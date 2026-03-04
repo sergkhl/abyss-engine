@@ -1,7 +1,8 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { pubSubClient } from '@/infrastructure/pubsub';
 
 interface QueryProviderProps {
   children: ReactNode;
@@ -19,6 +20,14 @@ export default function QueryProvider({ children }: QueryProviderProps) {
         },
       }),
   );
+
+  useEffect(() => {
+    pubSubClient.bindQueryClient(queryClient);
+    const connection = pubSubClient.connect();
+    return () => {
+      connection.close();
+    };
+  }, [queryClient]);
 
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }

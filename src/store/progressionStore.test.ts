@@ -1,284 +1,127 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { useProgressionStore } from './progressionStore';
-import { SM2Data } from '../utils/sm2';
-import { Concept } from '../types';
-import { getDeckData, INITIAL_UNLOCK_POINTS, setDeckDataForTests } from '../data/deckCatalog';
+import { useProgressionStore } from '../features/progression';
+import { Card, ActiveCrystal } from '../types';
+import { SubjectGraph } from '../types/core';
 
-function createLegacyConcept(id: string, topicId: string, dueDate: string): Concept {
+function createCard(id: string): Card {
   return {
     id,
-    topicId,
+    type: 'FLASHCARD',
     difficulty: 1,
-    sm2: {
-      interval: 0,
-      ease: 2.5,
-      repetitions: 0,
-      dueDate,
+    content: {
+      front: `front-${id}`,
+      back: `back-${id}`,
     },
-    formats: [],
   };
 }
 
-const TEST_DECK = {
-  subjects: [
-    {
-      id: 'data-science',
-      name: 'Data Science',
-      description: 'Test deck for progression store assertions',
-      themeId: 'data-science',
-      color: '#4F46E5',
-      geometry: {
-        gridTile: 'box',
-        crystal: 'box',
-        altar: 'cylinder',
-      },
-      topicIds: ['topic-a', 'topic-b'],
-    },
-  ],
-  topics: [
-    {
-      id: 'topic-a',
-      name: 'Topic A',
-      description: 'Foundation topic',
-      icon: 'book',
-      subjectId: 'data-science',
-      conceptIds: ['topic-a-card'],
-      theory: 'Basics for topic A',
-      prerequisites: [],
-    },
-    {
-      id: 'topic-b',
-      name: 'Topic B',
-      description: 'Depends on topic A',
-      icon: 'book',
-      subjectId: 'data-science',
-      conceptIds: ['topic-b-card'],
-      theory: 'Advanced topic B',
-      prerequisites: [{ topicId: 'topic-a', requiredLevel: 1 }],
-    },
-  ],
-  concepts: [
-    createLegacyConcept('topic-a-card', 'topic-a', new Date('2025-01-01T00:00:00Z').toISOString()),
-    createLegacyConcept('topic-b-card', 'topic-b', new Date('2025-01-01T00:00:00Z').toISOString()),
-  ],
-};
+function crystal(topicId: string): ActiveCrystal {
+  return {
+    topicId,
+    gridPosition: [0, 0],
+    xp: 0,
+    spawnedAt: Date.now(),
+  };
+}
 
-function resetStoreState() {
-  localStorage.removeItem('abyss-engine-storage');
+const topicGraphs: SubjectGraph[] = [
+  {
+    subjectId: 'data-science',
+    title: 'Data Science',
+    themeId: 'default',
+    maxTier: 2,
+    nodes: [
+      {
+        topicId: 'topic-a',
+        title: 'Topic A',
+        tier: 1,
+        prerequisites: [],
+        learningObjective: 'Base',
+      },
+      {
+        topicId: 'topic-b',
+        title: 'Topic B',
+        tier: 2,
+        prerequisites: ['topic-a'],
+        learningObjective: 'Depends on A',
+      },
+    ],
+  },
+];
+
+function resetStore() {
   useProgressionStore.setState({
-    concepts: [],
-    currentConcept: null,
-    currentFormat: null,
-    isConceptFlipped: false,
-    studyQueue: [],
-    unlockedTopics: [],
+    isCurrentCardFlipped: false,
+    unlockedTopicIds: [],
     lockedTopics: [],
     sm2Data: {},
     activeCrystals: [],
     currentSubjectId: null,
-    currentTopic: null,
+    currentSession: null,
     levelUpMessage: null,
-    currentTopicTheory: null,
     unlockPoints: 0,
   });
 }
 
-describe('progressionStore due-card selectors', () => {
+describe('progressionStore card-only canonical API', () => {
   beforeEach(() => {
-    resetStoreState();
-    setDeckDataForTests(TEST_DECK);
+    resetStore();
   });
 
-  it('counts due cards using legacy concept sm2 values when no runtime state override exists', () => {
-    const now = Date.now();
-    const concepts = [
-      createLegacyConcept('concept-due', 'topic-1', new Date(now - 1_000).toISOString()),
-      createLegacyConcept('concept-future', 'topic-1', new Date(now + 60_000).toISOString()),
-    ];
-
-    useProgressionStore.setState({ concepts });
-
-    expect(useProgressionStore.getState().getDueCardsCount()).toBe(1);
-    expect(useProgressionStore.getState().getTotalCardsCount()).toBe(2);
-  });
-
-  it('respects runtime sm2Data overrides over legacy concept sm2 values', () => {
-    const now = Date.now();
-    const concepts = [
-      createLegacyConcept('legacy-overridden', 'topic-1', new Date(now - 1_000).toISOString()),
-      createLegacyConcept('legacy-future', 'topic-1', new Date(now + 60_000).toISOString()),
-    ];
-    const sm2Data: Record<string, SM2Data> = {
-      'legacy-overridden': {
-        interval: 3,
-        easeFactor: 2.5,
-        repetitions: 0,
-        nextReview: now + 60_000,
-      },
-      'legacy-future': {
-        interval: 0,
-        easeFactor: 2.5,
-        repetitions: 0,
-        nextReview: now + 60_000,
-      },
-    };
-
+  it('starts a study session using card input and advances to next card on submit', () => {
+    const cards = [createCard('a-1'), createCard('a-2')];
     useProgressionStore.setState({
-      concepts,
-      sm2Data,
-    });
-
-    expect(useProgressionStore.getState().getDueCardsCount()).toBe(0);
-  });
-
-  it('counts a legacy-past concept when sm2Data marks it due', () => {
-    const now = Date.now();
-    const concepts = [
-      createLegacyConcept('legacy-due', 'topic-1', new Date(now + 60_000).toISOString()),
-      createLegacyConcept('legacy-due-2', 'topic-1', new Date(now + 60_000).toISOString()),
-    ];
-    const sm2Data: Record<string, SM2Data> = {
-      'legacy-due': {
-        interval: 1,
-        easeFactor: 2.5,
-        repetitions: 1,
-        nextReview: now - 1_000,
-      },
-    };
-
-    useProgressionStore.setState({
-      concepts,
-      sm2Data,
-    });
-
-    expect(useProgressionStore.getState().getDueCardsCount()).toBe(1);
-  });
-
-  it('rebuilds concepts from the deck catalog without resetting persisted progression on initialize', () => {
-    const deck = getDeckData();
-    const deckConcepts = deck.concepts ?? [];
-    const topicIds = Array.from(new Set(deckConcepts.map((concept) => concept.topicId).filter(Boolean)));
-    const crystalTopicId = topicIds[0];
-    const lockedTopicId = topicIds[1];
-    const preservedConceptId = deckConcepts[0]?.id;
-    const persistedSm2 = preservedConceptId
-      ? {
-          [preservedConceptId]: {
-            interval: 3,
-            easeFactor: 2.5,
-            repetitions: 2,
-            nextReview: Date.now() + 12_000,
-          },
-        }
-      : {};
-
-    resetStoreState();
-    expect(crystalTopicId).toBeTruthy();
-
-    useProgressionStore.setState({
-      activeCrystals: [{
-        topicId: crystalTopicId!,
-        gridPosition: [0, 0],
-        xp: 250,
-        spawnedAt: Date.now(),
-      }],
-      unlockPoints: 2,
-      sm2Data: persistedSm2,
-      concepts: [],
-      unlockedTopics: [],
-      lockedTopics: lockedTopicId ? [lockedTopicId] : [],
-    });
-
-    useProgressionStore.getState().initialize();
-    const state = useProgressionStore.getState();
-
-    expect(state.concepts.length).toBe(deckConcepts.length);
-    expect(state.activeCrystals).toHaveLength(1);
-    expect(state.activeCrystals[0].topicId).toBe(crystalTopicId);
-    expect(state.unlockPoints).toBe(2);
-    expect(state.unlockedTopics).toContain(crystalTopicId);
-    if (lockedTopicId) {
-      expect(state.lockedTopics).toContain(lockedTopicId);
-    }
-    if (preservedConceptId) {
-      expect(state.sm2Data[preservedConceptId]).toEqual(persistedSm2[preservedConceptId]);
-    }
-  });
-
-  it('initializes first-run defaults when no persistence is present', () => {
-    resetStoreState();
-    useProgressionStore.setState({ concepts: [], sm2Data: {} });
-    useProgressionStore.getState().initialize();
-
-    const deck = getDeckData();
-    const deckConcepts = deck.concepts ?? [];
-    const topicIds = Array.from(new Set(deckConcepts.map((concept) => concept.topicId).filter(Boolean)));
-    const state = useProgressionStore.getState();
-
-    expect(state.concepts.length).toBe(deckConcepts.length);
-    expect(state.lockedTopics.sort()).toEqual(topicIds.sort());
-    expect(state.unlockedTopics).toEqual([]);
-    expect(state.unlockPoints).toBe(INITIAL_UNLOCK_POINTS);
-  });
-
-  it('does not persist concept payload in localStorage (progression-only partialize)', async () => {
-    const deckConcepts = [createLegacyConcept('persist-test', 'topic-persist', new Date().toISOString())];
-    useProgressionStore.setState({
-      concepts: deckConcepts,
-      currentConcept: deckConcepts[0],
-      activeCrystals: [{
-        topicId: 'topic-persist',
-        gridPosition: [1, 1],
-        xp: 50,
-        spawnedAt: Date.now(),
-      }],
-      unlockedTopics: ['topic-persist'],
-      lockedTopics: [],
-      sm2Data: {
-        'persist-test': {
-          interval: 1,
-          easeFactor: 2.5,
-          repetitions: 0,
-          nextReview: Date.now(),
-        },
-      },
-      currentSubjectId: 'data-science',
+      unlockedTopicIds: ['topic-a'],
+      activeCrystals: [crystal('topic-a')],
       unlockPoints: 3,
+      lockedTopics: ['topic-b'],
     });
 
-    await Promise.resolve();
+    const startResult = useProgressionStore.getState().startTopicStudySession('topic-a', cards);
+    expect(startResult).toBeUndefined();
 
-    const raw = localStorage.getItem('abyss-engine-storage');
-    expect(raw).not.toBeNull();
-    const saved = JSON.parse(raw!);
-    const persisted = (saved as any).state ? (saved as any).state : saved;
+    const sessionAfterStart = useProgressionStore.getState().currentSession;
+    expect(sessionAfterStart?.topicId).toBe('topic-a');
+    expect(sessionAfterStart?.currentCardId).toBe('a-1');
+    expect(sessionAfterStart?.totalCards).toBe(2);
 
-    expect(persisted.concepts).toBeUndefined();
-    expect(persisted.activeCrystals).toHaveLength(1);
-    expect(persisted.sm2Data['persist-test']).toBeDefined();
+    useProgressionStore.getState().submitStudyResult('a-1', 4);
+    const sessionAfterSubmit = useProgressionStore.getState().currentSession;
+    expect(sessionAfterSubmit?.currentCardId).toBe('a-2');
+
+    const updated = useProgressionStore.getState().sm2Data['a-1'];
+    expect(updated).toBeDefined();
+    expect(updated.interval).toBeGreaterThan(0);
   });
 
-  it('migrates legacy persisted payloads by stripping concepts', () => {
-    const migrate = useProgressionStore.persist.getOptions().migrate!;
-    const migrated = migrate(
-      {
-        version: 1,
-        state: {
-          concepts: [{ id: 'legacy' }],
-          activeCrystals: [],
-          unlockedTopics: ['topic-legacy'],
-          lockedTopics: ['topic-other'],
-          sm2Data: {},
-          currentSubjectId: null,
-          unlockPoints: 0,
-        },
-      },
-      1,
-    );
-    const payload = (migrated as any).state ? (migrated as any).state : migrated;
+  it('uses graph prerequisites and unlock points when unlocking topics', () => {
+    useProgressionStore.setState({
+      lockedTopics: ['topic-a', 'topic-b'],
+      unlockedTopicIds: [],
+      activeCrystals: [],
+      unlockPoints: 2,
+    });
 
-    expect(payload.concepts).toBeUndefined();
-    expect(payload.unlockedTopics).toEqual(['topic-legacy']);
-    expect(payload.lockedTopics).toEqual(['topic-other']);
+    const firstUnlock = useProgressionStore.getState().unlockTopic('topic-a', topicGraphs);
+    expect(firstUnlock).not.toBeNull();
+
+    useProgressionStore.getState().addXP('topic-a', 250);
+
+    const dependentUnlock = useProgressionStore.getState().unlockTopic('topic-b', topicGraphs);
+    expect(dependentUnlock).not.toBeNull();
+
+    expect(useProgressionStore.getState().unlockedTopicIds).toContain('topic-b');
+    expect(useProgressionStore.getState().activeCrystals.map((storeCrystal) => storeCrystal.topicId)).toContain('topic-b');
+  });
+
+  it('returns deterministic topic tiers from graph data', () => {
+    expect(useProgressionStore.getState().getTopicTier('topic-a', topicGraphs)).toBe(1);
+    expect(useProgressionStore.getState().getTopicTier('topic-b', topicGraphs)).toBe(2);
+  });
+
+  it('counts due cards with explicit card data', () => {
+    const cards = [createCard('due-1'), createCard('due-2')];
+    const dueCount = useProgressionStore.getState().getDueCardsCount(cards);
+    expect(dueCount).toBe(2);
   });
 });

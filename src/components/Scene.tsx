@@ -3,34 +3,73 @@
 import React, { Suspense, useRef, useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrthographicCamera, Html } from '@react-three/drei';
+import { useQueries } from '@tanstack/react-query';
 import * as THREE from 'three';
 import { Grid } from './Grid';
 import { WisdomAltar } from './WisdomAltar';
 import { Crystals } from './Crystals';
 import TopicSelectionBar from './TopicSelectionBar';
-import { useProgressionStore as useStudyStore } from '../store/progressionStore';
+import { useProgressionStore as useStudyStore } from '../features/progression';
 import { useUIStore } from '../store/uiStore';
-
-interface TopicMetadata {
-  subjectId: string;
-}
-
-type TopicMetadataMap = Record<string, TopicMetadata>;
-
-interface SceneProps {
-  topicMetadata?: TopicMetadataMap;
-}
+import { useTopicMetadata } from '../features/content/selectors';
+import { Card } from '../types/core';
+import { deckRepository } from '../infrastructure/di';
 
 /**
  * Scene component - Main 3D visualization for Abyss Engine
  * Uses fixed orthographic camera for isometric view
  */
-export const Scene: React.FC<SceneProps> = ({ topicMetadata = {} }) => {
+export const Scene: React.FC = () => {
   const cameraRef = useRef<THREE.OrthographicCamera>(null);
   const activeCrystals = useStudyStore((state) => state.activeCrystals);
   const currentSubjectId = useStudyStore((state) => state.currentSubjectId);
   const selectedTopicId = useUIStore((state) => state.selectedTopicId);
   const startTopicStudySession = useStudyStore((state) => state.startTopicStudySession);
+  const openStudyPanel = useUIStore((state) => state.openStudyPanel);
+  const allTopicMetadata = useTopicMetadata(activeCrystals.map((crystal) => crystal.topicId));
+  const activeTopicIds = useMemo(
+    () => Array.from(new Set(activeCrystals.map((crystal) => crystal.topicId))),
+    [activeCrystals],
+  );
+  const topicCardQueries = useQueries({
+    queries: activeTopicIds.map((topicId) => {
+      const subjectId = allTopicMetadata[topicId]?.subjectId || '';
+      return {
+        queryKey: ['content', 'topic-cards', subjectId, topicId],
+        queryFn: () => deckRepository.getTopicCards(subjectId, topicId),
+        enabled: Boolean(subjectId),
+        staleTime: Infinity,
+      };
+    }),
+  });
+  const topicCardsById = useMemo(() => {
+    const map = new Map<string, Card[]>();
+    activeTopicIds.forEach((topicId, index) => {
+      const cards = topicCardQueries[index]?.data;
+      if (cards) {
+        map.set(topicId, cards);
+      }
+    });
+    return map;
+  }, [activeTopicIds, topicCardQueries]);
+
+  const startTopicStudySessionFromCards = (topicId: string, cards: Card[]) => {
+    if (!cards.length) {
+      console.warn(`[Scene] No cards available for topic ${topicId}; unable to start study session.`);
+      return;
+    }
+    startTopicStudySession(topicId, cards);
+    openStudyPanel();
+  };
+
+  const startTopicStudySessionFromSelection = (topicId: string) => {
+    const cards = topicCardsById.get(topicId) ?? [];
+    if (!cards.length) {
+      console.warn(`[Scene] No cards available for topic ${topicId}; unable to start study session.`);
+      return;
+    }
+    startTopicStudySessionFromCards(topicId, cards);
+  };
 
   // Filter crystals based on current subject selection
   // If a subject is selected, only show crystals belonging to that subject
@@ -41,10 +80,10 @@ export const Scene: React.FC<SceneProps> = ({ topicMetadata = {} }) => {
 
     // Get topic-subject mapping from deck
     return activeCrystals.filter((crystal) => {
-      const topicMeta = topicMetadata[crystal.topicId];
+      const topicMeta = allTopicMetadata[crystal.topicId];
       return topicMeta?.subjectId === currentSubjectId;
     });
-  }, [activeCrystals, currentSubjectId, topicMetadata]);
+  }, [activeCrystals, currentSubjectId, allTopicMetadata]);
 
   // Track selected crystal's 3D position for positioning the topic selection bar
   // Compute synchronously during render using useMemo - no more race conditions!
@@ -121,8 +160,7 @@ export const Scene: React.FC<SceneProps> = ({ topicMetadata = {} }) => {
         <Suspense fallback={null}>
           <Crystals
             crystals={filteredCrystals}
-            topicMetadata={topicMetadata}
-            onStartTopicStudySession={startTopicStudySession}
+            onStartTopicStudySession={startTopicStudySessionFromSelection}
           />
         </Suspense>
 
@@ -137,8 +175,7 @@ export const Scene: React.FC<SceneProps> = ({ topicMetadata = {} }) => {
           >
             <TopicSelectionBar
               isEmbedded
-              topicMetadata={topicMetadata}
-              onStartTopicStudySession={startTopicStudySession}
+              onStartTopicStudySession={startTopicStudySessionFromCards}
             />
           </Html>
         )}

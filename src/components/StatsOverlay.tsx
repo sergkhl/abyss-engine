@@ -1,9 +1,9 @@
 import React from 'react';
 
 export interface StatsOverlayProps {
-  /** Total number of concepts in the deck */
+  /** Total number of cards in the deck */
   totalCards: number;
-  /** Number of concepts due for review */
+  /** Number of cards due for review */
   dueCards: number;
   /** Number of active (unlocked) topics */
   activeTopics: number;
@@ -24,13 +24,13 @@ export function StatsOverlay({
 }: StatsOverlayProps) {
   return (
     <div className="absolute top-5 left-5 flex gap-[15px] z-10">
-      {/* Total Concepts */}
+      {/* Total Cards */}
       <div className="bg-slate-800/90 px-5 py-2.5 rounded-lg text-center">
         <span className="block text-slate-400 text-xs mb-0.5">Total</span>
         <span className="block text-xl font-bold text-cyan-400">{totalCards}</span>
       </div>
 
-      {/* Due Concepts */}
+      {/* Due Cards */}
       <div className="bg-slate-800/90 px-5 py-2.5 rounded-lg text-center">
         <span className="block text-slate-400 text-xs mb-0.5">Due</span>
         <span className="block text-xl font-bold text-cyan-400">{dueCards}</span>

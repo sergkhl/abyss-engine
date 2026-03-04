@@ -1,24 +1,22 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Concept, Rating } from '../types';
-import { Card } from '../types/repository';
+import { Rating } from '../types';
+import { Card } from '../types';
 import { getRatingLabel, getRatingColor, normalizeSM2State } from '../utils/sm2';
-import { useProgressionStore as useStudyStore } from '../store/progressionStore';
+import { useProgressionStore as useStudyStore } from '../features/progression';
 import { useTopicCards } from '../hooks/useDeckData';
+import { useTopicMetadata } from '../features/content/selectors';
 
 interface StudyPanelModalProps {
   isOpen: boolean;
-  currentConceptId: string | null;
+  currentCardId: string | null;
   currentTopicId: string | null;
-  topicMetadata?: Record<string, { subjectId: string }>;
-  isConceptFlipped: boolean;
-  totalConcepts: number;
+  isCardFlipped: boolean;
+  totalCards: number;
   feedbackMessage?: string | null;
   levelUpMessage?: string | null;
-  currentTopicTheory?: string | null;
   onClose: () => void;
   onFlip: () => void;
-  onSubmitResult: (conceptId: string, isCorrect?: boolean, selfRating?: Rating) => void;
-  onLoadDeck?: () => void;
+  onSubmitResult: (cardId: string, isCorrect?: boolean, selfRating?: Rating) => void;
 }
 
 type RenderableType = 'flashcard' | 'single_choice' | 'multi_choice';
@@ -83,21 +81,18 @@ function toRenderable(card: Card): RenderableCard | null {
 
 export function StudyPanelModal({
   isOpen,
-  currentConceptId,
+  currentCardId,
   currentTopicId,
-  topicMetadata = {},
-  isConceptFlipped,
-  totalConcepts,
+  isCardFlipped,
+  totalCards,
   feedbackMessage,
   levelUpMessage,
-  currentTopicTheory,
   onClose,
   onFlip,
   onSubmitResult,
-  onLoadDeck,
 }: StudyPanelModalProps) {
-  const concepts = useStudyStore((state) => state.concepts);
   const sm2Data = useStudyStore((state) => state.sm2Data);
+  const currentSession = useStudyStore((state) => state.currentSession);
 
   // Handle escape key
   useEffect(() => {
@@ -119,20 +114,15 @@ export function StudyPanelModal({
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
 
-  // Active concept and card lookup maps
-  const conceptMap = useMemo(
-    () => new Map<string, Concept>(concepts.map((concept) => [concept.id, concept])),
-    [concepts],
-  );
-
-  const currentConcept = useMemo(
-    () => (currentConceptId ? conceptMap.get(currentConceptId) : null),
-    [conceptMap, currentConceptId],
-  );
-
+  // Active card lookup maps
   const resolvedTopicId = useMemo(
-    () => currentTopicId || currentConcept?.topicId || null,
-    [currentTopicId, currentConcept?.topicId],
+    () => currentTopicId || currentSession?.topicId || null,
+    [currentTopicId, currentSession?.topicId],
+  );
+  const topicMetadata = useTopicMetadata(resolvedTopicId ? [resolvedTopicId] : []);
+  const resolvedTopicTheory = useMemo(
+    () => topicMetadata[resolvedTopicId || '']?.theory || null,
+    [resolvedTopicId, topicMetadata],
   );
 
   const resolvedSubjectId = useMemo(
@@ -148,8 +138,11 @@ export function StudyPanelModal({
   );
 
   const activeCard = useMemo(
-    () => (currentConceptId ? cardsById.get(currentConceptId) || null : null),
-    [cardsById, currentConceptId],
+    () => {
+      const activeFromSession = currentSession?.currentCardId ? cardsById.get(currentSession.currentCardId) : null;
+      return activeFromSession || (currentCardId ? cardsById.get(currentCardId) || null : null);
+    },
+    [cardsById, currentCardId, currentSession?.currentCardId],
   );
 
   const renderedCard = useMemo(
@@ -158,27 +151,28 @@ export function StudyPanelModal({
   );
 
   const sm2State = useMemo(() => {
-    if (!currentConceptId) return null;
-    const rawSm2 = sm2Data[currentConceptId] || currentConcept?.sm2;
+    const targetCardId = activeCard?.id || currentSession?.currentCardId || currentCardId;
+    if (!targetCardId) return null;
+    const rawSm2 = sm2Data[targetCardId];
     if (!rawSm2) return null;
     return normalizeSM2State(rawSm2);
-  }, [currentConceptId, currentConcept?.sm2, sm2Data]);
+  }, [activeCard?.id, currentSession?.currentCardId, currentCardId, sm2Data]);
 
-  // Reset selection state when concept changes
+  // Reset selection state when current card changes
   useEffect(() => {
     setSelectedAnswers([]);
     setIsAnswerSubmitted(false);
     setIsCorrect(false);
-  }, [currentConceptId]);
+  }, [currentSession?.currentCardId, currentCardId]);
 
   if (!isOpen) return null;
 
   const isLoadingCards = !!resolvedTopicId && !!resolvedSubjectId && cardQuery.isLoading;
   const isCardsLoadError = !!resolvedTopicId && !!resolvedSubjectId && cardQuery.isError;
 
-  const isEmptyDeck = totalConcepts === 0;
+  const isEmptyDeck = totalCards === 0;
   const hasActiveCard = renderedCard !== null;
-  const isCompleted = !hasActiveCard && !isLoadingCards && !isEmptyDeck && totalConcepts > 0;
+  const isCompleted = !hasActiveCard && !isLoadingCards && !isEmptyDeck && totalCards > 0;
 
   const isFlashcard = renderedCard?.type === 'flashcard';
   const isSingleChoice = renderedCard?.type === 'single_choice';
@@ -223,8 +217,9 @@ export function StudyPanelModal({
 
   // Handle continue after seeing feedback for choice questions
   const handleChoiceContinue = () => {
-    if (!currentConceptId) return;
-    onSubmitResult(currentConceptId, isCorrect);
+    const cardId = activeCard?.id || currentSession?.currentCardId || currentCardId;
+    if (!cardId) return;
+    onSubmitResult(cardId, isCorrect);
     setSelectedAnswers([]);
     setIsAnswerSubmitted(false);
     setIsCorrect(false);
@@ -232,8 +227,9 @@ export function StudyPanelModal({
 
   // Handle self-rating for flashcards
   const handleRating = (rating: Rating) => {
-    if (!currentConceptId) return;
-    onSubmitResult(currentConceptId, undefined, rating);
+    const cardId = activeCard?.id || currentSession?.currentCardId || currentCardId;
+    if (!cardId) return;
+    onSubmitResult(cardId, undefined, rating);
   };
 
   return (
@@ -259,7 +255,7 @@ export function StudyPanelModal({
           <h2 className="text-2xl font-semibold text-slate-200 m-0">📚 Study Session</h2>
 
           {/* Theory Tab - only show when topic has theory content */}
-          {currentTopicTheory && (
+          {resolvedTopicTheory && (
             <div className="flex justify-center gap-2 mt-3">
               <button
                 onClick={() => setActiveTab('study')}
@@ -296,15 +292,7 @@ export function StudyPanelModal({
         {/* Empty State */}
         {isEmptyDeck && (
           <div className="text-center py-8 px-5">
-            <p className="text-slate-400 mb-4">No deck loaded. Click below to load the Data Science deck.</p>
-            {onLoadDeck && (
-              <button
-                onClick={onLoadDeck}
-                className="bg-cyan-500 text-white border-none py-3 px-6 rounded-lg text-base cursor-pointer hover:bg-cyan-400"
-              >
-                Load Default Deck
-              </button>
-            )}
+            <p className="text-slate-400 mb-4">No cards are currently available for this topic.</p>
           </div>
         )}
 
@@ -333,13 +321,13 @@ export function StudyPanelModal({
           </div>
         )}
 
-        {/* Concept Display - Study Tab */}
-        {hasActiveCard && currentTopicTheory && activeTab === 'theory' && (
+        {/* Study Card View */}
+        {hasActiveCard && resolvedTopicTheory && activeTab === 'theory' && (
           <div className="w-full">
             <div className="bg-slate-900 rounded-[15px] p-5">
               <div className="text-violet-400 text-xs uppercase tracking-wider mb-3">💡 Theory</div>
               <div className="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">
-                {currentTopicTheory}
+                {resolvedTopicTheory}
               </div>
             </div>
             <div className="mt-4 text-center">
@@ -353,7 +341,7 @@ export function StudyPanelModal({
           </div>
         )}
 
-        {/* Concept Display - Study Tab */}
+        {/* Study Card View */}
         {hasActiveCard && activeTab === 'study' && renderedCard && (
           <div className="w-full">
             {/* Format Type Badge */}
@@ -372,7 +360,7 @@ export function StudyPanelModal({
               <div className="text-slate-200 text-lg">{renderedCard.question}</div>
 
               {/* Flashcard Answer */}
-              {isFlashcard && isConceptFlipped && renderedCard.answer && (
+              {isFlashcard && isCardFlipped && renderedCard.answer && (
                 <div className="mt-4 pt-4 border-t border-slate-700">
                   <div className="text-green-500 text-xs uppercase tracking-wider mb-2">Answer</div>
                   <div className="text-slate-200 text-lg">{renderedCard.answer}</div>
@@ -461,7 +449,7 @@ export function StudyPanelModal({
               )}
 
               {/* Context - shown after answering */}
-              {((isFlashcard && isConceptFlipped) || (isChoiceQuestion && isAnswerSubmitted)) && renderedCard.context && (
+              {((isFlashcard && isCardFlipped) || (isChoiceQuestion && isAnswerSubmitted)) && renderedCard.context && (
                 <div className="mt-4 pt-4 border-t border-slate-700">
                   <div className="text-violet-400 text-xs uppercase tracking-wider mb-2">💡 Explanation</div>
                   <div className="text-slate-300 text-sm italic">{renderedCard.context}</div>
@@ -481,10 +469,10 @@ export function StudyPanelModal({
                 </div>
               )}
 
-              {/* Concept Metadata */}
+              {/* Card Metadata */}
               <div className="flex gap-4 text-xs text-slate-500 border-t border-slate-700 pt-3 mt-4">
                 <span>ID: {renderedCard.id.slice(0, 8)}</span>
-                {currentConcept && <span>Difficulty: {currentConcept.difficulty}</span>}
+                {activeCard && <span>Difficulty: {activeCard.difficulty}</span>}
                 {sm2State && <span>Interval: {sm2State.interval} days</span>}
                 {sm2State && <span>Reps: {sm2State.repetitions}</span>}
               </div>
@@ -500,7 +488,7 @@ export function StudyPanelModal({
             {/* Actions */}
             <div className="mt-4 text-center">
               {/* Flashcard Actions */}
-              {isFlashcard && !isConceptFlipped && (
+              {isFlashcard && !isCardFlipped && (
                 <button
                   onClick={onFlip}
                   className="bg-violet-600 text-white border-none py-3 px-8 rounded-lg text-base cursor-pointer w-full hover:bg-violet-500"
@@ -509,7 +497,7 @@ export function StudyPanelModal({
                 </button>
               )}
 
-              {isFlashcard && isConceptFlipped && (
+                {isFlashcard && isCardFlipped && (
                 <div className="grid grid-cols-4 gap-2">
                   <span className="col-span-4 text-slate-400 text-sm mb-2">Rate your recall:</span>
                   {([1, 2, 3, 4] as Rating[]).map((rating) => (
@@ -525,7 +513,7 @@ export function StudyPanelModal({
                     </button>
                   ))}
                 </div>
-              )}
+                )}
 
               {/* Choice Question Actions */}
               {isChoiceQuestion && !isAnswerSubmitted && (
@@ -556,7 +544,7 @@ export function StudyPanelModal({
         {isCompleted && (
           <div className="text-center py-6 px-5">
             <h3 className="text-green-500 text-xl mb-2">🎉 All Done!</h3>
-            <p className="text-slate-400 mb-2">You've reviewed all concepts due today.</p>
+            <p className="text-slate-400 mb-2">You've reviewed all cards due today.</p>
             <p className="text-slate-400 mb-4">Return to the grid to see your crystals grow!</p>
             <button
               onClick={onClose}

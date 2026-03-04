@@ -7,15 +7,6 @@ export interface SM2Data {
   nextReview: number;
 }
 
-export interface LegacySM2Data {
-  interval: number;
-  ease: number;
-  repetitions: number;
-  dueDate: string;
-}
-
-export type AnySM2Data = SM2Data | LegacySM2Data;
-
 /**
  * Rating labels for UI display
  */
@@ -46,17 +37,8 @@ export function getRatingColor(rating: Rating): string {
   return RATING_COLORS[rating] || '#6b7280';
 }
 
-export function normalizeSM2State(sm2: AnySM2Data): SM2Data {
-  if ('nextReview' in sm2) {
-    return sm2;
-  }
-
-  return {
-    interval: sm2.interval,
-    easeFactor: sm2.ease,
-    repetitions: sm2.repetitions,
-    nextReview: new Date(sm2.dueDate).getTime(),
-  };
+export function normalizeSM2State(sm2: SM2Data): SM2Data {
+  return sm2;
 }
 
 export const defaultSM2: SM2Data = {
@@ -67,10 +49,10 @@ export const defaultSM2: SM2Data = {
 };
 
 export function calculateNextReview(
-  stateOrConcept: AnySM2Data | { sm2: AnySM2Data },
+  stateOrCard: SM2Data | { sm2: SM2Data },
   rating: Rating,
 ): SM2Data {
-  const state = 'sm2' in stateOrConcept ? stateOrConcept.sm2 : stateOrConcept;
+  const state = 'sm2' in stateOrCard ? stateOrCard.sm2 : stateOrCard;
   const current = normalizeSM2State(state);
   const { interval: prevInterval, easeFactor: prevEase, repetitions: prevReps } = current;
 
@@ -104,30 +86,27 @@ export function calculateNextReview(
   };
 }
 
-export function calculateNextReviewForConcept(
-  concept: { sm2: AnySM2Data },
+export function calculateNextReviewForCard(
+  card: { sm2: SM2Data },
   rating: Rating,
 ): SM2Data {
-  return calculateNextReview(concept.sm2, rating);
+  return calculateNextReview(card.sm2, rating);
 }
 
-function isDue(sm2Data: AnySM2Data): boolean {
+
+function isDue(sm2Data: SM2Data): boolean {
   const now = Date.now();
   return normalizeSM2State(sm2Data).nextReview <= now;
 }
 
-export function getDueConcepts<T extends { id: string; sm2: AnySM2Data }>(concepts: T[]): T[] {
-  return concepts.filter((concept) => isDue(concept.sm2));
+export function getDueCards<T extends { id: string; sm2: SM2Data }>(cards: T[]): T[] {
+  return cards.filter((card) => isDue(card.sm2));
 }
 
-export function getDueCards<T extends { id: string; sm2: AnySM2Data }>(cards: T[]): T[] {
-  return getDueConcepts(cards);
-}
 
 export const sm2 = {
-  getDueConcepts,
   getDueCards,
-  calculateNextReviewForConcept,
+  calculateNextReviewForCard,
   calculateNextReview,
   normalizeSM2State,
 };

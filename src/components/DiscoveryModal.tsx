@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { useProgressionStore as useStudyStore } from '../store/progressionStore';
+import { useProgressionStore as useStudyStore } from '../features/progression';
+import { useAllGraphs } from '../features/content/selectors';
+import { useSubjects } from '../features/content/contentQueries';
 
 // ============================================================================
 // Types
@@ -35,7 +37,7 @@ interface DiscoveryModalProps {
   isOpen: boolean;
   lockedTopicsCount: number;
   unlockPoints: number;
-  getTopicUnlockStatus: (topicId: string) => UnlockStatus;
+  getTopicUnlockStatus?: (topicId: string, allGraphs?: unknown[]) => UnlockStatus;
   onClose: () => void;
 }
 
@@ -162,25 +164,36 @@ export function DiscoveryModal({
   const getTopicsByTier = useStudyStore((state) => state.getTopicsByTier);
   const unlockTopic = useStudyStore((state) => state.unlockTopic);
   const lockedTopics = useStudyStore((state) => state.lockedTopics);
-  const unlockedTopics = useStudyStore((state) => state.unlockedTopics);
+  const unlockedTopicIds = useStudyStore((state) => state.unlockedTopicIds);
+  const storeGetTopicUnlockStatus = useStudyStore((state) => state.getTopicUnlockStatus);
+  const allGraphs = useAllGraphs();
+  const { data: subjects = [] } = useSubjects();
+  const topicUnlockStatusGetter = React.useMemo(() => {
+    return (topicId: string) =>
+      getTopicUnlockStatus
+        ? getTopicUnlockStatus(topicId, allGraphs)
+        : storeGetTopicUnlockStatus(topicId, allGraphs);
+  }, [allGraphs, getTopicUnlockStatus, storeGetTopicUnlockStatus]);
+
+  const subjectList = useMemo(() => subjects.map((subject) => ({ id: subject.id, name: subject.name })), [subjects]);
 
   // Get topics grouped by tier
   const topicsByTier = useMemo(() => {
-    return getTopicsByTier();
-  }, [getTopicsByTier, unlockPoints, lockedTopics, unlockedTopics]);
+    return getTopicsByTier(allGraphs, subjectList);
+  }, [getTopicsByTier, unlockPoints, lockedTopics, unlockedTopicIds, allGraphs, subjectList]);
 
   // Get unlock status for selected topic
   const selectedTopicStatus = useMemo(() => {
     if (!selectedTopic) return null;
-    return getTopicUnlockStatus(selectedTopic.id);
-  }, [selectedTopic, getTopicUnlockStatus]);
+    return topicUnlockStatusGetter(selectedTopic.id);
+  }, [selectedTopic, topicUnlockStatusGetter]);
 
   // Handle unlock click
   const handleUnlock = () => {
     if (!selectedTopic || !selectedTopicStatus?.canUnlock) return;
 
     // Unlock the topic
-    const position = unlockTopic(selectedTopic.id);
+    const position = unlockTopic(selectedTopic.id, allGraphs);
     if (position) {
       console.log(`Unlocked ${selectedTopic.name} at position [${position[0]}, ${position[1]}]`);
     }

@@ -30,6 +30,23 @@ async function setupTestWithDeck(page: any) {
   }
 }
 
+async function openCardByType(
+  page: any,
+  cardType: 'FLASHCARD' | 'SINGLE_CHOICE' | 'MULTI_CHOICE',
+) {
+  await page.evaluate(async (type: 'FLASHCARD' | 'SINGLE_CHOICE' | 'MULTI_CHOICE') => {
+    await (window as any).abyssDev.makeAllCardsDue();
+    const selection = await (window as any).abyssDev.setCurrentCardByType(type);
+    if (!selection) {
+      throw new Error(`No available card for card type: ${type}`);
+    }
+
+    (window as any).abyssDev.openStudyPanel();
+  }, cardType);
+
+  await page.waitForTimeout(500);
+}
+
 test.describe('Study Session', () => {
   /**
    * Happy Path: Complete Study Session
@@ -96,13 +113,7 @@ test.describe('Challenge Format Types', () => {
     await setupTestWithDeck(page);
 
     // Spawn crystal and make due, set to flashcard
-    await page.evaluate(() => {
-      (window as any).abyssDev.spawnCrystal('sql-basics');
-      (window as any).abyssDev.makeAllConceptsDue();
-      (window as any).abyssDev.setCurrentConcept('sql-1-flashcard');
-      (window as any).abyssDev.openStudyPanel();
-    });
-    await page.waitForTimeout(500);
+    await openCardByType(page, 'FLASHCARD');
 
     // Verify modal is open
     await expect(page.locator('text=Study Session')).toBeVisible({ timeout: 5000 });
@@ -134,13 +145,7 @@ test.describe('Challenge Format Types', () => {
     await setupTestWithDeck(page);
 
     // Spawn crystal and make due, set to single choice
-    await page.evaluate(() => {
-      (window as any).abyssDev.spawnCrystal('sql-basics');
-      (window as any).abyssDev.makeAllConceptsDue();
-      (window as any).abyssDev.setCurrentConcept('sql-1-single');
-      (window as any).abyssDev.openStudyPanel();
-    });
-    await page.waitForTimeout(500);
+    await openCardByType(page, 'SINGLE_CHOICE');
 
     // Verify modal is open
     await expect(page.locator('text=Study Session')).toBeVisible({ timeout: 5000 });
@@ -175,13 +180,7 @@ test.describe('Challenge Format Types', () => {
     await setupTestWithDeck(page);
 
     // Spawn crystal and make due, set to multi choice
-    await page.evaluate(() => {
-      (window as any).abyssDev.spawnCrystal('sql-basics');
-      (window as any).abyssDev.makeAllConceptsDue();
-      (window as any).abyssDev.setCurrentConcept('sql-1-multi');
-      (window as any).abyssDev.openStudyPanel();
-    });
-    await page.waitForTimeout(500);
+    await openCardByType(page, 'MULTI_CHOICE');
 
     // Verify modal is open
     await expect(page.locator('text=Study Session')).toBeVisible({ timeout: 5000 });

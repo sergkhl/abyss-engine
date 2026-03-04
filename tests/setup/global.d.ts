@@ -15,16 +15,24 @@ declare global {
     __FRAME_COUNT__?: number;
     __LAST_FRAME_TIME__?: number;
     abyssDev?: {
-      spawnCrystal: (topicId: string) => void;
-      makeAllConceptsDue: () => void;
-      setCurrentConcept: (conceptId: string) => void;
+      spawnCrystal: (topicId: string) => Promise<void>;
+      makeAllCardsDue: () => void;
+      setCurrentCard: (cardId: string) => Promise<void>;
+      setCurrentCardByType: (cardType: 'FLASHCARD' | 'SINGLE_CHOICE' | 'MULTI_CHOICE') => Promise<{
+        topicId: string;
+        cardId: string;
+      } | null>;
+      getCardByType: (cardType: 'FLASHCARD' | 'SINGLE_CHOICE' | 'MULTI_CHOICE') => Promise<{
+        topicId: string;
+        cardId: string;
+      } | null>;
       openStudyPanel: () => void;
       getState: () => {
-        concepts: number;
+        activeCards: number;
         activeCrystals: number;
         lockedTopics: number;
         unlockPoints: number;
-        studyQueue: number;
+        queuedCards: number;
       };
     };
   }

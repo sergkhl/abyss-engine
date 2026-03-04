@@ -1,12 +1,13 @@
 import { UseQueryResult, useQuery } from '@tanstack/react-query';
-import { Card, Manifest, SubjectGraph, TopicDetails } from '../types/repository';
+import { Card, SubjectGraph, TopicDetails } from '../types/core';
+import { Manifest } from '../types/repository';
 import { deckRepository } from '../infrastructure/di';
 
 const DEFAULT_STALE_TIME = Number.POSITIVE_INFINITY;
 
 export function useManifest(): UseQueryResult<Manifest, Error> {
   return useQuery({
-    queryKey: ['deck', 'manifest'] as const,
+    queryKey: ['content', 'subjects'] as const,
     queryFn: async (): Promise<Manifest> => deckRepository.getManifest(),
     staleTime: DEFAULT_STALE_TIME,
   });
@@ -14,7 +15,7 @@ export function useManifest(): UseQueryResult<Manifest, Error> {
 
 export function useSubjectGraph(subjectId: string): UseQueryResult<SubjectGraph, Error> {
   return useQuery({
-    queryKey: ['deck', 'subject', subjectId, 'graph'] as const,
+    queryKey: ['content', 'subject', subjectId, 'graph'] as const,
     queryFn: async (): Promise<SubjectGraph> => deckRepository.getSubjectGraph(subjectId),
     staleTime: DEFAULT_STALE_TIME,
     enabled: Boolean(subjectId),
@@ -23,7 +24,7 @@ export function useSubjectGraph(subjectId: string): UseQueryResult<SubjectGraph,
 
 export function useSubjectGraphs(subjectIds: string[]): UseQueryResult<SubjectGraph[], Error> {
   return useQuery({
-    queryKey: ['deck', 'subject', 'graphs', subjectIds],
+    queryKey: ['content', 'subject', 'graphs', ...subjectIds] as const,
     queryFn: async (): Promise<SubjectGraph[]> => Promise.all(subjectIds.map((subjectId) => deckRepository.getSubjectGraph(subjectId))),
     staleTime: DEFAULT_STALE_TIME,
     enabled: subjectIds.length > 0,
@@ -32,7 +33,7 @@ export function useSubjectGraphs(subjectIds: string[]): UseQueryResult<SubjectGr
 
 export function useTopicDetails(subjectId: string, topicId: string): UseQueryResult<TopicDetails, Error> {
   return useQuery({
-    queryKey: ['deck', 'subject', subjectId, 'topic', topicId, 'details'],
+    queryKey: ['content', 'topic', subjectId, topicId, 'details'],
     queryFn: async (): Promise<TopicDetails> => deckRepository.getTopicDetails(subjectId, topicId),
     staleTime: DEFAULT_STALE_TIME,
     enabled: Boolean(subjectId) && Boolean(topicId),
@@ -41,7 +42,7 @@ export function useTopicDetails(subjectId: string, topicId: string): UseQueryRes
 
 export function useTopicCards(subjectId: string, topicId: string): UseQueryResult<Card[], Error> {
   return useQuery({
-    queryKey: ['deck', 'subject', subjectId, 'topic', topicId, 'cards'],
+    queryKey: ['content', 'topic', subjectId, topicId, 'cards'],
     queryFn: async (): Promise<Card[]> => deckRepository.getTopicCards(subjectId, topicId),
     staleTime: DEFAULT_STALE_TIME,
     enabled: Boolean(subjectId) && Boolean(topicId),

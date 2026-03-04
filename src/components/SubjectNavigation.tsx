@@ -1,19 +1,16 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useProgressionStore as useStudyStore } from '../store/progressionStore';
-import { Subject } from '../types/repository';
-
-interface SubjectNavigationProps {
-  subjects?: Subject[];
-}
+import { useProgressionStore as useStudyStore } from '../features/progression';
+import { useSubjects } from '../features/content/contentQueries';
 
 /**
  * SubjectNavigation component - Fixed dropdown at top of screen
  * Allows switching between subjects (floors) in the multi-floor architecture
  * Positioned outside the 3D Canvas as a 2D DOM overlay
  */
-export const SubjectNavigation: React.FC<SubjectNavigationProps> = ({ subjects = [] }) => {
+export const SubjectNavigation: React.FC = () => {
+  const { data: subjects = [] } = useSubjects();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 

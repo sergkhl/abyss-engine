@@ -3,8 +3,8 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { uiStore } from '../store/uiStore';
-import { useProgressionStore as useStudyStore } from '../store/progressionStore';
-import { getGeometryForSubject, getSubjectColor } from '../utils/geometryMapping';
+import { useProgressionStore as useStudyStore } from '../features/progression';
+import { useSubjectColor, useSubjectGeometry } from '../utils/geometryMapping';
 
 // ============================================================================
 // Module-level shared geometries (created once, reused across all renders)
@@ -51,14 +51,10 @@ export const WisdomAltar: React.FC = () => {
   const currentSubjectId = useStudyStore((state) => state.currentSubjectId);
 
   // Get subject-specific altar geometry
-  const altarGeometry = useMemo(() => {
-    return getGeometryForSubject(currentSubjectId, 'altar');
-  }, [currentSubjectId]);
+  const altarGeometry = useSubjectGeometry(currentSubjectId, 'altar');
 
   // Get subject color for the altar
-  const subjectColor = useMemo(() => {
-    return getSubjectColor(currentSubjectId);
-  }, [currentSubjectId]);
+  const subjectColor = useSubjectColor(currentSubjectId);
 
   // Memoized materials with subject color applied
   const materials = useMemo(() => {

@@ -5,7 +5,8 @@ import * as THREE from 'three';
 import { ActiveCrystal } from '../types';
 import { calculateLevelFromXP } from '../utils/progressionUtils';
 import { useUIStore } from '../store/uiStore';
-import { getCrystalColors, getGeometryForSubject } from '../utils/geometryMapping';
+import { useSubjectColor, useSubjectGeometry } from '../utils/geometryMapping';
+import { useTopicMetadata } from '../features/content/selectors';
 
 const crystalInnerGeometry = new THREE.SphereGeometry(0.15, 8, 6);
 const levelIndicatorGeometry = new THREE.SphereGeometry(0.08, 16, 16);
@@ -17,8 +18,6 @@ interface TopicMetadata {
   topicName?: string;
 }
 
-export type TopicMetadataMap = Record<string, TopicMetadata>;
-
 function getCrystalScale(level: number): number {
   const baseScale = 0.6;
   const scaleIncrement = 0.15;
@@ -27,28 +26,32 @@ function getCrystalScale(level: number): number {
 
 interface CrystalsProps {
   crystals: ActiveCrystal[];
-  topicMetadata?: TopicMetadataMap;
   onStartTopicStudySession?: (topicId: string) => void;
 }
 
 interface SingleCrystalProps {
   crystal: ActiveCrystal;
   isSelected: boolean;
-  topicMetadata?: TopicMetadataMap;
+  topicMeta?: TopicMetadata;
   onSelect: (crystal: ActiveCrystal) => void;
 }
 
 const SingleCrystal: React.FC<SingleCrystalProps> = ({
   crystal,
   isSelected,
-  topicMetadata,
+  topicMeta,
   onSelect,
 }) => {
   const [x, z] = crystal.gridPosition;
   const [animatedScale, setAnimatedScale] = React.useState(0);
 
-  const topicInfo = topicMetadata?.[crystal.topicId];
-  const colors = getCrystalColors(topicInfo?.subjectId || null);
+  const subjectColor = useSubjectColor(topicMeta?.subjectId || null);
+  const crystalGeometry = useSubjectGeometry(topicMeta?.subjectId || null, 'crystal');
+  const colors = useMemo(() => ({
+    outerColor: subjectColor,
+    innerColor: subjectColor,
+    emissiveColor: subjectColor,
+  }), [subjectColor]);
   const level = calculateLevelFromXP(crystal.xp);
   const targetScale = getCrystalScale(level);
   React.useEffect(() => {
@@ -68,10 +71,6 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
 
     requestAnimationFrame(animate);
   }, [targetScale, crystal.spawnedAt]);
-
-  const crystalGeometry = useMemo(() => {
-    return getGeometryForSubject(topicInfo?.subjectId || null, 'crystal');
-  }, [topicInfo?.subjectId]);
 
   const selectedEmissiveIntensity = isSelected ? 0.6 : 0.2;
   const selectedEmissiveIntensityInner = isSelected ? 0.9 : 0.4;
@@ -147,14 +146,16 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
 export const Crystals: React.FC<CrystalsProps> = ({
   crystals,
   onStartTopicStudySession,
-  topicMetadata,
 }) => {
+  const metadataLookup = useTopicMetadata(crystals.map((crystal) => crystal.topicId));
+  const resolvedMetadata = metadataLookup;
+  const selectedTopicId = useUIStore((state) => state.selectedTopicId);
+  const selectTopic = useUIStore((state) => state.selectTopic);
+
   if (crystals.length === 0) {
     return <group />;
   }
 
-  const selectedTopicId = useUIStore((state) => state.selectedTopicId);
-  const selectTopic = useUIStore((state) => state.selectTopic);
   const handleCrystalClick = (crystal: ActiveCrystal) => {
     if (selectedTopicId === crystal.topicId) {
       onStartTopicStudySession?.(crystal.topicId);
@@ -171,7 +172,7 @@ export const Crystals: React.FC<CrystalsProps> = ({
           crystal={crystal}
           isSelected={selectedTopicId === crystal.topicId}
           onSelect={handleCrystalClick}
-          topicMetadata={topicMetadata}
+          topicMeta={resolvedMetadata[crystal.topicId]}
         />
       ))}
     </group>

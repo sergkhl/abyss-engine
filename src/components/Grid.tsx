@@ -2,8 +2,8 @@
 
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { useProgressionStore as useStudyStore } from '../store/progressionStore';
-import { getGeometryForSubject, getSubjectColor } from '../utils/geometryMapping';
+import { useProgressionStore as useStudyStore } from '../features/progression';
+import { useSubjectColor, useSubjectGeometry } from '../utils/geometryMapping';
 
 /**
  * Grid configuration
@@ -37,6 +37,8 @@ interface TilePosition {
 export const Grid: React.FC = () => {
   // Get current subject ID from store
   const currentSubjectId = useStudyStore((state) => state.currentSubjectId);
+  const tileGeometry = useSubjectGeometry(currentSubjectId, 'gridTile');
+  const subjectColor = useSubjectColor(currentSubjectId);
 
   // Memoize tile positions - recalculates only if grid size changes
   const tilePositions: TilePosition[] = useMemo(() => {
@@ -62,14 +64,8 @@ export const Grid: React.FC = () => {
   }, []);
 
   // Get subject-specific geometry for grid tiles
-  const tileGeometry = useMemo(() => {
-    return getGeometryForSubject(currentSubjectId, 'gridTile');
-  }, [currentSubjectId]);
-
   // Get subject color for grid tiles
-  const subjectColor = useMemo(() => {
-    return getSubjectColor(currentSubjectId);
-  }, [currentSubjectId]);
+  // const subjectColor = getSubjectColor(currentSubjectId); // now provided by hook
 
   // Calculate tile colors based on subject
   const tileColor = useMemo(() => {

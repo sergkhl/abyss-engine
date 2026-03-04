@@ -1,173 +1,237 @@
 /**
- * Developer Tools for Abyss Engine
- *
- * Provides console API for manipulating game state during development and testing.
- * Access via window.abyssDev in the browser console.
- *
- * Usage:
- *   window.abyssDev.spawnCrystal('topic-id')         // Spawn a crystal
- *   window.abyssDev.makeAllConceptsDue()             // Make all concepts due now
- *   window.abyssDev.setCurrentConcept('concept-id')  // Set current concept
- *   window.abyssDev.openStudyPanel()                 // Open study panel
+ * Developer tools for local debugging and manual game state control.
  */
 
-import { useProgressionStore as useStudyStore } from '../store/progressionStore';
 import { uiStore } from '../store/uiStore';
+import { SM2Data } from './sm2';
+import { deckRepository } from '../infrastructure/di';
+import { useProgressionStore as useStudyStore } from '../features/progression';
+import { SubjectGraph, Card } from '../types/core';
 
-/**
- * Type definitions for AbyssDev
- */
+interface StoreStateLike {
+  sm2Data: Record<string, SM2Data>;
+  activeCrystals: Array<{ topicId: string; gridPosition: [number, number]; xp: number; spawnedAt: number }>;
+  lockedTopics: string[];
+  unlockPoints: number;
+  currentSession: {
+    queueCardIds: string[];
+    currentCardId: string | null;
+  } | null;
+}
+
+interface TopicCardSelection {
+  topicId: string;
+  cardId: string;
+}
+
 export interface AbyssDevState {
-  concepts: number;
+  activeCards: number;
   activeCrystals: number;
   lockedTopics: number;
   unlockPoints: number;
-  studyQueue: number;
+  queuedCards: number;
 }
 
 export interface AbyssDev {
-  spawnCrystal: (topicId: string) => void;
-  makeAllConceptsDue: () => void;
-  setCurrentConcept: (conceptId: string) => void;
+  spawnCrystal: (topicId: string) => Promise<void>;
+  makeAllCardsDue: () => void;
+  setCurrentCard: (cardId: string) => Promise<void>;
+  setCurrentCardByType: (cardType: Card['type']) => Promise<TopicCardSelection | null>;
+  getCardByType: (cardType: Card['type']) => Promise<TopicCardSelection | null>;
   openStudyPanel: () => void;
   getState: () => AbyssDevState;
 }
 
-/**
- * Get the Zustand store state and actions
- */
 function getStore() {
-  return useStudyStore.getState();
+  return useStudyStore.getState() as StoreStateLike;
 }
 
+const getAllSubjectGraphs = async (): Promise<SubjectGraph[]> => {
+  const manifest = await deckRepository.getManifest();
+  const subjectIds = (manifest.subjects ?? []).map((subject: { id: string }) => subject.id);
+
+  const responses = await Promise.allSettled(subjectIds.map((subjectId) => deckRepository.getSubjectGraph(subjectId)));
+  return responses
+    .flatMap((entry) => (entry.status === 'fulfilled' ? [entry.value] : []));
+};
+
 /**
- * Reset all SM2 dates to make all concepts due now
+ * Reset all SM2 dates to make all cards due now.
  */
 function resetAllSM2Dates() {
-  const { concepts } = getStore();
+  const { sm2Data } = getStore();
+  const updated: Record<string, SM2Data> = {};
+  const activeCount = Object.keys(sm2Data).length;
 
-  const updatedConcepts = concepts.map(concept => ({
-    ...concept,
-    sm2: {
-      ...concept.sm2,
-      dueDate: new Date().toISOString(),
-      interval: 0,
-      repetitions: 0,
-    }
-  }));
+  for (const [cardId, state] of Object.entries(sm2Data)) {
+    updated[cardId] = {
+      ...state,
+      interval: state.interval ?? 0,
+      easeFactor: state.easeFactor ?? 2.5,
+      repetitions: state.repetitions ?? 0,
+      nextReview: Date.now(),
+    };
+  }
 
-  useStudyStore.setState({ concepts: updatedConcepts });
+  if (activeCount > 0) {
+    useStudyStore.setState({ sm2Data: updated });
+  }
 
-  // Refresh study queue
-  const { recalculateFromConcepts } = getStore();
-  recalculateFromConcepts();
-
-  console.log(`[AbyssDev] Reset SM2 dates for all ${concepts.length} concepts`);
+  console.log(`[AbyssDev] Reset SM2 review dates for ${activeCount} study cards`);
 }
 
-/**
- * AbyssDev implementation - only functions used by tests
- */
+function collectTopicIndex(graphs: SubjectGraph[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const graph of graphs) {
+    for (const node of graph.nodes) {
+      map.set(node.topicId, graph.subjectId);
+    }
+  }
+  return map;
+}
+
+async function getCardByType(cardType: Card['type']): Promise<TopicCardSelection | null> {
+  const allGraphs = await getAllSubjectGraphs();
+  const topicToSubject = collectTopicIndex(allGraphs);
+  const activeTopicIds = getStore().activeCrystals.map((crystal) => crystal.topicId);
+
+  const candidates = activeTopicIds.length > 0
+    ? activeTopicIds
+    : Array.from(topicToSubject.keys());
+
+  for (const topicId of candidates) {
+    const subjectId = topicToSubject.get(topicId);
+    if (!subjectId) {
+      continue;
+    }
+
+    try {
+      const cards = await deckRepository.getTopicCards(subjectId, topicId) as Card[];
+      const foundCard = cards.find((card) => card.type === cardType);
+
+      if (foundCard) {
+        return { topicId, cardId: foundCard.id };
+      }
+    } catch (error) {
+      console.warn(`[AbyssDev] Failed to load cards for topic "${topicId}".`, error);
+    }
+  }
+
+  return null;
+}
+
 const abyssDev: AbyssDev = {
-  /**
-   * Spawn a crystal for a topic (without using unlock points)
-   */
-  spawnCrystal: (topicId: string) => {
-    const { spawnCrystal, lockedTopics, activeCrystals } = getStore();
-
-    // Check if already has crystal
-    const existing = activeCrystals.find(c => c.topicId === topicId);
-    if (existing) {
-      console.log(`[AbyssDev] Crystal already exists for "${topicId}" at position [${existing.gridPosition}]`);
+  spawnCrystal: async (topicId: string) => {
+    const { activeCrystals } = getStore();
+    if (activeCrystals.some((crystal) => crystal.topicId === topicId)) {
+      console.log(`[AbyssDev] Crystal already exists for "${topicId}".`);
       return;
     }
 
-    // Remove from locked topics
-    const newLockedTopics = lockedTopics.filter(id => id !== topicId);
-    useStudyStore.setState({ lockedTopics: newLockedTopics });
-
-    // Spawn the crystal
-    const position = spawnCrystal(topicId);
-
-    if (position) {
-      console.log(`[AbyssDev] Spawned crystal for "${topicId}" at position [${position[0]}, ${position[1]}]`);
-    } else {
-      console.warn(`[AbyssDev] Could not spawn crystal for "${topicId}" - no space available`);
+    const allGraphs = await getAllSubjectGraphs();
+    const position = useStudyStore.getState().unlockTopic(topicId, allGraphs);
+    if (!position) {
+      console.warn(`[AbyssDev] Could not spawn crystal for "${topicId}" (locked, missing graph data, or no slots available).`);
+      return;
     }
+
+    console.log(`[AbyssDev] Spawned crystal for "${topicId}" at position [${position[0]}, ${position[1]}]`);
   },
 
-  /**
-   * Make all concepts due for study
-   */
-  makeAllConceptsDue: () => {
+  makeAllCardsDue: () => {
     resetAllSM2Dates();
-    console.log(`[AbyssDev] All concepts are now due`);
+    console.log('[AbyssDev] All cards are now due.');
   },
 
-  /**
-   * Set the current concept for study
-   */
-  setCurrentConcept: (conceptId: string) => {
-    const { concepts } = getStore();
-    const concept = concepts.find(c => c.id === conceptId);
+  setCurrentCard: async (cardId: string) => {
+    const activeTopicIds = getStore().activeCrystals.map((crystal) => crystal.topicId);
 
-    if (!concept) {
-      console.warn(`[AbyssDev] Concept not found: ${conceptId}`);
-      return;
+    try {
+      const allGraphs = await getAllSubjectGraphs();
+      const topicToSubject = collectTopicIndex(allGraphs);
+      const candidates = activeTopicIds.length > 0
+        ? activeTopicIds
+        : Array.from(topicToSubject.keys());
+
+      for (const topicId of candidates) {
+        const subjectId = topicToSubject.get(topicId);
+        if (!subjectId) {
+          continue;
+        }
+
+        const cards = await deckRepository.getTopicCards(subjectId, topicId) as Card[];
+        const foundCard = cards.find((card) => card.id === cardId);
+        if (!foundCard) {
+          continue;
+        }
+
+        useStudyStore.getState().startTopicStudySession(topicId, cards);
+        const nextState = useStudyStore.getState();
+        if (nextState.currentSession) {
+          useStudyStore.setState({
+            currentSession: {
+              ...nextState.currentSession,
+              currentCardId: cardId,
+            },
+          });
+        }
+
+        useStudyStore.setState({ isCurrentCardFlipped: false });
+
+        console.log(`[AbyssDev] Selected card "${cardId}" in topic "${topicId}"`);
+        return;
+      }
+
+      console.warn(`[AbyssDev] Card not found for ID: ${cardId}`);
+    } catch (error) {
+      console.warn('[AbyssDev] Failed to resolve card by ID.', error);
+    }
+  },
+
+  setCurrentCardByType: async (cardType: Card['type']) => {
+    const selection = await getCardByType(cardType);
+    if (!selection) {
+      console.warn(`[AbyssDev] No card found for type: ${cardType}`);
+      return null;
     }
 
-    // Get a random format for this concept
-    const formats = concept.formats || [];
-    const format = formats.length > 0
-      ? formats[Math.floor(Math.random() * formats.length)]
-      : null;
-
-    useStudyStore.setState({
-      currentConcept: concept,
-      currentFormat: format,
-      isConceptFlipped: false,
-    });
-
-    console.log(`[AbyssDev] Set current concept to "${conceptId}"`);
+    await abyssDev.setCurrentCard(selection.cardId);
+    return selection;
   },
 
-  /**
-   * Open the study panel modal
-   */
+  getCardByType: async (cardType: Card['type']) => {
+    return getCardByType(cardType);
+  },
+
   openStudyPanel: () => {
     uiStore.getState().openStudyPanel();
     console.log('[AbyssDev] Study panel opened');
   },
 
-  /**
-   * Get current state snapshot
-   */
   getState: (): AbyssDevState => {
-    const { concepts, activeCrystals, lockedTopics, unlockPoints, studyQueue } = getStore();
+    const { sm2Data, activeCrystals, lockedTopics, unlockPoints, currentSession } = getStore();
 
     const state: AbyssDevState = {
-      concepts: concepts.length,
+      activeCards: Object.keys(sm2Data).length,
       activeCrystals: activeCrystals.length,
       lockedTopics: lockedTopics.length,
       unlockPoints,
-      studyQueue: studyQueue.length,
+      queuedCards: currentSession?.queueCardIds.length ?? 0,
     };
 
-    console.log(`[AbyssDev] Current state:`, state);
+    console.log('[AbyssDev] Current state:', state);
     return state;
-  }
+  },
 };
 
 /**
- * Initialize and expose abyssDev to window
+ * Initialize and expose abyssDev to window.
  */
 export function initAbyssDev() {
-  // Expose to window for console access
   (window as any).abyssDev = abyssDev;
 
-  // Log welcome message
   console.log(`
- 🔧 AbyssDev loaded!.
+    🔧 AbyssDev loaded.
   `);
 
   return abyssDev;

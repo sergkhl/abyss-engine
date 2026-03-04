@@ -1,4 +1,4 @@
 import { IDeckRepository } from '../types/repository';
-import { HttpJsonDeckRepository } from './HttpJsonDeckRepository';
+import { ApiDeckRepository } from './repositories/ApiDeckRepository';
 
-export const deckRepository: IDeckRepository = new HttpJsonDeckRepository();
+export const deckRepository: IDeckRepository = new ApiDeckRepository();
