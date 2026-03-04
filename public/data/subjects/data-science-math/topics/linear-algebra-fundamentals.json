@@ -1,0 +1,13 @@
+{
+  "topicId": "linear-algebra-fundamentals",
+  "title": "Linear Algebra Fundamentals",
+  "subjectId": "data-science-math",
+  "coreConcept": "Linear algebra is the mathematical foundation of data representation, providing the language to manipulate high-dimensional spaces. By understanding vectors, matrices, and linear transformations, practitioners can computationally efficiently perform complex operations on massive datasets.",
+  "theory": "## The Architecture of Data\n\nAt its core, data science relies on linear algebra to structure information. Datasets are typically represented as matrices, where rows correspond to observations and columns to features.\n\n### Vectors and Matrices\n- **Vectors**: Ordered arrays of numbers representing points in space or directed magnitudes, denoted as $\\mathbf{x} \\in \\mathbb{R}^n$.\n- **Matrices**: 2D arrays of numbers representing linear transformations or datasets, denoted as $A \\in \\mathbb{R}^{m \\times n}$.\n- **Vector Spaces**: Sets of vectors closed under vector addition and scalar multiplication, forming the operational arena for machine learning models.\n\n### Linear Transformations and Eigen-decomposition\nA matrix acts as a function transforming vectors from one space to another: $T(\\mathbf{x}) = A\\mathbf{x}$. Understanding how these transformations stretch or rotate space is critical.\n\nCentral to this is the eigenvalue equation:\n$$ A\\mathbf{v} = \\lambda \\mathbf{v} $$\nwhere $\\mathbf{v}$ is an eigenvector representing a direction of invariant action, and $\\lambda$ is the corresponding eigenvalue representing the scaling factor along that direction.",
+  "keyTakeaways": [
+    "Data is fundamentally structured as matrices and vectors in high-dimensional spaces.",
+    "Matrix multiplication represents the composition of linear transformations.",
+    "Eigenvectors define the axes of transformation invariant to a given matrix.",
+    "Linear algebra enables the vectorization of code, drastically speeding up computations."
+  ]
+}

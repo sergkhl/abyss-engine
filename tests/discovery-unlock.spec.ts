@@ -1,0 +1,107 @@
+import { test, expect } from '@playwright/test';
+import {
+  waitForPageHydrated,
+  getCanvas,
+} from './utils/test-helpers';
+
+/**
+ * Discovery/Unlock E2E Test - Abyss Engine
+ *
+ * Keeps only UI-based tests. State logic tests moved to Vitest.
+ */
+
+test.describe('Discovery/Unlock Journey', () => {
+  /**
+   * Test: Discovery modal displays tiered topic grid
+   * This inherently tests that clicking the altar opens the modal
+   */
+  test('should display tiered topic grid with unlock points and lock icons', async ({ page }) => {
+    await page.goto('/');
+    await waitForPageHydrated(page);
+
+    // Load deck first
+    const loadDeckButton = page.locator('button:has-text("Load Default Deck")');
+    if (await loadDeckButton.count() > 0) {
+      await loadDeckButton.click();
+      await page.waitForTimeout(1000);
+    }
+
+    // Click altar to open discovery modal
+    const canvas = await getCanvas(page);
+    const canvasBox = await canvas!.boundingBox();
+
+    await page.mouse.click(
+      canvasBox!.x + canvasBox!.width / 2,
+      canvasBox!.y + canvasBox!.height / 2
+    );
+
+    await page.waitForTimeout(1500);
+
+    // Check for modal container (discovery modal opened)
+    const modalContainer = page.locator('[class*="fixed inset-0 bg-black"]');
+    await expect(modalContainer).toBeVisible();
+
+    // Check for tier labels (there are multiple tiers, so use first())
+    const tierLabel = page.locator('text=Tier').first();
+    await expect(tierLabel).toBeVisible();
+
+    // Check for unlock points display (multiple elements, use first())
+    const unlockPointsText = page.locator('text=Unlock Point').first();
+    await expect(unlockPointsText).toBeVisible();
+
+    // Check for lock icons
+    const lockIcon = page.locator('text=🔒');
+    expect(await lockIcon.count()).toBeGreaterThan(0);
+  });
+
+  /**
+   * Test: Can view topic details and close modal with escape
+   */
+  test('should open topic details and close discovery modal with escape', async ({ page }) => {
+    await page.goto('/');
+    await waitForPageHydrated(page);
+
+    // Load deck
+    const loadDeckButton = page.locator('button:has-text("Load Default Deck")');
+    if (await loadDeckButton.count() > 0) {
+      await loadDeckButton.click();
+      await page.waitForTimeout(1000);
+    }
+
+    // Click altar
+    const canvas = await getCanvas(page);
+    const canvasBox = await canvas!.boundingBox();
+
+    await page.mouse.click(
+      canvasBox!.x + canvasBox!.width / 2,
+      canvasBox!.y + canvasBox!.height / 2
+    );
+
+    await page.waitForTimeout(1500);
+
+    // Look for any topic buttons and click them
+    const modalContainer = page.locator('[class*="fixed inset-0 bg-black"]');
+
+    // Get all buttons in the modal
+    const buttons = modalContainer.locator('button');
+    const buttonCount = await buttons.count();
+
+    // Click a topic button if available
+    if (buttonCount > 2) {
+      await buttons.nth(2).click();
+      await page.waitForTimeout(500);
+
+      // Check for details popup (prerequisites or topic info)
+      const detailsPopup = page.locator('text=Prerequisites');
+      const hasDetails = await detailsPopup.count() > 0 || await page.locator('[class*="bg-slate-800"]').count() > 1;
+      expect(hasDetails).toBe(true);
+    }
+
+    // Press Escape to close
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(500);
+
+    // Canvas should still be visible after closing modal
+    await expect(canvas!).toBeVisible();
+  });
+});

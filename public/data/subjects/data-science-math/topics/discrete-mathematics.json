@@ -1,0 +1,13 @@
+{
+    "topicId": "discrete-mathematics",
+    "title": "Discrete Mathematics",
+    "subjectId": "data-science-math",
+    "coreConcept": "Discrete mathematics is the study of mathematical structures that are fundamentally countable rather than continuous. It forms the backbone of computer science and algorithm design, providing the logic and set theory required for data structures and efficient computation.",
+    "theory": "## The Mathematics of Algorithms\n\nData science is intrinsically computational. Discrete mathematics provides the theoretical underpinnings for how we structure data, search through it, and guarantee algorithm correctness.\n\n### Sets, Relations, and Logic\n- **Set Theory**: The foundation of relational databases and data manipulation. Operations include unions ($\\cup$), intersections ($\\cap$), and complements.\n- **Propositional Logic**: Formalizes reasoning using Boolean variables (True/False) and operators (AND, OR, NOT, IMPLIES).\n\n### Combinatorics\nThe study of counting, arrangement, and permutation. It is vital for calculating probabilities in discrete sample spaces. For example, the number of ways to choose $k$ elements from a set of $n$ elements is given by the binomial coefficient:\n$$ \\binom{n}{k} = \\frac{n!}{k!(n-k)!} $$\n\n### Graph Theory\nGraphs mathematically model networks (e.g., social networks, knowledge graphs). A graph $G = (V, E)$ consists of a set of vertices $V$ and edges $E$. Concepts like connectivity, paths, and graph coloring are essential for network analysis.",
+    "keyTakeaways": [
+      "Set theory defines the formal logic behind data queries and relational joins.",
+      "Propositional logic provides the rigorous foundation for algorithmic conditional statements.",
+      "Combinatorics calculates the exact sizes of discrete state spaces.",
+      "Graph theory mathematically formalizes complex network structures and relationships."
+    ]
+  }

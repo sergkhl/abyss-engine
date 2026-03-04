@@ -1,0 +1,15 @@
+{
+  "subjectId": "physics",
+  "title": "Physics",
+  "themeId": "physics",
+  "maxTier": 1,
+  "nodes": [
+    {
+      "topicId": "entropy",
+      "title": "Entropy",
+      "tier": 1,
+      "prerequisites": [],
+      "learningObjective": "Understand the concept of entropy as a measure of disorder and information theory fundamentals. Learn about the second law of thermodynamics and the role of entropy in energy systems."
+    }
+  ]
+}

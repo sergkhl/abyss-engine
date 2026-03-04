@@ -1,0 +1,387 @@
+{
+  "topicId": "linear-algebra-fundamentals",
+  "cards": [
+    {
+      "id": "linalg-1-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "What is the defining characteristic of a vector space?",
+        "back": "A set of vectors that is closed under vector addition and scalar multiplication."
+      }
+    },
+    {
+      "id": "linalg-2-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "For matrix multiplication $C=AB$, if $A$ is an $m \\times n$ matrix, what must be the dimensions of $B$, and what will be the dimensions of $C$?",
+        "back": "$B$ must be an $n \\times p$ matrix. The resulting matrix $C$ will be of dimension $m \\times p$."
+      }
+    },
+    {
+      "id": "linalg-3-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "Define an eigenvector and eigenvalue using the standard mathematical equation.",
+        "back": "For a square matrix $A$, a non-zero vector $\\mathbf{v}$ is an eigenvector with corresponding eigenvalue $\\lambda$ if $A\\mathbf{v}=\\lambda\\mathbf{v}$."
+      }
+    },
+    {
+      "id": "linalg-4-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Geometrically, what does the addition of two vectors $\\mathbf{u}$ and $\\mathbf{v}$ in $\\mathbb{R}^2$ represent?",
+        "options": [
+          "The area of the parallelogram formed by $\\mathbf{u}$ and $\\mathbf{v}$.",
+          "The diagonal of the parallelogram formed by $\\mathbf{u}$ and $\\mathbf{v}$ placed tail-to-tail.",
+          "The projection of vector $\\mathbf{u}$ onto vector $\\mathbf{v}$.",
+          "The rotation of vector $\\mathbf{u}$ by the angle of vector $\\mathbf{v}$."
+        ],
+        "correctAnswer": "The diagonal of the parallelogram formed by $\\mathbf{u}$ and $\\mathbf{v}$ placed tail-to-tail.",
+        "explanation": "Vector addition follows the parallelogram law, where the sum $\\mathbf{u}+\\mathbf{v}$ forms the main diagonal originating from the joined tails."
+      }
+    },
+    {
+      "id": "linalg-5-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following statements about the identity matrix $I$ is universally true for any square matrix $A$ of the same dimension?",
+        "options": [
+          "$AI=IA=I$",
+          "$AI=A$ and $IA=I$",
+          "$AI=IA=A$",
+          "$A+I=I+A=A$"
+        ],
+        "correctAnswer": "$AI=IA=A$",
+        "explanation": "The identity matrix acts as the multiplicative identity in linear algebra, meaning multiplying a square matrix $A$ by $I$ (from either side) returns $A$."
+      }
+    },
+    {
+      "id": "linalg-6-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "A set of vectors is considered linearly dependent if:",
+        "options": [
+          "All vectors in the set are orthogonal to each other.",
+          "At least one vector in the set can be written as a linear combination of the others.",
+          "The dot product of any two vectors in the set is zero.",
+          "None of the vectors can be expressed as a linear combination of the others."
+        ],
+        "correctAnswer": "At least one vector in the set can be written as a linear combination of the others.",
+        "explanation": "Linear dependence means there is redundancy in the set; at least one vector adds no new spatial dimensions because it lies in the span of the others."
+      }
+    },
+    {
+      "id": "linalg-7-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following operations are valid for any two matrices $A$ and $B$ of dimension $m \\times n$?",
+        "options": [
+          "$A+B$",
+          "$A-B$",
+          "$AB$",
+          "$c \\cdot A$ (where $c$ is a scalar)",
+          "$A^T$"
+        ],
+        "correctAnswers": [
+          "$A+B$",
+          "$A-B$",
+          "$c \\cdot A$ (where $c$ is a scalar)",
+          "$A^T$"
+        ],
+        "explanation": "Addition, subtraction, and scalar multiplication are element-wise operations valid for matrices of the same size. Transpose is valid for any matrix. Matrix multiplication $AB$ is only valid if the number of columns in $A$ matches the rows in $B$, which is not guaranteed here unless $m=n$."
+      }
+    },
+    {
+      "id": "linalg-8-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following properties hold true for the transpose operator applied to matrices?",
+        "options": [
+          "$(A+B)^T = A^T+B^T$",
+          "$(AB)^T = A^T B^T$",
+          "$(AB)^T = B^T A^T$",
+          "$(A^T)^T = A$"
+        ],
+        "correctAnswers": [
+          "$(A+B)^T = A^T+B^T$",
+          "$(AB)^T = B^T A^T$",
+          "$(A^T)^T = A$"
+        ],
+        "explanation": "The transpose distributes over addition and is an involution ($(A^T)^T = A$). However, for multiplication, the order of the matrices reverses: $(AB)^T = B^T A^T$."
+      }
+    },
+    {
+      "id": "linalg-9-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Select the true statements regarding the dot product (inner product) of two vectors $\\mathbf{u}$ and $\\mathbf{v}$ in $\\mathbb{R}^n$.",
+        "options": [
+          "The result is a scalar.",
+          "The result is a vector in $\\mathbb{R}^n$.",
+          "It can be computed as $\\mathbf{u}^T\\mathbf{v}$.",
+          "If the dot product is zero, the vectors are orthogonal.",
+          "It is commutative, meaning $\\mathbf{u} \\cdot \\mathbf{v} = \\mathbf{v} \\cdot \\mathbf{u}$."
+        ],
+        "correctAnswers": [
+          "The result is a scalar.",
+          "It can be computed as $\\mathbf{u}^T\\mathbf{v}$.",
+          "If the dot product is zero, the vectors are orthogonal.",
+          "It is commutative, meaning $\\mathbf{u} \\cdot \\mathbf{v} = \\mathbf{v} \\cdot \\mathbf{u}$."
+        ],
+        "explanation": "The dot product maps two vectors to a single scalar value. It geometrically represents the projection of one vector onto another and is 0 for perpendicular (orthogonal) vectors."
+      }
+    },
+    {
+      "id": "linalg-10-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following represents a scalar quantity in linear algebra?",
+        "options": [
+          "The norm (length) of a vector.",
+          "The transpose of a column vector.",
+          "The determinant of a square matrix.",
+          "The trace of a square matrix."
+        ],
+        "correctAnswers": [
+          "The norm (length) of a vector.",
+          "The determinant of a square matrix.",
+          "The trace of a square matrix."
+        ],
+        "explanation": "Norms, determinants, and traces all map matrices or vectors to a single real number (a scalar). The transpose of a column vector is a row vector, not a scalar."
+      }
+    },
+    {
+      "id": "linalg-11-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "State the Rank-Nullity Theorem for a linear transformation $T: \\mathbb{R}^n \\to \\mathbb{R}^m$.",
+        "back": "The rank of $T$ (dimension of the image) plus the nullity of $T$ (dimension of the kernel) equals $n$ (the dimension of the domain). Formula: $\\text{Rank}(T) + \\text{Nullity}(T) = n$."
+      }
+    },
+    {
+      "id": "linalg-12-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "What is the geometric interpretation of the absolute value of the determinant of a $2 \\times 2$ matrix $A$?",
+        "back": "It represents the area of the parallelogram spanned by the column vectors of matrix $A$."
+      }
+    },
+    {
+      "id": "linalg-13-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "What defines an orthogonal matrix $Q$, and what is the computational advantage of finding its inverse?",
+        "back": "An orthogonal matrix is a square matrix whose columns and rows are orthogonal unit vectors. The primary advantage is that its inverse is simply its transpose: $Q^{-1} = Q^T$."
+      }
+    },
+    {
+      "id": "linalg-14-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "To find the eigenvalues of a square matrix $A$, which equation must be solved?",
+        "options": [
+          "$\\text{det}(A - \\lambda I) = 0$",
+          "$\\text{det}(A + \\lambda I) = 0$",
+          "$A\\mathbf{x} = \\mathbf{0}$",
+          "$A^T A - \\lambda I = 0$"
+        ],
+        "correctAnswer": "$\\text{det}(A - \\lambda I) = 0$",
+        "explanation": "The characteristic equation $\\text{det}(A - \\lambda I) = 0$ ensures that the matrix $(A - \\lambda I)$ is non-invertible, which guarantees a non-trivial solution (an eigenvector) to $(A - \\lambda I)\\mathbf{x} = 0$."
+      }
+    },
+    {
+      "id": "linalg-15-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "If a matrix $A$ maps vectors from $\\mathbb{R}^3$ to $\\mathbb{R}^5$, what are the dimensions of matrix $A$?",
+        "options": [
+          "$3 \\times 5$",
+          "$5 \\times 3$",
+          "$3 \\times 3$",
+          "$5 \\times 5$"
+        ],
+        "correctAnswer": "$5 \\times 3$",
+        "explanation": "To multiply a vector $\\mathbf{x} \\in \\mathbb{R}^3$ (a $3 \\times 1$ column vector) and output a vector $\\mathbf{y} \\in \\mathbb{R}^5$ (a $5 \\times 1$ column vector), matrix $A$ must be $5 \\times 3$. The operation is $A_{5 \\times 3} \\mathbf{x}_{3 \\times 1} = \\mathbf{y}_{5 \\times 1}$."
+      }
+    },
+    {
+      "id": "linalg-16-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Which of the following is NOT a strictly equivalent condition for an $n \\times n$ matrix $A$ to be invertible?",
+        "options": [
+          "The determinant of $A$ is non-zero.",
+          "The columns of $A$ form a linearly independent set.",
+          "The matrix $A$ has 0 as an eigenvalue.",
+          "The null space of $A$ contains only the zero vector."
+        ],
+        "correctAnswer": "The matrix $A$ has 0 as an eigenvalue.",
+        "explanation": "If a matrix has 0 as an eigenvalue, it implies there is a non-zero vector $\\mathbf{x}$ such that $A\\mathbf{x} = 0\\mathbf{x} = \\mathbf{0}$, meaning its null space is non-trivial and it is NOT invertible."
+      }
+    },
+    {
+      "id": "linalg-17-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "What is the mathematical formula for the projection of a vector $\\mathbf{a}$ onto a vector $\\mathbf{b}$?",
+        "options": [
+          "$\\frac{\\mathbf{a} \\cdot \\mathbf{b}}{\\mathbf{b} \\cdot \\mathbf{b}} \\mathbf{b}$",
+          "$\\frac{\\mathbf{a} \\cdot \\mathbf{b}}{\\mathbf{a} \\cdot \\mathbf{a}} \\mathbf{a}$",
+          "$(\\mathbf{a} \\cdot \\mathbf{b}) \\frac{\\mathbf{b}}{\\|\\mathbf{b}\\|}$",
+          "$\\frac{\\mathbf{a} \\cdot \\mathbf{b}}{\\|\\mathbf{a}\\|\\|\\mathbf{b}\\|}$"
+        ],
+        "correctAnswer": "$\\frac{\\mathbf{a} \\cdot \\mathbf{b}}{\\mathbf{b} \\cdot \\mathbf{b}} \\mathbf{b}$",
+        "explanation": "The projection scales the direction of $\\mathbf{b}$ by a scalar factor. The scalar is the dot product of $\\mathbf{a}$ and the unit vector of $\\mathbf{b}$, divided by the magnitude of $\\mathbf{b}$, simplifying to $\\frac{\\mathbf{a} \\cdot \\mathbf{b}}{\\mathbf{b} \\cdot \\mathbf{b}} \\mathbf{b}$."
+      }
+    },
+    {
+      "id": "linalg-18-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Which of the following algebraic properties generally hold for matrix multiplication (assuming compatible dimensions)?",
+        "options": [
+          "Associativity: $(AB)C = A(BC)$",
+          "Commutativity: $AB = BA$",
+          "Distributivity: $A(B+C) = AB + AC$",
+          "Multiplicative Identity: $AI = IA = A$"
+        ],
+        "correctAnswers": [
+          "Associativity: $(AB)C = A(BC)$",
+          "Distributivity: $A(B+C) = AB + AC$",
+          "Multiplicative Identity: $AI = IA = A$"
+        ],
+        "explanation": "Matrix multiplication is associative and distributive over addition. It has an identity element ($I$). However, it is fundamentally NOT commutative; $AB \\neq BA$ in most cases."
+      }
+    },
+    {
+      "id": "linalg-19-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Let $A$ be a real symmetric matrix (i.e., $A = A^T$). Which of the following properties are guaranteed to be true?",
+        "options": [
+          "All eigenvalues of $A$ are real numbers.",
+          "Eigenvectors corresponding to distinct eigenvalues are orthogonal.",
+          "$A$ is always invertible.",
+          "$A$ is diagonalizable."
+        ],
+        "correctAnswers": [
+          "All eigenvalues of $A$ are real numbers.",
+          "Eigenvectors corresponding to distinct eigenvalues are orthogonal.",
+          "$A$ is diagonalizable."
+        ],
+        "explanation": "The Spectral Theorem guarantees that real symmetric matrices have real eigenvalues, orthogonal eigenvectors, and are always diagonalizable. However, they are not always invertible (e.g., a symmetric matrix filled with zeros)."
+      }
+    },
+    {
+      "id": "linalg-20-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "A square matrix $A$ of dimension $n \\times n$ is diagonalizable if and only if:",
+        "options": [
+          "It has $n$ distinct real eigenvalues.",
+          "It has $n$ linearly independent eigenvectors.",
+          "The algebraic multiplicity of each eigenvalue equals its geometric multiplicity.",
+          "It is a symmetric matrix."
+        ],
+        "correctAnswers": [
+          "It has $n$ linearly independent eigenvectors.",
+          "The algebraic multiplicity of each eigenvalue equals its geometric multiplicity."
+        ],
+        "explanation": "Diagonalization requires $P^{-1}AP=D$, which works iff the matrix formed by eigenvectors ($P$) is invertible, meaning it must have $n$ linearly independent eigenvectors. This is equivalent to saying geometric multiplicity equals algebraic multiplicity for all eigenvalues."
+      }
+    },
+    {
+      "id": "linalg-21-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 3,
+      "content": {
+        "front": "What is the formal definition of a symmetric positive definite matrix?",
+        "back": "A symmetric $n \\times n$ real matrix $A$ is positive definite if $\\mathbf{x}^T A \\mathbf{x} > 0$ for every non-zero vector $\\mathbf{x}$ in $\\mathbb{R}^n$. Equivalently, all its eigenvalues are strictly positive."
+      }
+    },
+    {
+      "id": "linalg-22-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 3,
+      "content": {
+        "front": "State the standard decomposition formula for the Singular Value Decomposition (SVD) of an arbitrary $m \\times n$ matrix $X$, identifying the properties of each matrix.",
+        "back": "$X = U \\Sigma V^T$, where $U$ ($m \\times m$) and $V$ ($n \\times n$) are orthogonal matrices, and $\\Sigma$ ($m \\times n$) is a diagonal matrix containing non-negative singular values."
+      }
+    },
+    {
+      "id": "linalg-23-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "Let $A$ be an $n \\times n$ matrix with eigenvalues $\\lambda_1, \\lambda_2, \\dots, \\lambda_n$. What is the relationship between the trace of $A$ and its eigenvalues?",
+        "options": [
+          "$\\text{Tr}(A) = \\prod_{i=1}^n \\lambda_i$",
+          "$\\text{Tr}(A) = \\sum_{i=1}^n \\lambda_i^2$",
+          "$\\text{Tr}(A) = \\sum_{i=1}^n \\lambda_i$",
+          "$\\text{Tr}(A) = \\max_{i} (\\lambda_i)$"
+        ],
+        "correctAnswer": "$\\text{Tr}(A) = \\sum_{i=1}^n \\lambda_i$",
+        "explanation": "The trace of a matrix (the sum of its diagonal elements) is mathematically equal to the sum of its eigenvalues. The product of the eigenvalues equals the determinant."
+      }
+    },
+    {
+      "id": "linalg-24-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "Suppose $A$ is an orthogonal matrix. Which of the following statements concerning the eigenvalues and determinant of $A$ are true?",
+        "options": [
+          "The determinant of $A$ must be exactly $1$ or $-1$.",
+          "All eigenvalues of $A$ have an absolute value (modulus) of $1$.",
+          "All eigenvalues of $A$ are guaranteed to be real numbers.",
+          "The trace of $A$ must be $0$."
+        ],
+        "correctAnswers": [
+          "The determinant of $A$ must be exactly $1$ or $-1$.",
+          "All eigenvalues of $A$ have an absolute value (modulus) of $1$."
+        ],
+        "explanation": "Because $A^T A = I$, $\\text{det}(A)^2 = 1$, so $\\text{det}(A) = \\pm 1$. Additionally, orthogonal matrices preserve length (isometries), meaning if $A\\mathbf{x}=\\lambda\\mathbf{x}$, then $\\|\\mathbf{x}\\| = \\|\\lambda\\mathbf{x}\\| = |\\lambda|\\|\\mathbf{x}\\|$, forcing $|\\lambda|=1$. Eigenvalues can be complex (e.g., in rotation matrices)."
+      }
+    },
+    {
+      "id": "linalg-25-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "Which of the following statements correctly distinguish Singular Value Decomposition (SVD) from Eigendecomposition?",
+        "options": [
+          "SVD is defined for all matrices, whereas eigendecomposition is only defined for square matrices.",
+          "The basis vectors in SVD ($U$ and $V$) are always orthogonal, while eigenvectors do not have to be orthogonal unless the matrix is symmetric.",
+          "SVD uses a single basis for both domain and image spaces, whereas eigendecomposition requires distinct bases.",
+          "Singular values are always non-negative real numbers, whereas eigenvalues can be negative or complex."
+        ],
+        "correctAnswers": [
+          "SVD is defined for all matrices, whereas eigendecomposition is only defined for square matrices.",
+          "The basis vectors in SVD ($U$ and $V$) are always orthogonal, while eigenvectors do not have to be orthogonal unless the matrix is symmetric.",
+          "Singular values are always non-negative real numbers, whereas eigenvalues can be negative or complex."
+        ],
+        "explanation": "Eigendecomposition ($A = P D P^{-1}$) maps a space back to itself using a single basis $P$ and applies only to diagonalizable square matrices. SVD maps between different spaces using two orthogonal bases ($U$ and $V$) and applies to any rectangular matrix. Singular values are non-negative."
+      }
+    }
+  ]
+}

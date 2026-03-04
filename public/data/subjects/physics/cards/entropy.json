@@ -1,0 +1,80 @@
+{
+  "topicId": "entropy",
+  "cards": [
+    {
+      "id": "entropy-1-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "What is entropy in thermodynamics?",
+        "back": "Entropy is a measure of the disorder or randomness in a closed system. In thermodynamics, it quantifies the energy not available for work and the second law states that total entropy of an isolated system always increases over time."
+      }
+    },
+    {
+      "id": "entropy-1-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "According to the second law of thermodynamics, what happens to the total entropy of an isolated system?",
+        "options": [
+          "It decreases",
+          "It stays constant",
+          "It always increases",
+          "It becomes zero"
+        ],
+        "correctAnswer": "It always increases",
+        "explanation": "The second law states that the total entropy of an isolated system can never decrease over time - it always increases or stays constant in reversible processes."
+      }
+    },
+    {
+      "id": "entropy-2-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "What is the Boltzmann formula for entropy?",
+        "back": "The Boltzmann formula is S = k × ln(W), where S is entropy, k is Boltzmann's constant (1.38 × 10⁻²³ J/K), and W is the number of possible microstates (different configurations) of the system."
+      }
+    },
+    {
+      "id": "entropy-2-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "In the formula S = k ln(W), what does W represent?",
+        "options": [
+          "Temperature",
+          "Number of microstates",
+          "Energy",
+          "Pressure"
+        ],
+        "correctAnswer": "Number of microstates",
+        "explanation": "W represents the number of possible microstates or configurations that the system can occupy. More microstates means higher entropy."
+      }
+    },
+    {
+      "id": "entropy-3-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "What is entropy in information theory?",
+        "back": "In information theory, entropy (Shannon entropy) measures the average amount of information or uncertainty in a random variable. It's calculated as H = -Σ p(x) log₂ p(x) and represents the minimum number of bits needed to encode information."
+      }
+    },
+    {
+      "id": "entropy-3-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "When is entropy maximum in information theory?",
+        "options": [
+          "When one outcome is certain",
+          "When all outcomes are equally likely",
+          "When there are no outcomes",
+          "When the probability is zero"
+        ],
+        "correctAnswer": "When all outcomes are equally likely",
+        "explanation": "Maximum entropy occurs when all possible outcomes have equal probability, meaning we have maximum uncertainty about the outcome."
+      }
+    }
+  ]
+}

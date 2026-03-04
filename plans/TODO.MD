@@ -1,0 +1,10 @@
+- [ ] LLM powered incremental Subject graph & topic & cards generation
+- [ ] Psychological support and coaching
+- [ ] Mastery goals, Variable ratio rewards https://www.apa.org/ed/schools/teaching-learning/top-twenty-principles.pdf
+- [ ] Entrance Stone Test
+- [ ] 3D UI
+  - [ ] WebGPU post-processing
+- [ ] Muse Projects
+  - [ ] https://github.com/vasturiano/r3f-forcegraph
+  - [ ] https://github.com/ektogamat/AutoFocusDOF
+  - [ ] https://github.com/verekia/r3f-gamedev

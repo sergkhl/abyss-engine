@@ -1,0 +1,13 @@
+{
+  "topicId": "optimization-theory",
+  "title": "Optimization Theory",
+  "subjectId": "data-science-math",
+  "coreConcept": "Optimization theory focuses on finding the best possible solution to a mathematical problem. In machine learning, it provides the algorithms to minimize loss functions, thereby 'training' models to fit the data optimally.",
+  "theory": "## Finding the Minimum\n\nMachine learning is fundamentally an optimization problem: find the model parameters $\\theta$ that minimize a loss function $\\mathcal{L}(\\theta)$.\n\n### Convexity\nA function is convex if a line segment between any two points on its graph lies above or on the graph. Convex problems are highly desirable because any local minimum is guaranteed to be the global minimum.\n\n### Gradient Descent\nThe workhorse of modern machine learning optimization. It iteratively updates parameters in the opposite direction of the gradient:\n$$ \\theta_{t+1} = \\theta_t - \\eta \\nabla \\mathcal{L}(\\theta_t) $$\nwhere $\\eta$ is the learning rate.\n\n### Advanced Optimization Techniques\n- **Stochastic Gradient Descent (SGD)**: Approximates the gradient using a single sample or mini-batch, injecting noise but speeding up convergence on large datasets.\n- **Momentum & Adaptive Methods**: Algorithms like Adam accumulate historical gradients (momentum) and adapt the learning rate per parameter to navigate pathological curvature (saddle points, ravines).",
+  "keyTakeaways": [
+    "Optimization mathematically drives the learning process in data science models.",
+    "Convex loss landscapes guarantee that local minima are global minima.",
+    "Gradient descent navigates the loss surface by following the negative gradient.",
+    "Adaptive optimizers adjust learning rates dynamically to accelerate convergence."
+  ]
+}

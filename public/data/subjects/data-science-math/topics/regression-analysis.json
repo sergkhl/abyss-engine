@@ -1,0 +1,13 @@
+{
+  "topicId": "regression-analysis",
+  "title": "Regression Analysis",
+  "subjectId": "data-science-math",
+  "coreConcept": "Regression analysis comprises statistical processes for estimating the relationships between a dependent variable and one or more independent variables. It establishes predictive models and quantifies the exact impact of predictors on an outcome.",
+  "theory": "## Modeling Relationships\n\nRegression translates correlational observation into an actionable mathematical equation.\n\n### Ordinary Least Squares (OLS) Linear Regression\nModels the relationship as a linear combination of features: $\\mathbf{y} = X\\mathbf{\\beta} + \\mathbf{\\epsilon}$. OLS seeks the parameter vector $\\beta$ that minimizes the Residual Sum of Squares (RSS). The closed-form analytical solution is:\n$$ \\hat{\\beta} = (X^T X)^{-1} X^T \\mathbf{y} $$\nAssumptions of OLS (Gauss-Markov theorem) include linearity, homoscedasticity, and independence of errors.\n\n### Logistic Regression\nDespite its name, it is a classification algorithm used to model binary outcomes. It passes a linear combination of features through a sigmoid function to map predictions to probabilities:\n$$ P(Y=1 | X) = \\frac{1}{1 + e^{-(\\beta_0 + \\beta_1 X)}} $$\nParameters are estimated using Maximum Likelihood Estimation (MLE) rather than closed-form OLS.\n\n### Regularization\nTechniques like Ridge ($L_2$ penalty) and Lasso ($L_1$ penalty) add constraints to the regression optimization to prevent over-reliance on any single feature, thereby mitigating overfitting.",
+  "keyTakeaways": [
+    "Linear regression fits a hyperplane that minimizes the squared distances to the target variables.",
+    "The OLS closed-form solution leverages linear algebra to compute exact optimal weights.",
+    "Logistic regression models the probability of binary classes using a sigmoid transformation.",
+    "Regularization introduces mathematical penalties to enforce model simplicity and generalization."
+  ]
+}

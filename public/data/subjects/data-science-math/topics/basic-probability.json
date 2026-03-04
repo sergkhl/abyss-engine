@@ -1,0 +1,13 @@
+{
+  "topicId": "basic-probability",
+  "title": "Basic Probability",
+  "subjectId": "data-science-math",
+  "coreConcept": "Probability provides the mathematical framework for quantifying uncertainty and modeling random phenomena. It allows data scientists to formalize the likelihood of observing specific data and to make rigorous predictions under uncertainty.",
+  "theory": "## Quantifying Uncertainty\n\nReal-world data is inherently noisy. Probability theory gives us a principled way to reason about this randomness using random variables and probability distributions.\n\n### Random Variables and Distributions\n- **Discrete Random Variables**: Take on countable values. Modeled by a Probability Mass Function (PMF), $P(X=x)$.\n- **Continuous Random Variables**: Take on uncountably infinite values. Modeled by a Probability Density Function (PDF), $f(x)$, where probability is the integral over an interval:\n$$ P(a \\le X \\le b) = \\int_a^b f(x) dx $$\n\n### Expectations and Independence\n- **Expected Value**: The long-run average of a random variable, $\\mathbb{E}[X] = \\int x f(x) dx$ (for continuous).\n- **Conditional Probability**: The probability of event A given B occurred, defined as $P(A|B) = \\frac{P(A \\cap B)}{P(B)}$.\n- **Independence**: Two variables are independent if learning about one provides no information about the other, $P(A \\cap B) = P(A)P(B)$.",
+  "keyTakeaways": [
+    "Probability mass and density functions describe the distribution of random variables.",
+    "Expected value computes the theoretical mean of a random variable.",
+    "Conditional probability measures the likelihood of an event given prior information.",
+    "Independence simplifies joint probabilities by allowing factorization."
+  ]
+}

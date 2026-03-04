@@ -1,0 +1,13 @@
+{
+  "topicId": "matrix-factorization-pca",
+  "title": "Matrix Factorization and PCA",
+  "subjectId": "data-science-math",
+  "coreConcept": "Matrix factorization decomposes large matrices into products of smaller matrices, revealing latent structures within the data. Principal Component Analysis (PCA) leverages this to reduce dimensionality while preserving maximum variance, crucial for mitigating the curse of dimensionality.",
+  "theory": "## Dimensionality Reduction and Latent Features\n\nHigh-dimensional data is computationally expensive and prone to overfitting. Factorization techniques project this data into a meaningful, lower-dimensional subspace.\n\n### Singular Value Decomposition (SVD)\nSVD is a highly versatile matrix factorization technique. Any real matrix $X \\in \\mathbb{R}^{m \\times n}$ can be decomposed as:\n$$ X = U \\Sigma V^T $$\nWhere $U$ and $V$ are orthogonal matrices, and $\\Sigma$ is a diagonal matrix containing singular values. The singular values represent the importance of each latent dimension.\n\n### Principal Component Analysis (PCA)\nPCA finds the orthogonal directions of maximum variance in the data. Mathematically, it is equivalent to performing an eigendecomposition on the data's covariance matrix $C = \\frac{1}{n-1}X^T X$, or extracting the right singular vectors ($V$) from the SVD of the centered data matrix.\n- **Objective**: Retain $k$ components that explain the vast majority of the variance, compressing the dataset from $n$ dimensions down to $k$.",
+  "keyTakeaways": [
+    "Matrix factorization uncovers hidden, latent variables driving the observed data.",
+    "SVD decomposes any matrix into rotation, scaling, and reverse rotation matrices.",
+    "PCA reduces dimensionality by projecting data onto axes of maximum variance.",
+    "Dimensionality reduction mitigates overfitting and radically reduces computational cost."
+  ]
+}

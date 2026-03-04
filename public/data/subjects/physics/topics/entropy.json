@@ -1,0 +1,13 @@
+{
+  "topicId": "entropy",
+  "title": "Entropy",
+  "subjectId": "physics",
+  "coreConcept": "Entropy is a fundamental concept in thermodynamics and information theory measuring system disorder or randomness. In thermodynamics, the second law states entropy of an isolated system always increases. In information theory, entropy measures the average amount of information or uncertainty in a random variable. Higher entropy means more possible states and less predictability.",
+  "theory": "## Entropy: Disorder and Information\n\nEntropy is a measure of randomness, disorder, or uncertainty in a system.\n\n### Thermodynamic Entropy\n- **Definition**: S = Q/T (heat transfer divided by temperature)\n- **Second Law**: Total entropy of an isolated system always increases\n- **Microstates**: Number of possible configurations\n- **Macrostates**: Observable states\n\n### Statistical Mechanics\n- **Boltzmann Formula**: S = k ln(W)\n  - k = Boltzmann constant\n  - W = number of microstates\n- **More microstates = higher entropy**\n\n### Information Theory\n- **Shannon Entropy**: H = -Σ p(x) log₂ p(x)\n- **Bits**: Log base 2 gives entropy in bits\n- **Maximum entropy**: When all outcomes equally likely\n\n### Examples\n- Ice → Water → Steam (entropy increases)\n- Ordered crystal → Amorphous solid (entropy increases)\n- Information compression reduces apparent entropy",
+  "keyTakeaways": [
+    "Entropy measures the number of possible microstates - more configurations means higher entropy",
+    "The second law of thermodynamics states entropy of an isolated system never decreases",
+    "In information theory, entropy quantifies the average surprise or uncertainty of a random variable",
+    "Phase transitions (solid→liquid→gas) involve large entropy changes"
+  ]
+}

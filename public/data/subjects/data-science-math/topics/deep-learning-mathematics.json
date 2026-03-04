@@ -1,0 +1,13 @@
+{
+  "topicId": "deep-learning-mathematics",
+  "title": "Deep Learning Mathematics",
+  "subjectId": "data-science-math",
+  "coreConcept": "Deep learning models are highly parameterized, non-linear mathematical functions composed of stacked linear transformations and non-linear activations. The field relies heavily on tensor calculus and massive-scale optimization to fit millions of parameters.",
+  "theory": "## The Calculus of Neural Networks\n\nNeural networks represent functional compositions: $f(x) = f_L(f_{L-1}(...f_1(x)))$.\n\n### Forward Propagation and Activations\nA single layer computes $H^{(l)} = \\sigma(W^{(l)} H^{(l-1)} + b^{(l)})$, where $W$ is a weight matrix, $b$ is a bias vector, and $\\sigma$ is a non-linear activation function (e.g., ReLU: $f(x) = \\max(0, x)$). Without non-linear activations, the entire deep network would mathematically collapse into a single linear transformation.\n\n### Backpropagation\nThe algorithm used to compute the gradients of the loss function with respect to every weight in the network. It is an efficient application of the multivariable chain rule of calculus. For a weight $w_{ij}$, the gradient is:\n$$ \\frac{\\partial \\mathcal{L}}{\\partial w_{ij}} = \\frac{\\partial \\mathcal{L}}{\\partial a_j} \\frac{\\partial a_j}{\\partial z_j} \\frac{\\partial z_j}{\\partial w_{ij}} $$\nwhere $z$ is the pre-activation sum and $a$ is the post-activation output.\n\n### Tensor Operations\nModern deep learning frameworks manipulate Tensors (n-dimensional arrays). Efficient tensor multiplication and broadcasting rules allow for parallelizing backpropagation across massively parallel GPU architectures.",
+  "keyTakeaways": [
+    "Neural networks are massive, nested mathematical functions optimized via gradient descent.",
+    "Non-linear activation functions allow networks to approximate any continuous function.",
+    "Backpropagation is an algorithmic implementation of the calculus chain rule.",
+    "Tensor calculus is essential for processing multi-dimensional data like images and video."
+  ]
+}

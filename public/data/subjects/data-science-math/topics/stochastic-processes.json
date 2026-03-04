@@ -1,0 +1,13 @@
+{
+  "topicId": "stochastic-processes",
+  "title": "Stochastic Processes",
+  "subjectId": "data-science-math",
+  "coreConcept": "A stochastic process is a mathematical object defined as a collection of random variables, representing the evolution of a system subject to random variation over time. It is crucial for modeling sequential data and queuing systems.",
+  "theory": "## Modeling Random Evolution\n\nWhen data exhibits sequential or temporal dependencies influenced by random shocks, static probability distributions are insufficient. Stochastic processes model these dynamics.\n\n### Markov Chains\nA discrete-time process exhibiting the Markov Property: the future state depends only on the current state, not on the sequence of events that preceded it (memorylessness).\n$$ P(X_{t+1} = j | X_t = i, X_{t-1} = i_{t-1}, \\dots) = P(X_{t+1} = j | X_t = i) $$\nDynamics are governed by a transition matrix $P$, where element $P_{ij}$ is the probability of moving from state $i$ to state $j$.\n\n### Poisson Processes\nA continuous-time counting process used to model the occurrence of random events over time or space (e.g., website traffic, server queues). The number of events $N(t)$ in an interval $t$ follows a Poisson distribution with parameter $\\lambda t$:\n$$ P(N(t) = k) = \\frac{(\\lambda t)^k e^{-\\lambda t}}{k!} $$",
+  "keyTakeaways": [
+    "Stochastic processes model dynamic systems that change probabilistically over time.",
+    "The Markov property simplifies complex sequences by assuming memorylessness.",
+    "Transition matrices allow for algebraic computation of long-term stationary distributions in Markov Chains.",
+    "Poisson processes mathematically model random event arrivals in continuous time."
+  ]
+}

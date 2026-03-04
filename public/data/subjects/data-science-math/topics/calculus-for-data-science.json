@@ -1,0 +1,13 @@
+{
+  "topicId": "calculus-for-data-science",
+  "title": "Calculus for Data Science",
+  "subjectId": "data-science-math",
+  "coreConcept": "Calculus is the mathematical study of continuous change, providing the tools to analyze functions and model dynamic systems. In data science, multivariable calculus is essential for quantifying how model performance changes with respect to parameters, forming the basis of learning algorithms.",
+  "theory": "## Modeling Rates of Change\n\nCalculus allows us to track continuous changes in data and models. For machine learning, we are primarily concerned with how a model's error (loss) changes as we adjust its internal weights.\n\n### Derivatives and Gradients\n- **The Derivative**: Measures the sensitivity of a function's output to changes in its input. For $f(x)$, the derivative is $f'(x)$ or $\\frac{df}{dx}$.\n- **The Gradient**: For a multivariable function $f(x_1, x_2, ..., x_n)$, the gradient $\\nabla f$ is a vector of partial derivatives:\n$$ \\nabla f = \\left[ \\frac{\\partial f}{\\partial x_1}, \\frac{\\partial f}{\\partial x_2}, \\dots, \\frac{\\partial f}{\\partial x_n} \\right]^T $$\nThe gradient points in the direction of the steepest ascent of the function.\n\n### The Chain Rule\nTo compute gradients of complex, nested functions (like deep neural networks), we rely on the multivariable chain rule. If $z = f(y)$ and $y = g(x)$, then:\n$$ \\frac{dz}{dx} = \\frac{dz}{dy} \\frac{dy}{dx} $$",
+  "keyTakeaways": [
+    "Derivatives quantify the instantaneous rate of change of a function.",
+    "Partial derivatives isolate the effect of a single variable in a multivariable system.",
+    "The gradient vector points towards the steepest increase of a function.",
+    "The chain rule is the mathematical engine behind computing gradients in nested functions."
+  ]
+}

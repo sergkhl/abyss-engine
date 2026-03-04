@@ -1,0 +1,13 @@
+{
+  "topicId": "statistical-inference",
+  "title": "Statistical Inference",
+  "subjectId": "data-science-math",
+  "coreConcept": "Statistical inference provides the formal mathematical rules for deducing properties of an underlying population based on an observed sample. It is the science of making robust, quantifiable generalizations under uncertainty.",
+  "theory": "## From Sample to Population\n\nInference relies heavily on the Central Limit Theorem (CLT), which states that the distribution of sample means approximates a normal distribution as the sample size becomes large, regardless of the population's true distribution.\n\n### Hypothesis Testing\nA framework for decision making. \n1. Formulate a null hypothesis ($H_0$) representing the status quo or no effect.\n2. Compute a test statistic from the data.\n3. Determine the **p-value**: the probability of observing a test statistic as extreme as the one computed, assuming $H_0$ is true.\n\n### Confidence Intervals\nInstead of a single point estimate, we construct an interval that traps the true population parameter with a certain probability (e.g., $95\\%$).\n$$ \\text{CI} = \\bar{x} \\pm z \\frac{s}{\\sqrt{n}} $$\nwhere $z$ is the critical value from the standard normal distribution.\n\n### Errors in Inference\n- **Type I Error ($\\alpha$)**: False positive; rejecting $H_0$ when it is true.\n- **Type II Error ($\\beta$)**: False negative; failing to reject $H_0$ when it is false. Power is defined as $1 - \\beta$.",
+  "keyTakeaways": [
+    "The Central Limit Theorem justifies the assumption of normality for sample means.",
+    "Hypothesis testing rigorously evaluates the validity of statistical claims.",
+    "A p-value measures the evidence against the null hypothesis, not the probability that the hypothesis is true.",
+    "Confidence intervals provide a range of plausible values for a population parameter."
+  ]
+}

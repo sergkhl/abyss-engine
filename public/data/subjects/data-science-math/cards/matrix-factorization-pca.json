@@ -1,0 +1,384 @@
+{
+  "topicId": "matrix-factorization-pca",
+  "cards": [
+    {
+      "id": "mfpca-1-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "What is the primary objective of Principal Component Analysis (PCA)?",
+        "back": "To reduce the dimensionality of a dataset while preserving as much variance as possible by finding new orthogonal axes."
+      }
+    },
+    {
+      "id": "mfpca-2-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "In the context of the Singular Value Decomposition equation $X=U\\Sigma V^T$, what are the elements on the diagonal of the $\\Sigma$ matrix called?",
+        "back": "They are called singular values."
+      }
+    },
+    {
+      "id": "mfpca-3-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "Why is mean centering a necessary preprocessing step before applying PCA?",
+        "back": "Mean centering ensures that the first principal component describes the direction of maximum variance rather than pointing towards the mean of the dataset."
+      }
+    },
+    {
+      "id": "mfpca-4-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "If you have a centered data matrix $X$ of size $n \\times p$ (where $n$ represents samples and $p$ represents features), what is the size of the resulting covariance matrix?",
+        "options": [
+          "$n \\times n$",
+          "$p \\times p$",
+          "$n \\times p$",
+          "$p \\times n$"
+        ],
+        "correctAnswer": "$p \\times p$",
+        "explanation": "The covariance matrix measures the variance and covariance between the $p$ features, resulting in a symmetric, square matrix of size $p \\times p$."
+      }
+    },
+    {
+      "id": "mfpca-5-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following best describes the principal components found by PCA?",
+        "options": [
+          "They are non-linear combinations of the original features.",
+          "They are linearly dependent on each other to maximize correlation.",
+          "They are orthogonal linear combinations of the original features.",
+          "They directly correspond to the features with the highest mean values."
+        ],
+        "correctAnswer": "They are orthogonal linear combinations of the original features.",
+        "explanation": "PCA creates new features (principal components) that are orthogonal (uncorrelated) to each other, constructed purely as linear combinations of the original variables."
+      }
+    },
+    {
+      "id": "mfpca-6-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "When using a Scree Plot to select the number of principal components to retain, what visual feature are you looking for?",
+        "options": [
+          "The point where the curve crosses the x-axis.",
+          "The 'elbow' where the rate of variance explained drops off significantly.",
+          "The highest peak in the plot.",
+          "The point where cumulative variance reaches exactly 100%."
+        ],
+        "correctAnswer": "The 'elbow' where the rate of variance explained drops off significantly.",
+        "explanation": "A Scree Plot displays the eigenvalues (variance explained) in descending order. The 'elbow' visually indicates the point where adding more components yields diminishing returns in capturing variance."
+      }
+    },
+    {
+      "id": "mfpca-7-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following are valid applications of Matrix Factorization techniques like SVD?",
+        "options": [
+          "Dimensionality reduction for large datasets",
+          "Collaborative filtering in recommendation systems",
+          "Data compression and image denoising",
+          "Converting non-linear data into linear models natively"
+        ],
+        "correctAnswers": [
+          "Dimensionality reduction for large datasets",
+          "Collaborative filtering in recommendation systems",
+          "Data compression and image denoising"
+        ],
+        "explanation": "Matrix factorization is heavily used for dimensionality reduction, recommendation systems, and data compression. It does not natively convert non-linear data into linear models; that requires techniques like kernel methods."
+      }
+    },
+    {
+      "id": "mfpca-8-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "What are the key mathematical properties of the $\\Sigma$ matrix in the full SVD equation $X=U\\Sigma V^T$?",
+        "options": [
+          "It is a diagonal matrix.",
+          "Its non-zero diagonal entries are the singular values.",
+          "It is always a perfectly square matrix.",
+          "Its diagonal entries are sorted in descending order."
+        ],
+        "correctAnswers": [
+          "It is a diagonal matrix.",
+          "Its non-zero diagonal entries are the singular values.",
+          "Its diagonal entries are sorted in descending order."
+        ],
+        "explanation": "$\\Sigma$ is a diagonal matrix containing sorted singular values. It is not always square; for a non-square $n \\times p$ data matrix $X$, the full $\\Sigma$ matrix is also $n \\times p$."
+      }
+    },
+    {
+      "id": "mfpca-9-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following statements about standard PCA are true?",
+        "options": [
+          "It is an unsupervised machine learning algorithm.",
+          "It is highly sensitive to the scale of the original features.",
+          "It requires a target variable vector to compute the covariance.",
+          "It mathematically maximizes the variance of the projected data."
+        ],
+        "correctAnswers": [
+          "It is an unsupervised machine learning algorithm.",
+          "It is highly sensitive to the scale of the original features.",
+          "It mathematically maximizes the variance of the projected data."
+        ],
+        "explanation": "PCA is unsupervised, meaning it requires no target labels. Because it maximizes variance, features with inherently larger scales will dominate the components, making feature scaling (standardization) critical."
+      }
+    },
+    {
+      "id": "mfpca-10-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which data characteristics can negatively impact the effectiveness and interpretability of standard PCA?",
+        "options": [
+          "The presence of extreme outliers in the dataset",
+          "Variables measured on vastly different units without standardization",
+          "Highly correlated features within the dataset",
+          "Highly non-linear manifolds and relationships between variables"
+        ],
+        "correctAnswers": [
+          "The presence of extreme outliers in the dataset",
+          "Variables measured on vastly different units without standardization",
+          "Highly non-linear manifolds and relationships between variables"
+        ],
+        "explanation": "PCA is specifically designed to handle and simplify highly correlated features. However, it is negatively impacted by extreme outliers, vastly differing scales, and it completely misses non-linear relationships."
+      }
+    },
+    {
+      "id": "mfpca-11-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "What is the mathematical relationship between the singular values $\\sigma_i$ of a centered data matrix $X$ and the eigenvalues $\\lambda_i$ of its covariance matrix?",
+        "back": "$\\lambda_i=\\frac{\\sigma_i^2}{n-1}$, where $n$ represents the total number of samples."
+      }
+    },
+    {
+      "id": "mfpca-12-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "In the Singular Value Decomposition of a data matrix $X$, what is the geometric interpretation of the columns of the right singular matrix $V$?",
+        "back": "The columns of $V$ (or rows of $V^T$) represent the principal directions or axes in the original feature space along which the data varies the most."
+      }
+    },
+    {
+      "id": "mfpca-13-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "Which mathematical theorem states that Truncated SVD provides the optimal low-rank approximation of a matrix in terms of minimizing the Frobenius norm?",
+        "back": "The Eckart-Young-Mirsky Theorem."
+      }
+    },
+    {
+      "id": "mfpca-14-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "How is the total variance of a dataset calculated directly from its covariance matrix in the context of PCA?",
+        "back": "The total variance is the trace (the sum of the diagonal elements) of the covariance matrix, which is mathematically equivalent to the sum of all its eigenvalues."
+      }
+    },
+    {
+      "id": "mfpca-15-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "If we compute PCA using the eigendecomposition of the covariance matrix $C=\\frac{1}{n-1}X^TX$, what role do the resulting eigenvectors play?",
+        "options": [
+          "They are the exact coordinates of the data points in the new lower-dimensional space.",
+          "They are the principal components (the new orthonormal axes) onto which the data will be projected.",
+          "They are the singular values of the original data matrix $X$.",
+          "They represent the numerical percentage of variance explained by each corresponding axis."
+        ],
+        "correctAnswer": "They are the principal components (the new orthonormal axes) onto which the data will be projected.",
+        "explanation": "The eigenvectors of the covariance matrix define the direction of the new axes in the original feature space. The actual projection of the data onto these eigenvectors yields the new reduced coordinates."
+      }
+    },
+    {
+      "id": "mfpca-16-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "In standard recommendation system matrix factorization (e.g., decomposing a rating matrix $R \\approx P Q^T$), why is standard SVD typically not used directly on $R$?",
+        "options": [
+          "Standard SVD evaluates too quickly, leading to severe overfitting on user data.",
+          "The rating matrix $R$ is typically extremely dense, making SVD numerically unstable.",
+          "The rating matrix $R$ contains predominantly missing values, which standard SVD cannot compute.",
+          "Standard SVD cannot extract orthogonal latent factors from user-item interactions."
+        ],
+        "correctAnswer": "The rating matrix $R$ contains predominantly missing values, which standard SVD cannot compute.",
+        "explanation": "Standard analytical SVD strictly requires a complete, dense matrix without NaNs. Because recommendation matrices are incredibly sparse (users rate very few items), iterative algorithms like Alternating Least Squares (ALS) are used to approximate the factorization using only the observed ratings."
+      }
+    },
+    {
+      "id": "mfpca-17-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "What is the general computational time complexity for computing the full SVD of a dense $n \\times p$ data matrix, assuming the number of samples $n$ is greater than the features $p$?",
+        "options": [
+          "$\\mathcal{O}(np)$",
+          "$\\mathcal{O}(n^2p)$",
+          "$\\mathcal{O}(np^2)$",
+          "$\\mathcal{O}(p^3)$"
+        ],
+        "correctAnswer": "$\\mathcal{O}(np^2)$",
+        "explanation": "The time complexity for computing the SVD of an $n \\times p$ matrix (where $n \\ge p$) scales as $\\mathcal{O}(np^2)$. This quadratic dependency on the number of features makes it computationally expensive for very wide datasets."
+      }
+    },
+    {
+      "id": "mfpca-18-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Which of the following are accurate comparisons between PCA and t-SNE (t-Distributed Stochastic Neighbor Embedding)?",
+        "options": [
+          "PCA is a linear dimensionality reduction technique, whereas t-SNE is highly non-linear.",
+          "PCA attempts to preserve global variance, while t-SNE focuses on preserving local neighborhood structures.",
+          "PCA is a deterministic algorithm, while t-SNE incorporates randomness and requires tuning a perplexity hyperparameter.",
+          "t-SNE can natively map new, unseen data points into the embedding space via a learned matrix, whereas PCA cannot."
+        ],
+        "correctAnswers": [
+          "PCA is a linear dimensionality reduction technique, whereas t-SNE is highly non-linear.",
+          "PCA attempts to preserve global variance, while t-SNE focuses on preserving local neighborhood structures.",
+          "PCA is a deterministic algorithm, while t-SNE incorporates randomness and requires tuning a perplexity hyperparameter."
+        ],
+        "explanation": "PCA provides a linear, deterministic functional mapping (the projection matrix) that can easily transform new unseen data. t-SNE is non-linear, stochastic, and focuses on local clustering; crucially, standard t-SNE learns an embedding for the training set but does not produce a function to project out-of-sample data."
+      }
+    },
+    {
+      "id": "mfpca-19-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "In the context of the SVD factorization $X=U\\Sigma V^T$ for an $m \\times n$ matrix $X$, what properties hold true for the matrix $U$?",
+        "options": [
+          "It is an orthogonal matrix, satisfying $U^TU=I$.",
+          "Its columns are mathematically equivalent to the eigenvectors of the matrix $XX^T$.",
+          "Its columns are mathematically equivalent to the eigenvectors of the matrix $X^TX$.",
+          "It has dimensions $m \\times m$ in a full (non-truncated) SVD."
+        ],
+        "correctAnswers": [
+          "It is an orthogonal matrix, satisfying $U^TU=I$.",
+          "Its columns are mathematically equivalent to the eigenvectors of the matrix $XX^T$.",
+          "It has dimensions $m \\times m$ in a full (non-truncated) SVD."
+        ],
+        "explanation": "The matrix $U$ contains the left singular vectors, which are the eigenvectors of $XX^T$ and form an orthonormal basis for the column space. The eigenvectors of $X^TX$ are stored in the matrix $V$."
+      }
+    },
+    {
+      "id": "mfpca-20-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "When utilizing matrix factorization for Collaborative Filtering (e.g., $R \\approx P Q^T$), what do the matrices $P$ and $Q$ intuitively represent in the latent space?",
+        "options": [
+          "$P$ represents the lower-dimensional latent preferences or characteristics of the users.",
+          "$Q$ represents the lower-dimensional latent attributes or characteristics of the items.",
+          "$P$ represents the raw, unaltered original user ratings directly.",
+          "$P$ and $Q$ are mathematically constrained to be perfectly orthogonal matrices."
+        ],
+        "correctAnswers": [
+          "$P$ represents the lower-dimensional latent preferences or characteristics of the users.",
+          "$Q$ represents the lower-dimensional latent attributes or characteristics of the items."
+        ],
+        "explanation": "In recommendation systems, decomposing $R \\approx P Q^T$ maps both users and items into a shared latent space. $P$ captures user embeddings, and $Q$ captures item embeddings. Unlike SVD, these matrices are not constrained to be orthogonal."
+      }
+    },
+    {
+      "id": "mfpca-21-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 3,
+      "content": {
+        "front": "How does Kernel PCA bypass the prohibitive computational cost of explicitly projecting data into a high-dimensional feature space?",
+        "back": "By employing the 'kernel trick'. It replaces the standard dot product with a kernel function $K(x_i, x_j)$, allowing the principal components to be computed entirely using inner products in the original space without ever instantiating the high-dimensional vectors."
+      }
+    },
+    {
+      "id": "mfpca-22-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "To derive the first principal component vector $\\mathbf{w}$, PCA formulates the objective to maximize the variance $\\mathbf{w}^T \\Sigma \\mathbf{w}$. What mathematical constraint is required to prevent an infinite solution, and what technique solves this optimization?",
+        "options": [
+          "Constraint: $\\mathbf{w}^T \\mathbf{w} = 0$, Technique: Stochastic Gradient Descent",
+          "Constraint: $\\mathbf{w}^T \\mathbf{w} = 1$, Technique: Lagrange Multipliers",
+          "Constraint: $\\Sigma \\mathbf{w} = \\lambda$, Technique: Ordinary Least Squares",
+          "Constraint: $\\mathbf{w}^T \\Sigma = I$, Technique: Singular Value Decomposition"
+        ],
+        "correctAnswer": "Constraint: $\\mathbf{w}^T \\mathbf{w} = 1$, Technique: Lagrange Multipliers",
+        "explanation": "To prevent the vector $\\mathbf{w}$ from growing to infinity and arbitrarily inflating variance, its norm must be constrained to 1 ($\\mathbf{w}^T \\mathbf{w} = 1$). This constrained optimization is solved using Lagrange Multipliers: $\\mathcal{L} = \\mathbf{w}^T \\Sigma \\mathbf{w} - \\lambda(\\mathbf{w}^T \\mathbf{w} - 1)$, which cleanly reduces to the eigenvalue problem $\\Sigma \\mathbf{w} = \\lambda \\mathbf{w}$."
+      }
+    },
+    {
+      "id": "mfpca-23-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "In Non-negative Matrix Factorization (NMF), a data matrix $V$ is approximated as $W H$ subject to $W, H \\ge 0$. What is the primary conceptual advantage of this non-negativity constraint over standard SVD?",
+        "options": [
+          "It guarantees finding the absolute global minimum of the reconstruction loss function.",
+          "It mathematically guarantees that the latent components in $W$ are perfectly orthogonal.",
+          "It forces an additive, parts-based representation that is significantly more interpretable.",
+          "It allows the factorization algorithm to natively handle negative input values in $V$."
+        ],
+        "correctAnswer": "It forces an additive, parts-based representation that is significantly more interpretable.",
+        "explanation": "NMF restricts the matrices $W$ and $H$ to contain strictly non-negative elements. This constraint prevents negative cancellations (which occur in SVD), forcing the algorithm to construct the data by purely adding basis vectors together. This yields a highly interpretable 'parts-based' representation, such as isolating distinct facial features in image processing."
+      }
+    },
+    {
+      "id": "mfpca-24-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "Which of the following statements correctly describe the mathematical framework of Probabilistic PCA (PPCA)?",
+        "options": [
+          "It frames PCA as a generative, continuous latent variable model.",
+          "It can natively and elegantly handle missing data values using the Expectation-Maximization (EM) algorithm.",
+          "It relies strictly on maximizing the geometric margin between clustered data points.",
+          "It explicitly assumes that the latent variables follow a standard Gaussian prior distribution."
+        ],
+        "correctAnswers": [
+          "It frames PCA as a generative, continuous latent variable model.",
+          "It can natively and elegantly handle missing data values using the Expectation-Maximization (EM) algorithm.",
+          "It explicitly assumes that the latent variables follow a standard Gaussian prior distribution."
+        ],
+        "explanation": "PPCA treats PCA as a generative probabilistic model defined as $x = Wz + \\mu + \\epsilon$, where the latent variable $z \\sim \\mathcal{N}(0, I)$ and the isotropic noise $\\epsilon \\sim \\mathcal{N}(0, \\sigma^2I)$. This probabilistic formulation allows the use of maximum likelihood and the EM algorithm, making it robust to missing data."
+      }
+    },
+    {
+      "id": "mfpca-25-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "What are the theoretical relationships and distinctions between Autoencoders and PCA?",
+        "options": [
+          "An autoencoder with a single hidden layer and purely linear activation functions spans the exact same principal subspace as PCA.",
+          "A linear autoencoder is mathematically guaranteed to find the exact same orthogonal, variance-ordered principal components as standard PCA.",
+          "Autoencoders optimize Mean Squared Error (MSE), which is mathematically equivalent to minimizing PCA's orthogonal reconstruction error.",
+          "Autoencoders equipped with non-linear activation functions can be viewed as a powerful non-linear generalization of PCA."
+        ],
+        "correctAnswers": [
+          "An autoencoder with a single hidden layer and purely linear activation functions spans the exact same principal subspace as PCA.",
+          "Autoencoders optimize Mean Squared Error (MSE), which is mathematically equivalent to minimizing PCA's orthogonal reconstruction error.",
+          "Autoencoders equipped with non-linear activation functions can be viewed as a powerful non-linear generalization of PCA."
+        ],
+        "explanation": "A linear autoencoder minimizes the same MSE reconstruction loss as PCA and will span the exact same optimal subspace. However, unlike PCA, standard backpropagation in an autoencoder does not enforce orthogonality among the learned weights, nor does it guarantee they are ordered by variance. Non-linear activations extend this framework to capture non-linear manifolds."
+      }
+    }
+  ]
+}

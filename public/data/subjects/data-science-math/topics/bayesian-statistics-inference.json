@@ -1,0 +1,13 @@
+{
+  "topicId": "bayesian-statistics-inference",
+  "title": "Bayesian Statistics and Inference",
+  "subjectId": "data-science-math",
+  "coreConcept": "Bayesian statistics is a paradigm wherein probability is interpreted as a degree of belief. It provides a rigorous mathematical framework for updating our beliefs about parameters dynamically as new evidence (data) is observed.",
+  "theory": "## The Bayesian Update Rule\n\nUnlike Frequentist statistics which treats parameters as fixed and data as random, Bayesian statistics treats data as fixed and parameters as random variables.\n\n### Bayes' Theorem\nThe cornerstone of the Bayesian framework:\n$$ P(\\theta | D) = \\frac{P(D | \\theta) P(\\theta)}{P(D)} $$\n- $P(\\theta)$: **Prior**, our initial belief about the parameter before seeing data.\n- $P(D | \\theta)$: **Likelihood**, the probability of observing the data given the parameter.\n- $P(\\theta | D)$: **Posterior**, the updated belief after seeing the data.\n- $P(D)$: **Evidence**, a normalizing constant obtained by marginalizing over all possible parameter values.\n\n### Markov Chain Monte Carlo (MCMC)\nFor complex models, calculating the exact posterior is analytically intractable due to the integral in the evidence term. MCMC algorithms, like Metropolis-Hastings or Hamiltonian Monte Carlo, bypass this by drawing correlated random samples directly from the posterior distribution, utilizing stochastic processes to explore the parameter space.",
+  "keyTakeaways": [
+    "Bayesian inference updates belief mathematically by multiplying the prior and the likelihood.",
+    "Parameters are modeled as probability distributions rather than point estimates.",
+    "The posterior distribution completely characterizes our uncertainty about the model.",
+    "MCMC enables the estimation of intractable posteriors through stochastic sampling."
+  ]
+}

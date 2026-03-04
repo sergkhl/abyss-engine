@@ -1,0 +1,13 @@
+{
+  "topicId": "descriptive-statistics",
+  "title": "Descriptive Statistics",
+  "subjectId": "data-science-math",
+  "coreConcept": "Descriptive statistics focuses on summarizing and organizing data into meaningful visual and numerical forms. It is the crucial first step in exploratory data analysis, allowing analysts to extract immediate insights and identify data anomalies.",
+  "theory": "## Summarizing Data Distributions\n\nBefore fitting complex models, one must understand the empirical properties of the dataset. Descriptive statistics reduces large datasets down to comprehensible summary metrics.\n\n### Measures of Central Tendency\n- **Mean**: The arithmetic average, sensitive to outliers. $\\bar{x} = \\frac{1}{n} \\sum_{i=1}^n x_i$\n- **Median**: The middle value of an ordered dataset, robust to outliers.\n- **Mode**: The most frequently occurring value.\n\n### Measures of Dispersion and Shape\n- **Variance and Standard Deviation**: Quantify the spread of data around the mean. Sample variance is defined as:\n$$ s^2 = \\frac{1}{n-1} \\sum_{i=1}^n (x_i - \\bar{x})^2 $$\n- **Skewness**: Measures the asymmetry of the data distribution.\n- **Kurtosis**: Measures the 'tailedness' of the distribution, indicating the presence of extreme outliers.\n\n### Covariance and Correlation\nTo understand relationships between variables, we compute covariance, and its normalized counterpart, the Pearson correlation coefficient $\\rho$, where $-1 \\le \\rho \\le 1$.",
+  "keyTakeaways": [
+    "Central tendency metrics identify the typical value within a dataset.",
+    "Variance and standard deviation measure the spread or volatility of the data.",
+    "Skewness and kurtosis characterize the shape and outlier presence of a distribution.",
+    "Correlation quantifies the strength and direction of linear relationships between variables."
+  ]
+}

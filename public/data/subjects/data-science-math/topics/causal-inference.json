@@ -1,0 +1,13 @@
+{
+  "topicId": "causal-inference",
+  "title": "Causal Inference",
+  "subjectId": "data-science-math",
+  "coreConcept": "Causal inference provides the mathematical machinery to move beyond correlation and identify the true cause-and-effect relationships within data. It relies on counterfactual reasoning and graphical models to estimate the effect of interventions.",
+  "theory": "## From Correlation to Causation\n\nStandard statistical learning estimates $P(Y | X)$. Causal inference seeks to estimate the effect of a deliberate intervention, denoted by Pearl's do-operator as $P(Y | do(X))$.\n\n### Potential Outcomes Framework (Rubin Causal Model)\nFor every unit, there exist potential outcomes: $Y(1)$ if treated, and $Y(0)$ if untreated. The fundamental problem of causal inference is that we only ever observe one of these states. The individual causal effect is $Y_i(1) - Y_i(0)$. We typically estimate the Average Treatment Effect (ATE):\n$$ \\text{ATE} = \\mathbb{E}[Y(1) - Y(0)] $$\n\n### Directed Acyclic Graphs (DAGs)\nVisual and mathematical representations of causal relationships. Nodes represent variables, and directed edges represent causal links. DAGs help identify confounding variables—variables that influence both the treatment and the outcome.\n\n### Controlling for Confounding\nTo isolate the true causal effect, we must mathematically \"block\" non-causal paths in the DAG. Techniques include:\n- **Propensity Score Matching**: Balancing treatment and control groups based on the predicted probability of receiving treatment.\n- **Instrumental Variables**: Utilizing a third variable that affects the outcome strictly through the treatment variable.",
+  "keyTakeaways": [
+    "Observational probability $P(Y|X)$ is fundamentally different from interventional probability $P(Y|do(X))$.",
+    "The potential outcomes framework formalizes causality through counterfactual states.",
+    "DAGs provide a rigorous graphical calculus to identify and adjust for confounding variables.",
+    "Causal inference techniques emulate randomized controlled trials using strictly observational data."
+  ]
+}

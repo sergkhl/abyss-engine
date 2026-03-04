@@ -1,0 +1,28 @@
+{
+  "subjects": [
+    {
+      "id": "data-science-math",
+      "name": "Data Science",
+      "description": "Master data science fundamentals from SQL to machine learning",
+      "themeId": "data-science-math",
+      "color": "#4F46E5",
+      "geometry": {
+        "gridTile": "box",
+        "crystal": "cylinder",
+        "altar": "cylinder"
+      }
+    },
+    {
+      "id": "physics",
+      "name": "Physics",
+      "description": "Explore the fundamental laws of the universe",
+      "themeId": "physics",
+      "color": "#7C3AED",
+      "geometry": {
+        "gridTile": "sphere",
+        "crystal": "octahedron",
+        "altar": "sphere"
+      }
+    }
+  ]
+}

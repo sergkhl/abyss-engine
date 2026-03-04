@@ -1,0 +1,385 @@
+{
+  "topicId": "calculus-for-data-science",
+  "cards": [
+    {
+      "id": "calc-1-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "What does the derivative of a single-variable function $f(x)$ represent geometrically?",
+        "back": "It represents the slope of the tangent line to the function's curve at a given point $x$, indicating the instantaneous rate of change."
+      }
+    },
+    {
+      "id": "calc-2-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "What is a partial derivative?",
+        "back": "The derivative of a multivariable function with respect to one variable, while holding all other variables constant."
+      }
+    },
+    {
+      "id": "calc-3-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "In what direction does the gradient vector $\\nabla f$ point?",
+        "back": "The gradient vector points in the direction of the steepest ascent (maximum rate of increase) of the function from the current point."
+      }
+    },
+    {
+      "id": "calc-4-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "What is the derivative of the natural logarithm function, $f(x) = \\ln(x)$, with respect to $x$?",
+        "options": [
+          "$f'(x) = e^x$",
+          "$f'(x) = \\frac{1}{x}$",
+          "$f'(x) = x$",
+          "$f'(x) = \\ln(x) + C$"
+        ],
+        "correctAnswer": "$f'(x) = \\frac{1}{x}$",
+        "explanation": "The derivative of $\\ln(x)$ is a foundational calculus rule, evaluating to $\\frac{1}{x}$ for $x > 0$."
+      }
+    },
+    {
+      "id": "calc-5-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "How is the gradient of a scalar-valued multivariable function $f(x, y, z)$ defined?",
+        "options": [
+          "As a scalar value representing the sum of all partial derivatives.",
+          "As a matrix containing all second-order partial derivatives.",
+          "As a vector containing the first-order partial derivatives with respect to each variable.",
+          "As the integral of the function over its domain."
+        ],
+        "correctAnswer": "As a vector containing the first-order partial derivatives with respect to each variable.",
+        "explanation": "The gradient $\\nabla f$ is a vector composed of partial derivatives: $[\\frac{\\partial f}{\\partial x}}, \\frac{\\partial f}{\\partial y}}, \\frac{\\partial f}{\\partial z}]^T$."
+      }
+    },
+    {
+      "id": "calc-6-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "If a differentiable function $f(x)$ is convex, what does finding a point where $f'(x) = 0$ guarantee?",
+        "options": [
+          "The point is a local maximum.",
+          "The point is an inflection point.",
+          "The point is the global minimum.",
+          "The function is undefined at that point."
+        ],
+        "correctAnswer": "The point is the global minimum.",
+        "explanation": "For a strictly convex function, any local minimum is mathematically guaranteed to be the global minimum, which occurs where the derivative is zero."
+      }
+    },
+    {
+      "id": "calc-7-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following are standard rules for computing derivatives?",
+        "options": [
+          "Product Rule: $(fg)' = f'g + fg'$",
+          "Quotient Rule: $(\\frac{f}{g})' = \\frac{f'g - fg'}{g^2}$",
+          "Chain Rule: $f(g(x))' = f'(g(x))g'(x)$",
+          "Addition Rule: $(f+g)' = f' + g'$",
+          "Exponential Rule: $(x^n)' = x^{n-1}$"
+        ],
+        "correctAnswers": [
+          "Product Rule: $(fg)' = f'g + fg'$",
+          "Quotient Rule: $(\\frac{f}{g})' = \\frac{f'g - fg'}{g^2}$",
+          "Chain Rule: $f(g(x))' = f'(g(x))g'(x)$",
+          "Addition Rule: $(f+g)' = f' + g'$"
+        ],
+        "explanation": "The Exponential Rule listed is incorrect; the Power Rule is $(x^n)' = nx^{n-1}$. The other four rules are standard and fundamental in calculus."
+      }
+    },
+    {
+      "id": "calc-8-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following conditions must be met for a point $x^*$ to be a local minimum of a smooth, twice-differentiable single-variable function $f(x)$?",
+        "options": [
+          "The first derivative must be zero: $f'(x^*) = 0$",
+          "The second derivative must be strictly negative: $f''(x^*) < 0$",
+          "The second derivative must be positive: $f''(x^*) > 0$",
+          "The function must be equal to zero: $f(x^*) = 0$"
+        ],
+        "correctAnswers": [
+          "The first derivative must be zero: $f'(x^*) = 0$",
+          "The second derivative must be positive: $f''(x^*) > 0$"
+        ],
+        "explanation": "A local minimum requires a critical point (first derivative is zero) and an upward concavity (second derivative is positive)."
+      }
+    },
+    {
+      "id": "calc-9-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "In the context of data science and basic probability, how is integration primarily utilized?",
+        "options": [
+          "To find the area under a Probability Density Function (PDF) to determine probabilities.",
+          "To compute the expected value of a continuous random variable.",
+          "To invert matrices for linear regression.",
+          "To calculate the discrete mode of a categorical dataset."
+        ],
+        "correctAnswers": [
+          "To find the area under a Probability Density Function (PDF) to determine probabilities.",
+          "To compute the expected value of a continuous random variable."
+        ],
+        "explanation": "Integration evaluates continuous accumulation, which is used to find probabilities under PDFs and to calculate expected values $\\mathbb{E}[X] = \\int x f(x)dx$. It is not used for matrix inversion or discrete mode calculations."
+      }
+    },
+    {
+      "id": "calc-10-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "If you are calculating the partial derivative of $f(x, y) = 3x^2y + y^3$ with respect to $x$, which of the following statements are true?",
+        "options": [
+          "The variable $y$ is treated as a constant.",
+          "The derivative of the $y^3$ term is $3y^2$.",
+          "The derivative of the $y^3$ term is $0$.",
+          "The final result is $6xy$."
+        ],
+        "correctAnswers": [
+          "The variable $y$ is treated as a constant.",
+          "The derivative of the $y^3$ term is $0$.",
+          "The final result is $6xy$."
+        ],
+        "explanation": "When taking the partial derivative with respect to $x$, $y$ is treated as a constant. Thus, the derivative of $3x^2y$ is $6xy$, and the derivative of the constant $y^3$ is $0$."
+      }
+    },
+    {
+      "id": "calc-11-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "State the chain rule for a multivariable function $z = f(x, y)$ where $x = g(t)$ and $y = h(t)$.",
+        "back": "$\\frac{dz}{dt} = \\frac{\\partial f}{\\partial x}\\frac{dx}{dt} + \\frac{\\partial f}{\\partial y}\\frac{dy}{dt}$"
+      }
+    },
+    {
+      "id": "calc-12-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "What is the Jacobian matrix?",
+        "back": "A matrix representing the first-order partial derivatives of a vector-valued function, essentially capturing the best linear approximation of the function near a given point."
+      }
+    },
+    {
+      "id": "calc-13-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "What is the Hessian matrix?",
+        "back": "A square matrix containing all second-order partial derivatives of a scalar-valued function, describing the local curvature of the function."
+      }
+    },
+    {
+      "id": "calc-14-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "What is the partial derivative of $f(x, y) = x \\sin(xy)$ with respect to $y$?",
+        "options": [
+          "$\\frac{\\partial f}{\\partial y} = x^2 \\cos(xy)$",
+          "$\\frac{\\partial f}{\\partial y} = x \\cos(xy)$",
+          "$\\frac{\\partial f}{\\partial y} = \\sin(xy) + x^2 \\cos(xy)$",
+          "$\\frac{\\partial f}{\\partial y} = -x^2 \\cos(xy)$"
+        ],
+        "correctAnswer": "$\\frac{\\partial f}{\\partial y} = x^2 \\cos(xy)$",
+        "explanation": "Treat $x$ as a constant. The derivative of $\\sin(xy)$ with respect to $y$ requires the chain rule: $\\cos(xy) \\cdot \\frac{\\partial}{\\partial y}(xy) = x \\cos(xy)$. Multiplying by the outer $x$ yields $x^2 \\cos(xy)$."
+      }
+    },
+    {
+      "id": "calc-15-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "In the context of gradient descent optimization, what direction does the update rule $\\mathbf{\\theta}_{t+1} = \\mathbf{\\theta}_t - \\eta \\nabla L(\\mathbf{\\theta}_t)$ move the parameters?",
+        "options": [
+          "In the direction of steepest ascent to maximize the loss.",
+          "In the direction of steepest descent to minimize the loss.",
+          "In an orthogonal direction to the gradient.",
+          "Towards the largest eigenvalue of the Hessian matrix."
+        ],
+        "correctAnswer": "In the direction of steepest descent to minimize the loss.",
+        "explanation": "The gradient $\\nabla L$ points to the steepest ascent. Subtracting it (the negative gradient) moves the parameters in the direction of steepest descent, minimizing the loss function."
+      }
+    },
+    {
+      "id": "calc-16-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Why is the first-order Taylor series approximation useful in machine learning?",
+        "options": [
+          "It provides an exact, global representation of any non-linear loss function.",
+          "It perfectly captures the curvature of the loss landscape.",
+          "It linearizes complex functions locally, simplifying gradient calculations and optimization.",
+          "It is required to compute the eigenvectors of the dataset."
+        ],
+        "correctAnswer": "It linearizes complex functions locally, simplifying gradient calculations and optimization.",
+        "explanation": "The first-order Taylor expansion approximates a function using its gradient at a specific point, creating a local linear approximation that makes iterative optimization algorithms like gradient descent computationally feasible."
+      }
+    },
+    {
+      "id": "calc-17-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "If the Hessian matrix $H$ of a function $f(\\mathbf{x})$ evaluated at a critical point $\\mathbf{x}^*$ is Positive Definite, which of the following must be true?",
+        "options": [
+          "All eigenvalues of $H$ are strictly positive.",
+          "The critical point $\\mathbf{x}^*$ is a local minimum.",
+          "The critical point $\\mathbf{x}^*$ is a saddle point.",
+          "For any non-zero vector $\\mathbf{v}$, $\\mathbf{v}^T H \\mathbf{v} > 0$."
+        ],
+        "correctAnswers": [
+          "All eigenvalues of $H$ are strictly positive.",
+          "The critical point $\\mathbf{x}^*$ is a local minimum.",
+          "For any non-zero vector $\\mathbf{v}$, $\\mathbf{v}^T H \\mathbf{v} > 0$."
+        ],
+        "explanation": "A Positive Definite Hessian implies upward curvature in all directions (all positive eigenvalues, $\\mathbf{v}^T H \\mathbf{v} > 0$), mathematically proving the critical point is a local minimum."
+      }
+    },
+    {
+      "id": "calc-18-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Which of the following differentiate the Jacobian matrix from the Hessian matrix?",
+        "options": [
+          "The Jacobian contains first-order derivatives, while the Hessian contains second-order derivatives.",
+          "The Jacobian applies to vector-valued functions, while the Hessian applies to scalar-valued functions.",
+          "The Hessian is always a symmetric matrix (for smooth functions), while the Jacobian is generally not symmetric.",
+          "The Jacobian measures curvature, while the Hessian measures the rate of change."
+        ],
+        "correctAnswers": [
+          "The Jacobian contains first-order derivatives, while the Hessian contains second-order derivatives.",
+          "The Jacobian applies to vector-valued functions, while the Hessian applies to scalar-valued functions.",
+          "The Hessian is always a symmetric matrix (for smooth functions), while the Jacobian is generally not symmetric."
+        ],
+        "explanation": "The first three statements are defining distinctions. The fourth is reversed: the Jacobian measures the rate of change (slope/plane), and the Hessian measures curvature."
+      }
+    },
+    {
+      "id": "calc-19-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "In backpropagation, computing the gradient of the loss with respect to a weight matrix $W$ relies heavily on which mathematical concepts?",
+        "options": [
+          "The multivariable chain rule.",
+          "Matrix multiplication.",
+          "Singular Value Decomposition (SVD).",
+          "Partial differentiation."
+        ],
+        "correctAnswers": [
+          "The multivariable chain rule.",
+          "Matrix multiplication.",
+          "Partial differentiation."
+        ],
+        "explanation": "Backpropagation is essentially the systematic application of the chain rule using partial derivatives and matrix multiplication to pass gradients backward through network layers. SVD is a matrix factorization technique not inherently used in standard backpropagation."
+      }
+    },
+    {
+      "id": "calc-20-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "For a scalar function $f(\\mathbf{x})$ where $\\mathbf{x} \\in \\mathbb{R}^n$, which of the following vector/matrix calculus identities are correct?",
+        "options": [
+          "$\\nabla_{\\mathbf{x}} (\\mathbf{w}^T \\mathbf{x}) = \\mathbf{w}$",
+          "$\\nabla_{\\mathbf{x}} (\\mathbf{x}^T \\mathbf{x}) = 2\\mathbf{x}$",
+          "$\\nabla_{\\mathbf{x}} (A\\mathbf{x}) = A$",
+          "$\\nabla_{\\mathbf{x}} (\\mathbf{x}^T A \\mathbf{x}) = (A + A^T)\\mathbf{x}$"
+        ],
+        "correctAnswers": [
+          "$\\nabla_{\\mathbf{x}} (\\mathbf{w}^T \\mathbf{x}) = \\mathbf{w}$",
+          "$\\nabla_{\\mathbf{x}} (\\mathbf{x}^T \\mathbf{x}) = 2\\mathbf{x}$",
+          "$\\nabla_{\\mathbf{x}} (\\mathbf{x}^T A \\mathbf{x}) = (A + A^T)\\mathbf{x}$"
+        ],
+        "explanation": "$A\\mathbf{x}$ is a vector-valued function, so its derivative is the Jacobian $A$, but the notation $\\nabla$ is typically reserved for scalar functions. The other three are foundational matrix calculus identities for scalar functions."
+      }
+    },
+    {
+      "id": "calc-21-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 3,
+      "content": {
+        "front": "What is the gradient of the quadratic form $f(\\mathbf{x}) = \\mathbf{x}^T A \\mathbf{x}$ assuming matrix $A$ is symmetric?",
+        "back": "$\\nabla f(\\mathbf{x}) = 2A\\mathbf{x}$. (Since $A = A^T$, the general form $(A + A^T)\\mathbf{x}$ simplifies to $2A\\mathbf{x}$)."
+      }
+    },
+    {
+      "id": "calc-22-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 3,
+      "content": {
+        "front": "Provide the update rule for Newton's Method in multidimensional optimization.",
+        "back": "$\\mathbf{x}_{t+1} = \\mathbf{x}_t - H^{-1} \\nabla f(\\mathbf{x}_t)$, where $H^{-1}$ is the inverse of the Hessian matrix."
+      }
+    },
+    {
+      "id": "calc-23-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "What is the gradient of the Ordinary Least Squares (OLS) objective function, $L(\\mathbf{w}) = \\frac{1}{2} \\| X\\mathbf{w} - \\mathbf{y} \\|_2^2$, with respect to the weight vector $\\mathbf{w}$?",
+        "options": [
+          "$X^T(X\\mathbf{w} - \\mathbf{y})$",
+          "$(X\\mathbf{w} - \\mathbf{y})^T X$",
+          "$X(X\\mathbf{w} - \\mathbf{y})$",
+          "$2X^T(X\\mathbf{w} - \\mathbf{y})$"
+        ],
+        "correctAnswer": "$X^T(X\\mathbf{w} - \\mathbf{y})$",
+        "explanation": "Expanding the squared L2 norm gives $\\frac{1}{2}(\\mathbf{w}^T X^T X \\mathbf{w} - 2\\mathbf{y}^T X \\mathbf{w} + \\mathbf{y}^T \\mathbf{y})$. Taking the gradient yields $\\frac{1}{2}(2X^T X \\mathbf{w} - 2X^T \\mathbf{y})$, which simplifies to $X^T(X\\mathbf{w} - \\mathbf{y})$."
+      }
+    },
+    {
+      "id": "calc-24-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "How does an ill-conditioned Hessian matrix (high condition number) affect the geometry of the loss landscape and standard Gradient Descent (GD)?",
+        "options": [
+          "It creates a highly spherical landscape, allowing GD to converge extremely quickly.",
+          "It creates a 'ravine' or highly elliptical landscape, causing GD to oscillate wildly across the ravine and progress slowly towards the minimum.",
+          "It flattens the landscape entirely, causing GD to stop prematurely due to zero gradients.",
+          "It forces the loss landscape to become non-convex, introducing multiple local minima."
+        ],
+        "correctAnswer": "It creates a 'ravine' or highly elliptical landscape, causing GD to oscillate wildly across the ravine and progress slowly towards the minimum.",
+        "explanation": "An ill-conditioned Hessian means eigenvalues vary vastly in magnitude. This creates sharp ravines in the landscape. GD steps overshoot in the steep directions and barely move in the flat directions, causing inefficient, zig-zagging convergence."
+      }
+    },
+    {
+      "id": "calc-25-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "When evaluating a critical point $\\mathbf{x}^*$ using the Hessian matrix $H$, which of the following eigenvalue configurations accurately describe the nature of the stationary point?",
+        "options": [
+          "If all eigenvalues are $> 0$, the point is a local minimum.",
+          "If all eigenvalues are $< 0$, the point is a local maximum.",
+          "If eigenvalues are a mix of positive and negative values, the point is a saddle point.",
+          "If at least one eigenvalue is $0$ and the rest are positive, the point is guaranteed to be a global minimum."
+        ],
+        "correctAnswers": [
+          "If all eigenvalues are $> 0$, the point is a local minimum.",
+          "If all eigenvalues are $< 0$, the point is a local maximum.",
+          "If eigenvalues are a mix of positive and negative values, the point is a saddle point."
+        ],
+        "explanation": "Positive eigenvalues imply upward curvature; negative imply downward. A mix implies upward in some directions and downward in others (saddle point). An eigenvalue of $0$ indicates a degenerate/flat direction, meaning the second derivative test is inconclusive, not guaranteed to be a global minimum."
+      }
+    }
+  ]
+}

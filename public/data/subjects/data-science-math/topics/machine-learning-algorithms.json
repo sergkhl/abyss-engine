@@ -1,0 +1,13 @@
+{
+  "topicId": "machine-learning-algorithms",
+  "title": "Machine Learning Algorithms",
+  "subjectId": "data-science-math",
+  "coreConcept": "Machine learning algorithms apply mathematical optimization and statistical inference to enable computers to learn from data. By formalizing error minimization, these algorithms automatically extract patterns and build predictive models.",
+  "theory": "## Algorithmic Learning Paradigms\n\nMachine learning is divided broadly into supervised (labeled data) and unsupervised (unlabeled data) paradigms.\n\n### Support Vector Machines (SVM)\nA powerful supervised algorithm that finds the optimal hyperplane maximizing the margin between classes. The optimization problem relies on finding support vectors, and utilizes the 'kernel trick' to map data implicitly into infinite-dimensional spaces for non-linear classification:\n$$ K(\\mathbf{x}_i, \\mathbf{x}_j) = \\phi(\\mathbf{x}_i)^T \\phi(\\mathbf{x}_j) $$\n\n### Tree-Based Models\nAlgorithms like Random Forests and Gradient Boosted Trees build non-linear models by recursively partitioning the feature space. They optimize metrics like Gini impurity or Information Gain (Entropy) at each split.\n\n### K-Means Clustering\nAn unsupervised algorithm that partitions data into $K$ distinct clusters. It iteratively assigns points to the nearest cluster centroid and recalculates the centroid to minimize the within-cluster sum of squares (WCSS):\n$$ \\text{WCSS} = \\sum_{j=1}^K \\sum_{\\mathbf{x}_i \\in C_j} \\| \\mathbf{x}_i - \\mathbf{\\mu}_j \\|^2 $$",
+  "keyTakeaways": [
+    "SVMs maximize classification margins using constrained convex optimization.",
+    "The kernel trick enables linear algorithms to seamlessly perform non-linear classification.",
+    "Decision trees partition data spaces by optimizing information theoretic metrics.",
+    "K-Means iteratively minimizes intra-cluster variance using geometric distance metrics."
+  ]
+}

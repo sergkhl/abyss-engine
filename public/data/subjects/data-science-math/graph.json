@@ -1,0 +1,146 @@
+{
+  "subjectId": "data-science-math",
+  "title": "Data Science & Applied Mathematics",
+  "themeId": "data-science-math",
+  "maxTier": 3,
+  "nodes": [
+    {
+      "topicId": "linear-algebra-fundamentals",
+      "title": "Linear Algebra Fundamentals",
+      "tier": 1,
+      "prerequisites": [],
+      "learningObjective": "Master the principles of vectors, matrices, and linear transformations essential for manipulating high-dimensional data spaces."
+    },
+    {
+      "topicId": "calculus-for-data-science",
+      "title": "Calculus for Data Science",
+      "tier": 1,
+      "prerequisites": [],
+      "learningObjective": "Understand limits, derivatives, and partial differentiation to model rates of change and navigate loss landscapes."
+    },
+    {
+      "topicId": "basic-probability",
+      "title": "Basic Probability",
+      "tier": 1,
+      "prerequisites": [],
+      "learningObjective": "Grasp the foundational laws of probability, discrete and continuous random variables, and core probability distributions."
+    },
+    {
+      "topicId": "descriptive-statistics",
+      "title": "Descriptive Statistics",
+      "tier": 1,
+      "prerequisites": [],
+      "learningObjective": "Learn to summarize, visualize, and mathematically interpret the central tendencies and dispersions of complex data sets."
+    },
+    {
+      "topicId": "discrete-mathematics",
+      "title": "Discrete Mathematics",
+      "tier": 1,
+      "prerequisites": [],
+      "learningObjective": "Develop a solid foundation in logic, set theory, and combinatorics to enable rigorous algorithmic thinking."
+    },
+    {
+      "topicId": "matrix-factorization-pca",
+      "title": "Matrix Factorization and PCA",
+      "tier": 2,
+      "prerequisites": [
+        "linear-algebra-fundamentals",
+        "calculus-for-data-science"
+      ],
+      "learningObjective": "Apply advanced linear algebra techniques, such as Singular Value Decomposition, to reduce dimensionality and extract latent features."
+    },
+    {
+      "topicId": "optimization-theory",
+      "title": "Optimization Theory",
+      "tier": 2,
+      "prerequisites": [
+        "calculus-for-data-science",
+        "linear-algebra-fundamentals"
+      ],
+      "learningObjective": "Formulate and computationally solve convex and non-convex optimization problems critical for training mathematical models."
+    },
+    {
+      "topicId": "statistical-inference",
+      "title": "Statistical Inference",
+      "tier": 2,
+      "prerequisites": [
+        "basic-probability",
+        "descriptive-statistics"
+      ],
+      "learningObjective": "Perform hypothesis testing, calculate p-values, and construct confidence intervals to draw robust, quantifiable conclusions from sample data."
+    },
+    {
+      "topicId": "regression-analysis",
+      "title": "Regression Analysis",
+      "tier": 2,
+      "prerequisites": [
+        "linear-algebra-fundamentals",
+        "descriptive-statistics",
+        "basic-probability"
+      ],
+      "learningObjective": "Build, optimize, and critically evaluate linear and logistic regression models to quantify multivariate relationships."
+    },
+    {
+      "topicId": "stochastic-processes",
+      "title": "Stochastic Processes",
+      "tier": 2,
+      "prerequisites": [
+        "basic-probability",
+        "discrete-mathematics"
+      ],
+      "learningObjective": "Model dynamic systems that evolve over time with inherent randomness utilizing Markov chains and Poisson processes."
+    },
+    {
+      "topicId": "machine-learning-algorithms",
+      "title": "Machine Learning Algorithms",
+      "tier": 3,
+      "prerequisites": [
+        "optimization-theory",
+        "matrix-factorization-pca",
+        "regression-analysis"
+      ],
+      "learningObjective": "Implement and mathematically deconstruct both supervised and unsupervised learning models, including SVMs and clustering algorithms."
+    },
+    {
+      "topicId": "bayesian-statistics-inference",
+      "title": "Bayesian Statistics and Inference",
+      "tier": 3,
+      "prerequisites": [
+        "statistical-inference",
+        "stochastic-processes"
+      ],
+      "learningObjective": "Update probability estimates sequentially using Bayes' theorem and apply Markov Chain Monte Carlo methods for complex posteriors."
+    },
+    {
+      "topicId": "deep-learning-mathematics",
+      "title": "Deep Learning Mathematics",
+      "tier": 3,
+      "prerequisites": [
+        "optimization-theory",
+        "matrix-factorization-pca",
+        "calculus-for-data-science"
+      ],
+      "learningObjective": "Master the rigorous backpropagation calculus, tensor operations, and structural mathematics underlying modern neural networks."
+    },
+    {
+      "topicId": "time-series-analysis",
+      "title": "Time Series Analysis",
+      "tier": 3,
+      "prerequisites": [
+        "regression-analysis",
+        "stochastic-processes"
+      ],
+      "learningObjective": "Mathematically forecast future data points by extracting temporal dependencies, non-stationary trends, and seasonality."
+    },
+    {
+      "topicId": "causal-inference",
+      "title": "Causal Inference",
+      "tier": 3,
+      "prerequisites": [
+        "statistical-inference",
+        "regression-analysis"
+      ],
+      "learningObjective": "Distinguish causation from correlation using directed acyclic graphs, counterfactual frameworks, and quasi-experimental designs."
+    }
+  ]
+}
