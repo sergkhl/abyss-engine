@@ -1,4 +1,4 @@
-import { Buff } from '../../types/progression';
+import { Buff } from '../../../types/progression';
 import { BuffConsumeEvent, BuffContext, BuffDefinition, BuffInstance } from './types';
 import { getBuffDefinition } from './buffDefinitions';
 
@@ -74,6 +74,10 @@ export class BuffEngine {
       duration: definition.durationMs,
       remainingUses: definition.maxUses,
       expiresAt: this.shouldExpire(definition, issuedAt),
+      stacking: definition.stacking,
+      icon: definition.icon,
+      name: definition.name,
+      description: definition.description,
     });
   }
 

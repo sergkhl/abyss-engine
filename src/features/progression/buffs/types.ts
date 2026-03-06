@@ -1,4 +1,4 @@
-import { BuffCondition, BuffModifierType, BuffStackingRule } from '../../types/progression';
+import { BuffCondition, BuffModifierType, BuffStackingRule } from '../../../types/progression';
 
 export interface BuffDefinition {
   id: string;

@@ -6,7 +6,7 @@ import {
   AttunementReadinessBucket,
   AttunementChecklistSubmission,
 } from '../types/progression';
-import { getSectionBuffs } from '../features/progression/buffs/buffDefinitions';
+import { getCategoryBuffs } from '../features/progression/buffs/buffDefinitions';
 import { BuffEngine } from '../features/progression/buffs/buffEngine';
 import { getBuffIcon, getBuffSummary, groupBuffsByType } from '../features/progression/buffDisplay';
 import { useProgressionStore } from '../features/progression';
@@ -100,9 +100,9 @@ export function AttunementRitualModal({
   const activeCrystals = useProgressionStore((state) => state.activeCrystals);
   const activeCrystalTopicIds = useMemo(() => activeCrystals.map((item) => item.topicId), [activeCrystals]);
   const sectionBuffs = useMemo(() => ({
-    biological: getSectionBuffs('biological').map((definition) => BuffEngine.get().grantBuff(definition.id, 'biological')),
-    cognitive: getSectionBuffs('cognitive').map((definition) => BuffEngine.get().grantBuff(definition.id, 'cognitive')),
-    quest: getSectionBuffs('quest').map((definition) => BuffEngine.get().grantBuff(definition.id, 'quest')),
+    biological: getCategoryBuffs('biological').map((definition) => BuffEngine.get().grantBuff(definition.id, 'biological')),
+    cognitive: getCategoryBuffs('cognitive').map((definition) => BuffEngine.get().grantBuff(definition.id, 'cognitive')),
+    quest: getCategoryBuffs('quest').map((definition) => BuffEngine.get().grantBuff(definition.id, 'quest')),
   }), []);
   const targetCrystalOptions = useMemo(() => {
     const seen = new Set<string>();
@@ -426,4 +426,3 @@ export function AttunementRitualModal({
     </div>
   );
 }
-

@@ -1,4 +1,4 @@
-import { BuffDefinition, BuffSection } from './types';
+import { BuffDefinition, BuffCategory } from './types';
 
 export const BUFF_CATALOG: Record<string, BuffDefinition> = {
   clarity_focus: {
@@ -40,7 +40,7 @@ export const BUFF_CATALOG: Record<string, BuffDefinition> = {
   },
 } as const;
 
-export function getSectionBuffs(section: BuffSection): BuffDefinition[] {
+export function getCategoryBuffs(section: BuffCategory): BuffDefinition[] {
   return Object.values(BUFF_CATALOG)
     .filter((definition) => definition.categories.includes(section));
 }

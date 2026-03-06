@@ -2,7 +2,7 @@ import { IDeckRepository, Manifest } from '../../types/repository';
 import { Card, SubjectGraph, TopicDetails } from '../../types/core';
 
 export class ApiDeckRepository implements IDeckRepository {
-  private baseUrl = '/data';
+  private baseUrl = `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/data`;
 
   private async fetchJson<T>(paths: string[]): Promise<T> {
     for (const path of paths) {
