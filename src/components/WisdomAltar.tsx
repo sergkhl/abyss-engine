@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame } from '@react-three/fiber/webgpu';
 import * as THREE from 'three/webgpu';
 import { uiStore } from '../store/uiStore';
 import { useProgressionStore as useStudyStore } from '../features/progression';

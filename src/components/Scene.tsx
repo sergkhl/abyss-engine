@@ -1,8 +1,8 @@
 'use client';
 
 import React, { Suspense, useRef, useMemo, useEffect } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
-import { OrthographicCamera, Html, OrbitControls } from '@react-three/drei';
+import { Canvas, useThree } from '@react-three/fiber/webgpu';
+import { OrthographicCamera, Html, OrbitControls } from '@react-three/drei/webgpu';
 import { useQueries } from '@tanstack/react-query';
 import * as THREE from 'three/webgpu';
 import { WebGPURenderer } from 'three/webgpu';
@@ -176,7 +176,9 @@ const OrbitCameraControls: React.FC = () => {
       minPolarAngle={CAMERA_START_POLAR_ANGLE}
       maxPolarAngle={CAMERA_START_POLAR_ANGLE}
       target={ORBIT_TARGET}
-      onChange={invalidate}
+      onChange={() => {
+        invalidate();
+      }}
     />
   );
 };
@@ -285,7 +287,7 @@ export const Scene: React.FC<SceneProps> = ({ onStartAttunement }) => {
       <Canvas
         frameloop="demand"
         dpr={renderQuality.dpr}
-        gl={async (canvas) => {
+        renderer={async (canvas: HTMLCanvasElement) => {
           const resolvedCanvas = resolveWebGPUCanvas(canvas);
           const hasWebGPU = typeof navigator !== 'undefined'
             && !!(navigator as { gpu?: { requestAdapter?: unknown } }).gpu
@@ -324,7 +326,9 @@ export const Scene: React.FC<SceneProps> = ({ onStartAttunement }) => {
           zoom={50}
           near={0.1}
           far={1000}
-          onUpdate={(c) => c.lookAt(...ORBIT_TARGET)}
+          onUpdate={(c: THREE.OrthographicCamera) => {
+            c.lookAt(...ORBIT_TARGET);
+          }}
         />
         <OrbitCameraControls />
 

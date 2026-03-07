@@ -39,16 +39,14 @@ Core systems: SM-2 progression, ritual-based attunement, buff engine, procedural
   - `progressionStore.ts`: Lifecycle and state management (when it triggers).
 
 ### 5. WebGPU & Mobile-First Graphics Engine
-- **Hardware Target**: The application targets flagship mobile hardware exclusively. WebGL fallback support is strictly prohibited.
-- **Renderer Initialization**: All Three.js imports must utilize `three/webgpu`. The R3F `<Canvas>` must utilize the asynchronous `WebGPURenderer`.
-- **Material Constraints**: Legacy materials (e.g., `MeshStandardMaterial`) are prohibited. All surface rendering must utilize Node materials (e.g., `MeshStandardNodeMaterial`).
-- **Procedural Logic & Compute**: Heavy procedural logic (crystal growth, particle physics) must be offloaded to WebGPU compute shaders or TSL.
-- **Main-Thread Isolation**: Animations and procedural scaling must not be bound to React state (`useState`, `setState`). Drive continuous graphical updates directly via TSL uniforms, `useNodes`, or isolated `useFrame` loops.
-- **Post-Processing**: Glowing crystals and atmospheric effects must be implemented via TSL node composition. Usage of `EffectComposer` is forbidden.
+- **Renderer Initialization**: The standard `<Canvas>` import from `@react-three/fiber` is strictly prohibited. You must import `<Canvas>` exclusively from `@react-three/fiber/webgpu` to natively initialize the asynchronous `WebGPURenderer`. Manual `gl` prop instantiation of the WebGPU renderer is deprecated.
+- **Drei Component Import Paths**: The root `@react-three/drei` entry point is forbidden, as it defaults to legacy WebGL implementations. All Drei components must be imported via their dedicated WebGPU entry points (e.g., `@react-three/drei/webgpu`).
+- **Drei Component Fallbacks**: If a specific Drei utility lacks a WebGPU entry point in v11, its usage is prohibited. You must reconstruct the required functionality from scratch using Three.js Shading Language (TSL) and Node Materials.
 
 ## Mandatory Project Rules
 - **Data-Driven Execution**: No magic strings. No manual state mapping.
 - **No Legacy Burden**: Deprecated behavior must be refactored or removed. Do not preserve dead code.
+- **WebGPU Strictness**: Any pull request or code generation that introduces a legacy WebGL material, `WebGLRenderer`, or non-TSL shader string into the codebase will be rejected.
 
 ## Agent Workflow & Decision Framework
 Agents must execute the following structured decision process before outputting code modifications to force planned, architectural alignment.
