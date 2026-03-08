@@ -2,9 +2,11 @@
 
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 import { useProgressionStore as useStudyStore } from '@/features/progression';
 import { useUIStore } from '@/store/uiStore';
 import { Rating } from '@/types';
+import { Leva, useControls } from 'leva';
 
 import { playPositiveSound } from '@/utils/sound';
 import { initAbyssDev } from '@/utils/abyssDev';
@@ -36,6 +38,12 @@ const Scene = dynamic(() => import('@/components/Scene'), {
  * Coordinates between the 3D scene and UI modals
  */
 export default function Home() {
+  const searchParams = useSearchParams();
+  const isDebugMode = searchParams.get('debug') === '1';
+  const { showStats } = useControls({
+    showStats: true,
+  });
+
   // Track initialization to prevent infinite loops
   const initializedRef = useRef(false);
 
@@ -236,7 +244,7 @@ export default function Home() {
 
         {/* Full Screen 3D Scene */}
         <div className="absolute inset-0">
-          <Scene onStartAttunement={handleStartAttunement} />
+          <Scene onStartAttunement={handleStartAttunement} showStats={isDebugMode && showStats} />
         </div>
 
         {/* Stats Overlay */}
@@ -292,6 +300,8 @@ export default function Home() {
           onFlip={flipCurrentCard}
           onSubmitResult={handleRate}
         />
+
+        {isDebugMode && <Leva collapsed />}
       </div>
     </Suspense>
   );

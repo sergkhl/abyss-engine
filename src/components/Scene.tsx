@@ -1,47 +1,48 @@
-'use client';
+'use client'
 
-import React, { Suspense, useRef, useMemo, useEffect } from 'react';
-import { Canvas, useThree } from '@react-three/fiber/webgpu';
-import { OrthographicCamera, Html, OrbitControls } from '@react-three/drei/webgpu';
-import { useQueries } from '@tanstack/react-query';
-import * as THREE from 'three/webgpu';
-import { Grid } from './Grid';
-import { WisdomAltar } from './WisdomAltar';
-import { Crystals } from './Crystals';
-import { CrystalGlowPostProcessing } from '../graphics/glowPostProcessing';
-import TopicSelectionBar from './TopicSelectionBar';
-import { useProgressionStore as useStudyStore } from '../features/progression';
-import { useUIStore } from '../store/uiStore';
-import { useTopicMetadata, type TopicMetadata } from '../features/content';
-import { Card } from '../types/core';
-import { deckRepository } from '../infrastructure/di';
-import '../graphics/nodeMaterialRegistration';
+import React, { Suspense, useRef, useMemo, useEffect } from 'react'
+import { Canvas, useThree } from '@react-three/fiber/webgpu'
+import { PerspectiveCamera, Html, OrbitControls, Environment, Stats } from '@react-three/drei/webgpu'
+import { useQueries } from '@tanstack/react-query'
+import * as THREE from 'three/webgpu'
+import { Grid } from './Grid'
+import { WisdomAltar } from './WisdomAltar'
+import { Crystals } from './Crystals'
+import { CrystalGlowPostProcessing } from '../graphics/glowPostProcessing'
+import TopicSelectionBar from './TopicSelectionBar'
+import { useProgressionStore as useStudyStore } from '../features/progression'
+import { useUIStore } from '../store/uiStore'
+import { useTopicMetadata, type TopicMetadata } from '../features/content'
+import { Card } from '../types/core'
+import { deckRepository } from '../infrastructure/di'
+import '../graphics/nodeMaterialRegistration'
 
 /**
  * Scene component - Main 3D visualization for Abyss Engine
  * Uses fixed orthographic camera for isometric view
  */
 interface SceneProps {
-  onStartAttunement?: (topicId: string, cards: Card[]) => void;
+  onStartAttunement?: (topicId: string, cards: Card[]) => void
+  showStats?: boolean
 }
 
 interface SceneRenderInvalidatorProps {
-  activeCrystals: readonly unknown[];
-  filteredCrystals: readonly unknown[];
-  selectedTopicId: string | null;
-  selectedTopicXp: number;
-  currentSubjectId: string | null;
-  selectedTopicCardsCount: number;
+  activeCrystals: readonly unknown[]
+  filteredCrystals: readonly unknown[]
+  selectedTopicId: string | null
+  selectedTopicXp: number
+  currentSubjectId: string | null
+  selectedTopicCardsCount: number
 }
 
 type RenderQuality = {
-  dpr: number | [number, number];
-  antialias: boolean;
-  powerPreference: 'high-performance' | 'low-power';
-};
+  dpr: number | [number, number]
+  antialias: boolean
+  powerPreference: 'high-performance' | 'low-power'
+}
 
-const TARGET_SCENE_FPS = 45;
-const TARGET_FRAME_INTERVAL_MS = 1000 / TARGET_SCENE_FPS;
+const TARGET_SCENE_FPS = 45
+const TARGET_FRAME_INTERVAL_MS = 1000 / TARGET_SCENE_FPS
 
 const getRenderQuality = (): RenderQuality => {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') {
@@ -49,48 +50,52 @@ const getRenderQuality = (): RenderQuality => {
       dpr: [1, 1.5],
       antialias: true,
       powerPreference: 'high-performance',
-    };
+    }
   }
 
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const lowCoreCount = typeof navigator.hardwareConcurrency === 'number'
-    && navigator.hardwareConcurrency <= 4;
-  const veryHighDpr = (window.devicePixelRatio || 1) > 2;
-  const needsReducedQuality = reducedMotion || lowCoreCount || veryHighDpr;
+    && navigator.hardwareConcurrency <= 4
+  const veryHighDpr = (window.devicePixelRatio || 1) > 2
+  const needsReducedQuality = reducedMotion || lowCoreCount || veryHighDpr
 
   return {
     dpr: needsReducedQuality ? 1 : [1, 1.5],
     antialias: !needsReducedQuality,
     powerPreference: needsReducedQuality ? 'low-power' : 'high-performance',
-  };
-};
+  }
+}
 
-const CAMERA_START_POSITION: [number, number, number] = [8, 8, 8];
-const ORBIT_TARGET: [number, number, number] = [0, 0, 0];
+const CAMERA_START_POSITION: [number, number, number] = [7, 7, 7]
+const ORBIT_TARGET: [number, number, number] = [0, 0, 0]
 const CAMERA_START_DISTANCE = Math.hypot(
   CAMERA_START_POSITION[0] - ORBIT_TARGET[0],
   CAMERA_START_POSITION[1] - ORBIT_TARGET[1],
   CAMERA_START_POSITION[2] - ORBIT_TARGET[2],
-);
+)
 const CAMERA_START_POLAR_ANGLE = Math.acos(
   (CAMERA_START_POSITION[1] - ORBIT_TARGET[1]) / CAMERA_START_DISTANCE,
-);
+)
+const CAMERA_START_ZOOM = 60
+const CAMERA_ZOOM_RANGE = 20
+const CAMERA_MIN_ZOOM = CAMERA_START_ZOOM - CAMERA_ZOOM_RANGE
+const CAMERA_MAX_ZOOM = CAMERA_START_ZOOM + CAMERA_ZOOM_RANGE
 
 const SceneFrameLimiter: React.FC = () => {
-  const invalidate = useThree((state) => state.invalidate);
+  const invalidate = useThree((state) => state.invalidate)
 
   useEffect(() => {
     const interval = setInterval(() => {
-      invalidate();
-    }, TARGET_FRAME_INTERVAL_MS);
+      invalidate()
+    }, TARGET_FRAME_INTERVAL_MS)
 
     return () => {
-      clearInterval(interval);
-    };
-  }, [invalidate]);
+      clearInterval(interval)
+    }
+  }, [invalidate])
 
-  return null;
-};
+  return null
+}
 
 const SceneRenderInvalidator: React.FC<SceneRenderInvalidatorProps> = ({
   activeCrystals,
@@ -100,10 +105,10 @@ const SceneRenderInvalidator: React.FC<SceneRenderInvalidatorProps> = ({
   currentSubjectId,
   selectedTopicCardsCount,
 }) => {
-  const invalidate = useThree((state) => state.invalidate);
+  const invalidate = useThree((state) => state.invalidate)
 
   useEffect(() => {
-    invalidate();
+    invalidate()
   }, [
     invalidate,
     activeCrystals,
@@ -112,129 +117,131 @@ const SceneRenderInvalidator: React.FC<SceneRenderInvalidatorProps> = ({
     selectedTopicXp,
     currentSubjectId,
     selectedTopicCardsCount,
-  ]);
+  ])
 
-  return null;
-};
+  return null
+}
 
 const OrbitCameraControls: React.FC = () => {
-  const invalidate = useThree((state) => state.invalidate);
+  const invalidate = useThree((state) => state.invalidate)
 
   return (
     <OrbitControls
       enablePan={false}
-      enableZoom={false}
+      enableZoom
       enableRotate
-      minDistance={CAMERA_START_DISTANCE}
-      maxDistance={CAMERA_START_DISTANCE}
+      minDistance={CAMERA_START_DISTANCE * 0.95}
+      maxDistance={CAMERA_START_DISTANCE * 1.05}
       minPolarAngle={CAMERA_START_POLAR_ANGLE}
       maxPolarAngle={CAMERA_START_POLAR_ANGLE}
       target={ORBIT_TARGET}
+      minZoom={CAMERA_MIN_ZOOM}
+      maxZoom={CAMERA_MAX_ZOOM}
       onChange={() => {
-        invalidate();
+        invalidate()
       }}
     />
-  );
-};
+  )
+}
 
-export const Scene: React.FC<SceneProps> = ({ onStartAttunement }) => {
-  const cameraRef = useRef<THREE.OrthographicCamera>(null);
-  const activeCrystals = useStudyStore((state) => state.activeCrystals);
-  const currentSubjectId = useStudyStore((state) => state.currentSubjectId);
-  const selectedTopicId = useUIStore((state) => state.selectedTopicId);
-  const isStudyPanelOpen = useUIStore((state) => state.isStudyPanelOpen);
-  const startTopicStudySession = useStudyStore((state) => state.startTopicStudySession);
-  const openStudyPanel = useUIStore((state) => state.openStudyPanel);
-  const allTopicMetadata = useTopicMetadata(activeCrystals.map((crystal) => crystal.topicId));
+export const Scene: React.FC<SceneProps> = ({ onStartAttunement, showStats = false }) => {
+  const cameraRef = useRef<THREE.PerspectiveCamera>(null)
+  const activeCrystals = useStudyStore((state) => state.activeCrystals)
+  const currentSubjectId = useStudyStore((state) => state.currentSubjectId)
+  const selectedTopicId = useUIStore((state) => state.selectedTopicId)
+  const isStudyPanelOpen = useUIStore((state) => state.isStudyPanelOpen)
+  const startTopicStudySession = useStudyStore((state) => state.startTopicStudySession)
+  const openStudyPanel = useUIStore((state) => state.openStudyPanel)
+  const allTopicMetadata = useTopicMetadata(activeCrystals.map((crystal) => crystal.topicId))
   const activeTopicIds = useMemo(
     () => Array.from(new Set(activeCrystals.map((crystal) => crystal.topicId))),
     [activeCrystals],
-  );
+  )
   const topicCardQueries = useQueries({
     queries: activeTopicIds.map((topicId) => {
-      const subjectId = allTopicMetadata[topicId]?.subjectId || '';
+      const subjectId = allTopicMetadata[topicId]?.subjectId || ''
       return {
         queryKey: ['content', 'topic-cards', subjectId, topicId],
         queryFn: () => deckRepository.getTopicCards(subjectId, topicId),
         enabled: Boolean(subjectId),
         staleTime: Infinity,
-      };
-    }),
-  });
-  const topicCardsById = useMemo(() => {
-    const map = new Map<string, Card[]>();
-    activeTopicIds.forEach((topicId, index) => {
-      const cards = topicCardQueries[index]?.data;
-      if (cards) {
-        map.set(topicId, cards);
       }
-    });
-    return map;
-  }, [activeTopicIds, topicCardQueries]);
+    }),
+  })
+  const topicCardsById = useMemo(() => {
+    const map = new Map<string, Card[]>()
+    activeTopicIds.forEach((topicId, index) => {
+      const cards = topicCardQueries[index]?.data
+      if (cards) {
+        map.set(topicId, cards)
+      }
+    })
+    return map
+  }, [activeTopicIds, topicCardQueries])
 
   const selectedTopicMetadata: TopicMetadata | undefined = selectedTopicId
     ? allTopicMetadata[selectedTopicId]
-    : undefined;
+    : undefined
   const selectedTopicCards = useMemo(
     () => (selectedTopicId ? topicCardsById.get(selectedTopicId) ?? [] : []),
     [selectedTopicId, topicCardsById],
-  );
+  )
   const selectedTopicXp = useMemo(() => {
-    if (!selectedTopicId) return 0;
-    return activeCrystals.find((crystal) => crystal.topicId === selectedTopicId)?.xp || 0;
-  }, [activeCrystals, selectedTopicId]);
+    if (!selectedTopicId) return 0
+    return activeCrystals.find((crystal) => crystal.topicId === selectedTopicId)?.xp || 0
+  }, [activeCrystals, selectedTopicId])
 
   const startTopicStudySessionFromCards = (topicId: string, cards: Card[]) => {
     if (!cards.length) {
-      console.warn(`[Scene] No cards available for topic ${topicId}; unable to start study session.`);
-      return;
+      console.warn(`[Scene] No cards available for topic ${topicId}; unable to start study session.`)
+      return
     }
-    startTopicStudySession(topicId, cards);
-    openStudyPanel();
-  };
+    startTopicStudySession(topicId, cards)
+    openStudyPanel()
+  }
 
   const startTopicStudySessionFromSelection = (topicId: string) => {
-    const cards = topicCardsById.get(topicId) ?? [];
+    const cards = topicCardsById.get(topicId) ?? []
     if (!cards.length) {
-      console.warn(`[Scene] No cards available for topic ${topicId}; unable to start study session.`);
-      return;
+      console.warn(`[Scene] No cards available for topic ${topicId}; unable to start study session.`)
+      return
     }
     if (onStartAttunement) {
-      onStartAttunement(topicId, cards);
-      return;
+      onStartAttunement(topicId, cards)
+      return
     }
-    startTopicStudySessionFromCards(topicId, cards);
-  };
+    startTopicStudySessionFromCards(topicId, cards)
+  }
 
   // Filter crystals based on current subject selection
   // If a subject is selected, only show crystals belonging to that subject
   const filteredCrystals = useMemo(() => {
     if (!currentSubjectId) {
-      return activeCrystals;
+      return activeCrystals
     }
 
     // Get topic-subject mapping from deck
     return activeCrystals.filter((crystal) => {
-      const topicMeta = allTopicMetadata[crystal.topicId];
-      return topicMeta?.subjectId === currentSubjectId;
-    });
-  }, [activeCrystals, currentSubjectId, allTopicMetadata]);
+      const topicMeta = allTopicMetadata[crystal.topicId]
+      return topicMeta?.subjectId === currentSubjectId
+    })
+  }, [activeCrystals, currentSubjectId, allTopicMetadata])
 
   // Track selected crystal's 3D position for positioning the topic selection bar
   // Compute synchronously during render using useMemo - no more race conditions!
   const selectedCrystalPosition = useMemo(() => {
-    if (!selectedTopicId) return null;
+    if (!selectedTopicId) return null
 
-    const crystal = filteredCrystals.find((c) => c.topicId === selectedTopicId);
-    if (!crystal) return null;
+    const crystal = filteredCrystals.find((c) => c.topicId === selectedTopicId)
+    if (!crystal) return null
 
-    const [x, z] = crystal.gridPosition;
-    return [x, 0.3, z] as [number, number, number];
-  }, [selectedTopicId, filteredCrystals]);
+    const [x, z] = crystal.gridPosition
+    return [x, 0.3, z] as [number, number, number]
+  }, [selectedTopicId, filteredCrystals])
 
   // Note: Removed handleSelectedCrystalPositionChange callback
   // The position is now computed synchronously in useMemo above
-  const renderQuality = useMemo(() => getRenderQuality(), []);
+  const renderQuality = useMemo(() => getRenderQuality(), [])
 
   return (
     <div style={{ width: '100%', height: '100%', backgroundColor: '#0a0a1a' }}>
@@ -243,6 +250,7 @@ export const Scene: React.FC<SceneProps> = ({ onStartAttunement }) => {
         dpr={renderQuality.dpr}
         style={{ background: '#0a0a1a' }}
       >
+        {showStats && <Stats />}
         <SceneFrameLimiter />
         <SceneRenderInvalidator
           activeCrystals={activeCrystals}
@@ -253,16 +261,18 @@ export const Scene: React.FC<SceneProps> = ({ onStartAttunement }) => {
           selectedTopicCardsCount={selectedTopicCards.length}
         />
 
+        <Environment preset="forest" background />
+
         {/* Orthographic camera with isometric view */}
-        <OrthographicCamera
+        <PerspectiveCamera
           ref={cameraRef}
           makeDefault
           position={CAMERA_START_POSITION}
-          zoom={50}
+          fov={CAMERA_START_ZOOM}
           near={0.1}
           far={1000}
-          onUpdate={(c: THREE.OrthographicCamera) => {
-            c.lookAt(...ORBIT_TARGET);
+          onUpdate={(c: THREE.PerspectiveCamera) => {
+            c.lookAt(...ORBIT_TARGET)
           }}
         />
         <OrbitCameraControls />
@@ -289,9 +299,6 @@ export const Scene: React.FC<SceneProps> = ({ onStartAttunement }) => {
           distance={20}
           decay={2}
         />
-
-        {/* Simple background color */}
-        <color attach="background" args={['#0a0a1a']} />
 
         {/* Fog for depth */}
         <fog attach="fog" args={['#0a0a1a', 10, 50]} />
@@ -339,8 +346,8 @@ export const Scene: React.FC<SceneProps> = ({ onStartAttunement }) => {
           rotation={[-Math.PI / 2, 0, 0]}
           onClick={() => {
             // Clear selection when clicking on empty space
-            const { selectTopic } = useUIStore.getState();
-            selectTopic(null);
+            const { selectTopic } = useUIStore.getState()
+            selectTopic(null)
           }}
         >
           <planeGeometry args={[100, 100]} />
@@ -348,7 +355,7 @@ export const Scene: React.FC<SceneProps> = ({ onStartAttunement }) => {
         </mesh>
       </Canvas>
     </div>
-  );
-};
+  )
+}
 
-export default Scene;
+export default Scene

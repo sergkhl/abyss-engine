@@ -31,6 +31,7 @@
   - [P0] Simple rule-based coach (20 witty Portal-2 style lines + if-then on streaks, time-per-card, correct%)
   - [P0] Embed APA Top 20 Principles into coach rules (spaced practice, feedback, etc.)
   - [ ] In-game mentor hints & daily rest reminders
+    - [ ] Square breathing when anxiety is high
   - [ ] Mental Health Tracker (local only)
 
 - [ ] **Metrics** (all local storage)
