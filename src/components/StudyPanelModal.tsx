@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Rating } from '../types';
 import { Card } from '../types';
 import { calculateLevelFromXP, getRatingLabel, getRatingColor, normalizeSM2State } from '../features/progression';
@@ -7,6 +7,17 @@ import { useTopicCards } from '../hooks/useDeckData';
 import { evaluateAnswer, useTopicMetadata } from '../features/content';
 import MathMarkdownRenderer from './MathMarkdownRenderer';
 import { ModalWrapper } from './ui/modal-wrapper';
+import topicSystemPromptTemplate from '../prompts/topic-system.prompt';
+
+const promptInterpolationPattern = /\{\{([^{}]+)\}\}|\{([^{}]+)\}/g;
+
+function interpolatePromptTemplate(template: string, variables: Record<string, string>): string {
+  return template.replace(
+    promptInterpolationPattern,
+    (_match, doubleBracesKey?: string, singleBracesKey?: string) =>
+      variables[(doubleBracesKey || singleBracesKey || '').trim()] ?? '',
+  );
+}
 
 interface StudyPanelModalProps {
   isOpen: boolean;
@@ -150,47 +161,24 @@ export function StudyPanelModal({
         const topicName = topicMetadata[topicId]?.topicName || topicId;
         const crystal = activeCrystals.find((item) => item.topicId === topicId);
         const level = calculateLevelFromXP(crystal?.xp ?? 0);
+        if (level <= 0) {
+          return null;
+        }
+
         return {
           topicName,
           level,
         };
       })
+      .filter((entry): entry is { topicName: string; level: number } => entry !== null)
       .sort((a, b) => a.topicName.localeCompare(b.topicName));
 
     if (entries.length === 0) {
-      return '- No unlocked topics found.';
+      return 'unknown';
     }
 
     return entries.map((entry) => `- ${entry.topicName} - Level ${entry.level}`).join('\n');
   }, [activeCrystals, unlockedTopicIds, topicMetadata]);
-  const topicSystemPrompt = useMemo(() => (
-    `<system_prompt>\n`
-    + `You are an expert lecturer in ${resolvedSubject}. Explain for Domain Experts.\n`
-    + `\n`
-    + `<topic>${resolvedTopic}</topic>\n`
-    + `\n`
-    + `<constraints>\n`
-    + `Assume prior knowledge:\n${priorKnowledgeLines}\n`
-    + `Be rigorous but clear. Include equations, analogies, applications, and ASCII diagrams when useful.\n`
-    + `</constraints>\n`
-    + `\n`
-    + `<sections>\n`
-    + `1. summary_applications - concise overview + 2-4 applications\n`
-    + `2. intuition - mental models and analogies\n`
-    + `3. definition - formal definition and notation\n`
-    + `4. examples - 3-5 practical examples\n`
-    + `5. diagrams - conceptual/ASCII visualizations\n`
-    + `6. formulas_methods - key formulas, algorithms, principles\n`
-    + `</sections>\n`
-    + `\n`
-    + `<related_topics>\n`
-    + `<parents />\n`
-    + `<siblings />\n`
-    + `<children />\n`
-    + `</related_topics>\n`
-    + `</system_prompt>`
-  ), [resolvedSubject, resolvedTopic, priorKnowledgeLines]);
-
   const resolvedSubjectId = useMemo(
     () => (resolvedTopicId ? topicMetadata[resolvedTopicId]?.subjectId || null : null),
     [resolvedTopicId, topicMetadata],
@@ -215,6 +203,23 @@ export function StudyPanelModal({
     () => (activeCard ? toRenderable(activeCard) : null),
     [activeCard],
   );
+  const currentQuestion = useMemo(() => {
+    if (!activeCard) return 'unknown';
+    if (activeCard.type === 'FLASHCARD') {
+      return (activeCard.content as { front: string }).front ?? 'unknown';
+    }
+    return (activeCard.content as { question: string }).question ?? 'unknown';
+  }, [activeCard]);
+  const topicSystemPrompt = useMemo(
+    () =>
+      interpolatePromptTemplate(topicSystemPromptTemplate, {
+        subject: resolvedSubject,
+        topic: resolvedTopic,
+        priorKnowledge: priorKnowledgeLines,
+        question: currentQuestion,
+      }),
+    [resolvedSubject, resolvedTopic, priorKnowledgeLines, currentQuestion],
+  );
 
   const sm2State = useMemo(() => {
     const targetCardId = activeCard?.id || currentSession?.currentCardId || currentCardId;
@@ -232,6 +237,20 @@ export function StudyPanelModal({
   }, [currentSession?.currentCardId, currentCardId]);
 
   const hasTheory = Boolean(resolvedTopicTheory);
+
+  const systemPromptRef = useRef<HTMLPreElement>(null);
+  const handleSelectSystemPrompt = () => {
+    const promptElement = systemPromptRef.current;
+    if (!promptElement) return;
+
+    const selection = window.getSelection();
+    if (!selection) return;
+
+    const range = document.createRange();
+    range.selectNodeContents(promptElement);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  };
 
   useEffect(() => {
     if (!resolvedTopicId || (activeTab === 'theory' && !hasTheory)) {
@@ -410,8 +429,16 @@ export function StudyPanelModal({
           {activeTab === 'system_prompt' && (
             <div className="w-full">
               <div className="bg-slate-900 rounded-[15px] p-5">
-                <div className="text-emerald-400 text-xs uppercase tracking-wider mb-3">🧠 System Prompt</div>
-                <pre className="text-slate-200 leading-relaxed text-sm whitespace-pre-wrap break-words">
+                <div
+                  className="text-emerald-400 text-xs uppercase tracking-wider mb-3 cursor-pointer"
+                  onClick={handleSelectSystemPrompt}
+                >
+                  📋 System Prompt
+                </div>
+                <pre
+                  ref={systemPromptRef}
+                  className="text-slate-200 leading-relaxed text-sm whitespace-pre-wrap break-words cursor-pointer"
+                >
                   {topicSystemPrompt}
                 </pre>
               </div>
