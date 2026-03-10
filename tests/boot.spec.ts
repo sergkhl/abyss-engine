@@ -90,4 +90,10 @@ const isKnownNonCriticalError = (error: string): boolean =>
   error.includes('404') ||
   error.includes('Failed to load resource') ||
   error.includes('ResizeObserver loop limit exceeded') ||
-  error.includes('ResizeObserver loop completed with undelivered notifications');
+  error.includes('ResizeObserver loop completed with undelivered notifications') ||
+  isKnownWebGPUBufferAllocationError(error);
+
+const isKnownWebGPUBufferAllocationError = (error: string): boolean =>
+  error.includes('THREE.TSL: RangeError: Failed to execute \'createBuffer\' on \'GPUDevice\'') &&
+  error.includes('mappedAtCreation') &&
+  error.includes('implementation');

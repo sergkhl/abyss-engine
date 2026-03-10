@@ -42,7 +42,7 @@ export function StudyPanelStateViews({
   systemPromptRef,
 }: StudyPanelStateViewsProps) {
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto pr-1" data-testid="study-panel-state">
+    <div className="min-h-0 pr-1" data-testid="study-panel-state">
       {/* Level Up Banner */}
       {levelUpMessage && (
         <div className="mb-4 p-4 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl text-center animate-pulse">
@@ -117,7 +117,6 @@ export function StudyPanelStateViews({
             <pre
               ref={systemPromptRef}
               className="text-slate-200 leading-relaxed text-sm whitespace-pre-wrap break-words cursor-pointer"
-              onClick={onSystemPromptSelect}
             >
               {topicSystemPrompt}
             </pre>

@@ -140,8 +140,8 @@ export function StudyPanelModal({
   if (!isOpen) return null;
 
   return (
-    <ModalWrapper onClose={onClose} panelClassName="w-[min(95%,60rem)]">
-      <div data-testid="study-panel-modal-content">
+    <ModalWrapper onClose={onClose} panelClassName="w-[min(95%,60rem)] max-h-[95vh]">
+      <div data-testid="study-panel-modal-content" className="relative flex min-h-0 flex-col">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 bg-transparent border-none text-slate-400 text-2xl cursor-pointer leading-none p-1 hover:text-slate-200 transition-colors z-30"
@@ -157,48 +157,50 @@ export function StudyPanelModal({
           onTabChange={setActiveTab}
         />
 
-        <StudyPanelStateViews
-          levelUpMessage={levelUpMessage}
-          activeTab={activeTab}
-          hasTheory={model.hasTheory}
-          isEmptyDeck={model.isEmptyDeck}
-          isLoadingCards={model.isLoadingCards}
-          isCardsLoadError={model.isCardsLoadError}
-          hasActiveCard={model.hasActiveCard}
-          isCompleted={model.isCompleted}
-          resolvedTopicTheory={model.resolvedTopicTheory}
-          topicSystemPrompt={model.topicSystemPrompt}
-          targetAudience={targetAudience}
-          targetAudienceOptions={TARGET_AUDIENCE_OPTIONS}
-          onClose={onClose}
-          onSetTargetAudience={setTargetAudience}
-          onSystemPromptSelect={handleSelectSystemPrompt}
-          systemPromptRef={systemPromptRef}
-        />
-
-        {model.renderedCard && activeTab === 'study' && (
-          <StudyPanelStudyView
-            renderedCard={model.renderedCard}
-            isFlashcard={model.isFlashcard}
-            isSingleChoice={model.isSingleChoice}
-            isMultiChoice={model.isMultiChoice}
-            isChoiceQuestion={model.isChoiceQuestion}
-            selectedAnswers={selectedAnswers}
-            isAnswerSubmitted={isAnswerSubmitted}
-            isCorrect={isCorrect}
-            isCardFlipped={isCardFlipped}
-            feedbackMessage={feedbackMessage}
-            sm2State={model.sm2State}
-            activeCard={model.activeCard}
-            onSelectAnswer={handleAnswerSelect}
-            onChoiceSubmit={handleChoiceSubmit}
-            onChoiceContinue={handleChoiceContinue}
-            onFlip={onFlip}
-            onRate={handleRating}
-            getRatingLabel={getRatingLabel}
-            getRatingColor={getRatingColor}
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          <StudyPanelStateViews
+            levelUpMessage={levelUpMessage}
+            activeTab={activeTab}
+            hasTheory={model.hasTheory}
+            isEmptyDeck={model.isEmptyDeck}
+            isLoadingCards={model.isLoadingCards}
+            isCardsLoadError={model.isCardsLoadError}
+            hasActiveCard={model.hasActiveCard}
+            isCompleted={model.isCompleted}
+            resolvedTopicTheory={model.resolvedTopicTheory}
+            topicSystemPrompt={model.topicSystemPrompt}
+            targetAudience={targetAudience}
+            targetAudienceOptions={TARGET_AUDIENCE_OPTIONS}
+            onClose={onClose}
+            onSetTargetAudience={setTargetAudience}
+            onSystemPromptSelect={handleSelectSystemPrompt}
+            systemPromptRef={systemPromptRef}
           />
-        )}
+
+          {model.renderedCard && activeTab === 'study' && (
+            <StudyPanelStudyView
+              renderedCard={model.renderedCard}
+              isFlashcard={model.isFlashcard}
+              isSingleChoice={model.isSingleChoice}
+              isMultiChoice={model.isMultiChoice}
+              isChoiceQuestion={model.isChoiceQuestion}
+              selectedAnswers={selectedAnswers}
+              isAnswerSubmitted={isAnswerSubmitted}
+              isCorrect={isCorrect}
+              isCardFlipped={isCardFlipped}
+              feedbackMessage={feedbackMessage}
+              sm2State={model.sm2State}
+              activeCard={model.activeCard}
+              onSelectAnswer={handleAnswerSelect}
+              onChoiceSubmit={handleChoiceSubmit}
+              onChoiceContinue={handleChoiceContinue}
+              onFlip={onFlip}
+              onRate={handleRating}
+              getRatingLabel={getRatingLabel}
+              getRatingColor={getRatingColor}
+            />
+          )}
+        </div>
       </div>
     </ModalWrapper>
   );
