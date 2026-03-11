@@ -9,6 +9,7 @@ import { Grid } from './Grid'
 import { WisdomAltar } from './WisdomAltar'
 import { Crystals } from './Crystals'
 import { MeshTree } from './MeshTree'
+import { SelectedCrystalSpotlight } from './SelectedCrystalSpotlight'
 import { CrystalGlowPostProcessing } from '../graphics/glowPostProcessing'
 import { SceneDebugStats } from './debug/SceneDebugStats'
 import TopicSelectionBar from './TopicSelectionBar'
@@ -18,6 +19,7 @@ import { useTopicMetadata, type TopicMetadata } from '../features/content'
 import { Card } from '../types/core'
 import { deckRepository } from '../infrastructure/di'
 import { useSceneInvalidator } from '../hooks/useSceneInvalidator'
+import { useSelectedCrystalSpotlight } from '../hooks/useSelectedCrystalSpotlight'
 import '../graphics/nodeMaterialRegistration'
 
 /**
@@ -247,16 +249,16 @@ export const Scene: React.FC<SceneProps> = ({
   }, [activeCrystals, currentSubjectId, allTopicMetadata])
 
   // Track selected crystal's 3D position for positioning the topic selection bar
-  // Compute synchronously during render using useMemo - no more race conditions!
-  const selectedCrystalPosition = useMemo(() => {
-    if (!selectedTopicId) return null
-
-    const crystal = filteredCrystals.find((c) => c.topicId === selectedTopicId)
-    if (!crystal) return null
-
-    const [x, z] = crystal.gridPosition
-    return [x, 0.3, z] as [number, number, number]
-  }, [selectedTopicId, filteredCrystals])
+  // Computed in a dedicated hook to keep scene structure focused
+  const {
+    selectedCrystalPosition,
+    spotlightPosition,
+    spotlightTarget,
+    spotlightOpacity,
+  } = useSelectedCrystalSpotlight({
+    selectedTopicId,
+    crystals: filteredCrystals,
+  })
 
   // Note: Removed handleSelectedCrystalPositionChange callback
   // The position is now computed synchronously in useMemo above
@@ -314,6 +316,11 @@ export const Scene: React.FC<SceneProps> = ({
           intensity={0.4}
           color="#a0a0ff"
         />
+        <SelectedCrystalSpotlight
+          spotlightPosition={spotlightPosition}
+          spotlightTarget={spotlightTarget}
+          spotlightOpacity={spotlightOpacity}
+        />
 
 
         {/* Fog for depth */}
@@ -326,7 +333,7 @@ export const Scene: React.FC<SceneProps> = ({
         <WisdomAltar />
 
         {/* Recursive mesh box-tree near grid edge */}
-        {/* <MeshTree position={[3.75, 0, 0]} scale={0.06} /> */}
+        <MeshTree position={[3.75, 0, 0]} scale={0.06} />
 
         {/* Crystals from props (data from parent/store) */}
         <Suspense fallback={null}>
