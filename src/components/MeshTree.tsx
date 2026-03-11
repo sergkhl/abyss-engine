@@ -1,12 +1,13 @@
  'use client'
 
-import React, { useMemo } from 'react'
+import React, { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three/webgpu'
 import { abs, float, Fn, instancedBufferAttribute, max, normalWorldGeometry, positionGeometry, positionLocal, pow2, sin, sub, time, uv, vec2, vec3 } from 'three/tsl'
 
 interface MeshTreeProps {
   position?: [number, number, number]
   scale?: number
+  bloomExcludeLayer?: number
 }
 
 const TREE_MAX_STEPS = 5
@@ -127,8 +128,25 @@ const generateTreePayload = (): TreePayload => {
   }
 }
 
-export const MeshTree: React.FC<MeshTreeProps> = ({ position = [3.75, 0, 0], scale = 0.06 }) => {
+export const MeshTree: React.FC<MeshTreeProps> = ({
+  position = [3.75, 0, 0],
+  scale = 0.06,
+  bloomExcludeLayer = 1,
+}) => {
+  const treeRef = useRef<THREE.InstancedMesh>(null)
   const treePayload = useMemo(() => generateTreePayload(), [])
+
+  useEffect(() => {
+    if (!treeRef.current) {
+      return
+    }
+
+    treeRef.current.layers.set(bloomExcludeLayer)
+
+    return () => {
+      treeRef.current?.layers.set(0)
+    }
+  }, [bloomExcludeLayer])
 
   const treeGeometry = useMemo(() => {
     const geometry = new THREE.BoxGeometry()
@@ -211,6 +229,7 @@ export const MeshTree: React.FC<MeshTreeProps> = ({ position = [3.75, 0, 0], sca
   return (
     <group position={position} scale={scale}>
       <instancedMesh
+        ref={treeRef}
         args={[treeGeometry, treeMaterial, treePayload.instanceCount]}
         castShadow
         receiveShadow

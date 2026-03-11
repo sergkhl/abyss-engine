@@ -10,7 +10,7 @@ import { WisdomAltar } from './WisdomAltar'
 import { Crystals } from './Crystals'
 import { MeshTree } from './MeshTree'
 import { SelectedCrystalSpotlight } from './SelectedCrystalSpotlight'
-import { CrystalGlowPostProcessing } from '../graphics/glowPostProcessing'
+import { GlowPostProcessing } from '../graphics/glowPostProcessing'
 import { SceneDebugStats } from './debug/SceneDebugStats'
 import TopicSelectionBar from './TopicSelectionBar'
 import { useProgressionStore as useStudyStore } from '../features/progression'
@@ -48,6 +48,7 @@ type RenderQuality = {
 
 const TARGET_SCENE_FPS = 45
 const TARGET_FRAME_INTERVAL_MS = 1000 / TARGET_SCENE_FPS
+const BLOOM_EXCLUDE_LAYER = 1
 
 const getRenderQuality = (): RenderQuality => {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') {
@@ -333,7 +334,11 @@ export const Scene: React.FC<SceneProps> = ({
         <WisdomAltar />
 
         {/* Recursive mesh box-tree near grid edge */}
-        <MeshTree position={[3.75, 0, 0]} scale={0.06} />
+        <MeshTree
+          position={[3.75, 0, 0]}
+          scale={0.06}
+          bloomExcludeLayer={BLOOM_EXCLUDE_LAYER}
+        />
 
         {/* Crystals from props (data from parent/store) */}
         <Suspense fallback={null}>
@@ -344,7 +349,7 @@ export const Scene: React.FC<SceneProps> = ({
           />
         </Suspense>
 
-        <CrystalGlowPostProcessing />
+        <GlowPostProcessing bloomExcludeLayer={BLOOM_EXCLUDE_LAYER} />
 
         {/* Topic Selection Bar - rendered as HTML overlay following selected crystal */}
         {selectedCrystalPosition && (

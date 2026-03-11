@@ -63,8 +63,8 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
     phase: 0,
     progress: 0,
   });
-  const selectedEmissiveIntensity = isSelected ? 0.6 : 0.2;
-  const selectedEmissiveIntensityInner = isSelected ? 0.9 : 0.4;
+  const selectedEmissiveIntensity = isSelected ? 1.5 : 0.6;
+  const selectedEmissiveIntensityInner = isSelected ? 5 : 1.5;
   const crystalUniformScope = useMemo(
     () => sanitizeUniformScope(crystal.topicId),
     [crystal.topicId],
@@ -216,8 +216,6 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
         color: colors.outerColor,
         metalness: 0.4,
         roughness: 0.3,
-        emissive: colors.emissiveColor,
-        emissiveIntensity: 1,
         emissiveNode: color(colors.emissiveColor).mul(outerEmissiveIntensity),
       });
       return material;
@@ -351,7 +349,7 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
         geometry={crystalInnerGeometry}
         material={innerMaterial}
         ref={innerRef}
-        position={[0, 0.1, 0]}
+        position={[0, 0.3, 0]}
       />
 
       {level > 0 && (

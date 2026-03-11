@@ -26,7 +26,7 @@ export const useSelectedCrystalSpotlight = ({
   selectedTopicId,
   crystals,
 }: UseSelectedCrystalSpotlightParams): SelectedCrystalSpotlightData => {
-  const selectedCrystalPosition = useMemo(() => {
+  const selectedCrystalPosition = useMemo<[number, number, number] | null>(() => {
     if (!selectedTopicId) return null
 
     const crystal = crystals.find((c) => c.topicId === selectedTopicId)

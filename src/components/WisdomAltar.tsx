@@ -95,6 +95,8 @@ export const WisdomAltar: React.FC = () => {
       clearcoat: 0.5,
       clearcoatRoughness: 0.25,
       ior: 1.9,
+      emissiveIntensity: 0.3,
+      emissive: platformTint,
     });
 
     const glowRing = new THREE.MeshBasicNodeMaterial({
