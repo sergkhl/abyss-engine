@@ -1,0 +1,385 @@
+{
+  "topicId": "discrete-mathematics",
+  "cards": [
+    {
+      "id": "discrete-1-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "What formally defines a mathematical set?",
+        "back": "A well-defined, unordered collection of distinct objects or elements."
+      }
+    },
+    {
+      "id": "discrete-2-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "What is the fundamental difference between a permutation and a combination in combinatorics?",
+        "back": "In a permutation, the specific order of arrangement matters. In a combination, the order of the elements is irrelevant."
+      }
+    },
+    {
+      "id": "discrete-3-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "What constitutes a graph $G$ in discrete mathematics?",
+        "back": "An ordered pair $G = (V, E)$, where $V$ is a set of vertices (or nodes) and $E$ is a set of edges connecting pairs of vertices."
+      }
+    },
+    {
+      "id": "discrete-4-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which logical equivalence correctly represents De Morgan's Law for the negation of a conjunction?",
+        "options": [
+          "$\\neg(p \\land q) \\equiv \\neg p \\lor \\neg q$",
+          "$\\neg(p \\lor q) \\equiv \\neg p \\land \\neg q$",
+          "$\\neg(p \\land q) \\equiv \\neg p \\land \\neg q$",
+          "$p \\land (q \\lor r) \\equiv (p \\land q) \\lor (p \\land r)$"
+        ],
+        "correctAnswer": "$\\neg(p \\land q) \\equiv \\neg p \\lor \\neg q$",
+        "explanation": "De Morgan's Law mathematically dictates that the negation of an AND statement is logically equivalent to the OR of the individually negated statements."
+      }
+    },
+    {
+      "id": "discrete-5-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "In set theory, what constitutes the power set $\\mathcal{P}(S)$ of a given set $S$?",
+        "options": [
+          "The set containing only the empty set and $S$ itself",
+          "The set of all possible subsets of $S$, including the empty set and $S$",
+          "The Cartesian product of $S$ with itself",
+          "The number of elements contained strictly within $S$"
+        ],
+        "correctAnswer": "The set of all possible subsets of $S$, including the empty set and $S$",
+        "explanation": "By definition, the power set contains every possible combination of elements from $S$ as subsets. If $|S| = n$, the cardinality of the power set is $2^n$."
+      }
+    },
+    {
+      "id": "discrete-6-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "What condition must be rigorously met for a function $f: A \\to B$ to be classified as surjective (onto)?",
+        "options": [
+          "Every element in $A$ maps to a unique element in $B$",
+          "Every element in $B$ is mapped to by at least one element in $A$",
+          "The cardinality of $A$ is exactly equal to the cardinality of $B$",
+          "Every element in $A$ maps to itself"
+        ],
+        "correctAnswer": "Every element in $B$ is mapped to by at least one element in $A$",
+        "explanation": "Surjectivity ensures the image of the function fully spans the codomain. Mathematically, for every $y \\in B$, there exists at least one $x \\in A$ such that $f(x) = y$."
+      }
+    },
+    {
+      "id": "discrete-7-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following logical statements are classified as tautologies?",
+        "options": [
+          "$p \\lor \\neg p$",
+          "$p \\implies (p \\lor q)$",
+          "$p \\land \\neg p$",
+          "$(p \\implies q) \\\\iff (\\neg p \\lor q)$"
+        ],
+        "correctAnswers": [
+          "$p \\lor \\neg p$",
+          "$p \\implies (p \\lor q)$",
+          "$(p \\implies q) \\\\iff (\\neg p \\lor q)$"
+        ],
+        "explanation": "A tautology evaluates to true under all possible truth value assignments. The statement $p \\land \\neg p$ is a contradiction (always false)."
+      }
+    },
+    {
+      "id": "discrete-8-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following principles form the foundational rules of counting in combinatorics?",
+        "options": [
+          "The Rule of Sum (Addition Principle)",
+          "The Rule of Product (Multiplication Principle)",
+          "The Rule of Exponentiation",
+          "The Inclusion-Exclusion Principle"
+        ],
+        "correctAnswers": [
+          "The Rule of Sum (Addition Principle)",
+          "The Rule of Product (Multiplication Principle)",
+          "The Inclusion-Exclusion Principle"
+        ],
+        "explanation": "The Addition, Multiplication, and Inclusion-Exclusion principles are the core mechanisms for counting discrete events. 'Exponentiation' is an operation, not a standalone combinatoric counting rule."
+      }
+    },
+    {
+      "id": "discrete-9-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Select the properties that universally define an undirected bipartite graph:",
+        "options": [
+          "The vertex set can be partitioned into two disjoint sets where every edge connects a vertex from one set to the other",
+          "It contains no cycles of odd length",
+          "It is always a fully connected graph",
+          "Its chromatic number is at most 2"
+        ],
+        "correctAnswers": [
+          "The vertex set can be partitioned into two disjoint sets where every edge connects a vertex from one set to the other",
+          "It contains no cycles of odd length",
+          "Its chromatic number is at most 2"
+        ],
+        "explanation": "Bipartite graphs partition vertices into two independent sets, inherently possess no odd-length cycles, and can be 2-colored. They are not required to be connected."
+      }
+    },
+    {
+      "id": "discrete-10-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following are standard, valid operations performed on sets $A$ and $B$?",
+        "options": [
+          "Union ($A \\cup B$)",
+          "Intersection ($A \\cap B$)",
+          "Difference ($A \\setminus B$)",
+          "Symmetric Difference ($A \\oplus B$)",
+          "Cross-multiplication ($A \\times B$)"
+        ],
+        "correctAnswers": [
+          "Union ($A \\cup B$)",
+          "Intersection ($A \\cap B$)",
+          "Difference ($A \\setminus B$)",
+          "Symmetric Difference ($A \\oplus B$)"
+        ],
+        "explanation": "Union, intersection, difference, and symmetric difference are fundamental set operations. The Cartesian product exists ($A \\times B$), but 'cross-multiplication' is a misnomer in standard set theory."
+      }
+    },
+    {
+      "id": "discrete-11-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "State the generalized Pigeonhole Principle.",
+        "back": "If $N$ objects are placed into $k$ boxes, then there is at least one box containing at least $\\lceil N/k \\rceil$ objects."
+      }
+    },
+    {
+      "id": "discrete-12-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "What does it mean for a binary relation $R$ on a set $A$ to be classified as an Equivalence Relation?",
+        "back": "The relation $R$ must strictly satisfy three properties simultaneously: it must be reflexive, symmetric, and transitive."
+      }
+    },
+    {
+      "id": "discrete-13-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "In mathematical induction, what is the precise purpose of the 'inductive step'?",
+        "back": "It demonstrates that if the property holds true for an arbitrary case $k$ (the inductive hypothesis), it logically guarantees the property holds for the subsequent case, $k+1$."
+      }
+    },
+    {
+      "id": "discrete-14-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "For a connected planar graph containing $V$ vertices, $E$ edges, and $F$ faces (regions), which equation correctly formulates Euler's characteristic?",
+        "options": [
+          "$V - E + F = 2$",
+          "$V + E - F = 2$",
+          "$E - V + F = 2$",
+          "$V - E - F = 2$"
+        ],
+        "correctAnswer": "$V - E + F = 2$",
+        "explanation": "Euler's formula proves that for any connected planar graph drawn without edge intersections, the geometric relation $V - E + F = 2$ remains an invariant constant."
+      }
+    },
+    {
+      "id": "discrete-15-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "In formal propositional logic, the deductive rule of inference known as 'Modus Tollens' is structured as:",
+        "options": [
+          "If $p \\implies q$ and $\\neg q$, then $\\neg p$",
+          "If $p \\implies q$ and $p$, then $q$",
+          "If $p \\implies q$ and $q \\implies r$, then $p \\implies r$",
+          "If $p \\lor q$ and $\\neg p$, then $q$"
+        ],
+        "correctAnswer": "If $p \\implies q$ and $\\neg q$, then $\\neg p$",
+        "explanation": "Modus Tollens functions by denying the consequent. If a conditional statement is accepted as true and the consequent is proven false, the antecedent must necessarily be false."
+      }
+    },
+    {
+      "id": "discrete-16-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "What is the precise chromatic number of a complete graph containing $n$ vertices, denoted as $K_n$?",
+        "options": [
+          "$2$",
+          "$n-1$",
+          "$n$",
+          "$n^2$"
+        ],
+        "correctAnswer": "$n$",
+        "explanation": "In a complete graph $K_n$, every single vertex shares an edge with every other vertex. Consequently, no two vertices can share a color without violating the coloring rule, requiring exactly $n$ colors."
+      }
+    },
+    {
+      "id": "discrete-17-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Which combination of relational properties formally defines a Partially Ordered Set (Poset)?",
+        "options": [
+          "A relation that is reflexive, symmetric, and transitive",
+          "A relation that is reflexive, antisymmetric, and transitive",
+          "A relation that is irreflexive, symmetric, and transitive",
+          "A relation that is merely transitive and symmetric"
+        ],
+        "correctAnswer": "A relation that is reflexive, antisymmetric, and transitive",
+        "explanation": "A poset formalizes the mathematical concept of ordering. Elements must be comparable to themselves (reflexive), maintain directional order without bidirectional equality (antisymmetric), and chain together (transitive)."
+      }
+    },
+    {
+      "id": "discrete-18-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Which of the following are necessary and mathematically sufficient properties of a Tree within graph theory?",
+        "options": [
+          "It is a fully connected graph",
+          "It contains exactly $V-1$ edges, where $V$ is the total number of vertices",
+          "It contains absolutely no simple cycles",
+          "It must be a bipartite graph constructed with equal-sized partitions"
+        ],
+        "correctAnswers": [
+          "It is a fully connected graph",
+          "It contains exactly $V-1$ edges, where $V$ is the total number of vertices",
+          "It contains absolutely no simple cycles"
+        ],
+        "explanation": "A tree is an undirected graph defined as both connected and acyclic. A direct mathematical consequence of these two constraints is that a tree inherently possesses exactly $V-1$ edges."
+      }
+    },
+    {
+      "id": "discrete-19-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Which statements accurately describe the functionality of the Inclusion-Exclusion Principle?",
+        "options": [
+          "It calculates the exact cardinality of the union of multiple intersecting sets",
+          "It systematically subtracts the sizes of pairwise intersections to correct for initial overcounting",
+          "It adds back the sizes of three-way intersections to correct for subsequent over-subtraction",
+          "It relies entirely on the condition that all constituent sets are mutually exclusive (disjoint)"
+        ],
+        "correctAnswers": [
+          "It calculates the exact cardinality of the union of multiple intersecting sets",
+          "It systematically subtracts the sizes of pairwise intersections to correct for initial overcounting",
+          "It adds back the sizes of three-way intersections to correct for subsequent over-subtraction"
+        ],
+        "explanation": "The principle derives the size of unions by alternating additions and subtractions of intersection sizes. It is explicitly designed to handle sets that are *not* disjoint."
+      }
+    },
+    {
+      "id": "discrete-20-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Which of the following mathematically outline a valid bijection (bijective function)?",
+        "options": [
+          "The function is proven to be both injective (one-to-one) and surjective (onto)",
+          "Every element in the codomain has exactly one pre-image located in the domain",
+          "The domain and codomain sets must possess the exact same cardinality",
+          "The function maps multiple domain elements to a single codomain element to ensure absolute coverage"
+        ],
+        "correctAnswers": [
+          "The function is proven to be both injective (one-to-one) and surjective (onto)",
+          "Every element in the codomain has exactly one pre-image located in the domain",
+          "The domain and codomain sets must possess the exact same cardinality"
+        ],
+        "explanation": "A bijection forms a perfect one-to-one correspondence between sets, meaning they must be equal in size (cardinality). Mapping multiple domain elements to one codomain element strictly violates injectivity."
+      }
+    },
+    {
+      "id": "discrete-21-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 3,
+      "content": {
+        "front": "In advanced combinatorics, what is the primary function of a Generating Function?",
+        "back": "It encodes an infinite sequence of numbers as the coefficients of a formal power series, translating discrete sequence operations into continuous, manipulable algebraic functions."
+      }
+    },
+    {
+      "id": "discrete-22-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 3,
+      "content": {
+        "front": "Under what exact structural condition does an Eulerian Circuit exist within a connected undirected graph?",
+        "back": "An Eulerian Circuit exists if and only if every single vertex within the connected graph has an even degree."
+      }
+    },
+    {
+      "id": "discrete-23-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "Consider a linear homogeneous recurrence relation of degree 2: $a_n = c_1 a_{n-1} + c_2 a_{n-2}$. If its characteristic equation $r^2 - c_1 r - c_2 = 0$ yields a single repeated root $r_0$, what is the closed-form general solution?",
+        "options": [
+          "$a_n = A(r_0)^n + B(r_0)^n$",
+          "$a_n = A(r_0)^n + B n(r_0)^n$",
+          "$a_n = A(r_0)^n + B(r_0)^{n-1}$",
+          "$a_n = (A + B)^n (r_0)^n$"
+        ],
+        "correctAnswer": "$a_n = A(r_0)^n + B n(r_0)^n$",
+        "explanation": "When a characteristic equation produces a root $r_0$ with a multiplicity of 2, the linearly independent basis solutions are $r_0^n$ and $n r_0^n$. The general solution forms a linear combination of these bases."
+      }
+    },
+    {
+      "id": "discrete-24-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "Which of the following computational challenges are classified as NP-Complete problems in complexity theory (assuming P $\\neq$ NP)?",
+        "options": [
+          "Determining if an arbitrary graph contains a Hamiltonian Cycle",
+          "Finding the Shortest Path between two vertices in a weighted graph using Dijkstra's algorithm",
+          "The Boolean Satisfiability Problem (SAT)",
+          "Determining if an arbitrary graph is structurally planar"
+        ],
+        "correctAnswers": [
+          "Determining if an arbitrary graph contains a Hamiltonian Cycle",
+          "The Boolean Satisfiability Problem (SAT)"
+        ],
+        "explanation": "Hamiltonian Cycle and SAT are foundational NP-Complete problems. Conversely, Shortest Path and Planarity testing possess highly efficient algorithms that solve them in polynomial time (P)."
+      }
+    },
+    {
+      "id": "discrete-25-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "According to Kuratowski's Theorem, a finite graph is considered planar if and only if it strictly avoids containing a subgraph that is a subdivision of which fundamental graphs?",
+        "options": [
+          "$K_5$ (the complete graph on 5 vertices)",
+          "$K_{3,3}$ (the complete bipartite graph on 6 vertices)",
+          "$K_4$ (the complete graph on 4 vertices)",
+          "$C_5$ (the cycle graph on 5 vertices)"
+        ],
+        "correctAnswers": [
+          "$K_5$ (the complete graph on 5 vertices)",
+          "$K_{3,3}$ (the complete bipartite graph on 6 vertices)"
+        ],
+        "explanation": "Kuratowski's Theorem provides the definitive mathematical boundary for planarity, proving that the geometric interference inherent in subdivisions of $K_5$ and $K_{3,3}$ makes planar embedding impossible."
+      }
+    }
+  ]
+}

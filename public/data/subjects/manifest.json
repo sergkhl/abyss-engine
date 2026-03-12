@@ -5,7 +5,7 @@
       "name": "Data Science",
       "description": "Master data science fundamentals from SQL to machine learning",
       "themeId": "data-science-math",
-      "color": "#4F46E5",
+      "color": "#0B6623",
       "geometry": {
         "gridTile": "box",
         "crystal": "cylinder",

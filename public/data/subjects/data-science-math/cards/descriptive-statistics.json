@@ -1,0 +1,386 @@
+{
+  "topicId": "descriptive-statistics",
+  "cards": [
+    {
+      "id": "descstat-1-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "What is the primary difference between descriptive statistics and inferential statistics?",
+        "back": "Descriptive statistics summarize and organize the characteristics of a given dataset, whereas inferential statistics use a sample to make generalizations or predictions about a larger population."
+      }
+    },
+    {
+      "id": "descstat-2-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "Which measure of central tendency is most heavily influenced by the presence of extreme outliers in a dataset?",
+        "back": "The arithmetic mean, because its calculation weights every value equally, pulling the average toward extreme values."
+      }
+    },
+    {
+      "id": "descstat-3-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "Define the mathematical relationship between variance and standard deviation.",
+        "back": "The standard deviation is the square root of the variance, returning the measure of dispersion to the original units of the data."
+      }
+    },
+    {
+      "id": "descstat-4-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "When calculating the sample variance from a dataset, why is the denominator $n-1$ rather than $n$?",
+        "options": [
+          "To account for the assumption that the population data is normally distributed.",
+          "To apply Bessel's correction, providing an unbiased estimator of the population variance.",
+          "To artificially inflate the standard deviation, ensuring all extreme outliers are captured within one unit.",
+          "To mathematically normalize the scale of the variance between $0$ and $1$."
+        ],
+        "correctAnswer": "To apply Bessel's correction, providing an unbiased estimator of the population variance.",
+        "explanation": "Using $n$ systematically underestimates the population variance because the sample mean is strictly optimized to minimize the squared deviations within the sample. Dividing by $n-1$ (degrees of freedom) corrects this negative bias."
+      }
+    },
+    {
+      "id": "descstat-5-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following metrics defines the Interquartile Range (IQR)?",
+        "options": [
+          "The absolute difference between the minimum and maximum values in a dataset.",
+          "The distance between the mean and the first standard deviation.",
+          "The difference between the 75th percentile and the 25th percentile.",
+          "The ratio of the median to the standard deviation."
+        ],
+        "correctAnswer": "The difference between the 75th percentile and the 25th percentile.",
+        "explanation": "The IQR measures the spread of the middle $50\\%$ of the data values, calculated precisely as $Q_3 - Q_1$, making it highly robust to outliers."
+      }
+    },
+    {
+      "id": "descstat-6-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "What does a negative covariance between two variables, $X$ and $Y$, mathematically indicate?",
+        "options": [
+          "As $X$ increases, $Y$ tends to decrease.",
+          "As $X$ increases, $Y$ tends to increase.",
+          "There is no linear relationship between $X$ and $Y$.",
+          "The variance of $X$ is greater than the variance of $Y$."
+        ],
+        "correctAnswer": "As $X$ increases, $Y$ tends to decrease.",
+        "explanation": "Covariance measures the joint variability of two random variables. A negative covariance implies an inverse relationship, where higher values of one variable correspond to lower values of the other."
+      }
+    },
+    {
+      "id": "descstat-7-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following are formal measures of central tendency?",
+        "options": [
+          "Median",
+          "Variance",
+          "Mode",
+          "Standard Deviation",
+          "Arithmetic Mean"
+        ],
+        "correctAnswers": [
+          "Median",
+          "Mode",
+          "Arithmetic Mean"
+        ],
+        "explanation": "Central tendency metrics identify the center or typical value of a distribution. Variance and Standard Deviation are measures of dispersion, not central tendency."
+      }
+    },
+    {
+      "id": "descstat-8-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following properties are characteristics of the standard normal distribution?",
+        "options": [
+          "The mean is exactly $0$.",
+          "The standard deviation is exactly $1$.",
+          "The distribution is perfectly uniform across all quartiles.",
+          "The skewness is strictly greater than $1$.",
+          "It is perfectly symmetric."
+        ],
+        "correctAnswers": [
+          "The mean is exactly $0$.",
+          "The standard deviation is exactly $1$.",
+          "It is perfectly symmetric."
+        ],
+        "explanation": "The standard normal distribution is defined by a mean of $0$ and a standard deviation of $1$. As a normal distribution, it is inherently symmetric (skewness is $0$)."
+      }
+    },
+    {
+      "id": "descstat-9-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Select the measures of dispersion used to quantify the spread of a dataset.",
+        "options": [
+          "Range",
+          "Median",
+          "Variance",
+          "Mode",
+          "Interquartile Range"
+        ],
+        "correctAnswers": [
+          "Range",
+          "Variance",
+          "Interquartile Range"
+        ],
+        "explanation": "Measures of dispersion indicate how scattered the data points are. Median and Mode denote central location, not spread."
+      }
+    },
+    {
+      "id": "descstat-10-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "According to the Empirical Rule (68-95-99.7 rule) for a normal distribution, which statements are accurate?",
+        "options": [
+          "Approximately $68\\%$ of data falls within one standard deviation of the mean.",
+          "Approximately $95\\%$ of data falls within two standard deviations of the mean.",
+          "Exactly $100\\%$ of data falls within three standard deviations of the mean.",
+          "The rule applies equally accurately to heavily skewed distributions."
+        ],
+        "correctAnswers": [
+          "Approximately $68\\%$ of data falls within one standard deviation of the mean.",
+          "Approximately $95\\%$ of data falls within two standard deviations of the mean."
+        ],
+        "explanation": "The empirical rule applies specifically to normal (or near-normal) distributions. $99.7\\%$ of data falls within three standard deviations, not $100\\%$. It fails on heavily skewed data."
+      }
+    },
+    {
+      "id": "descstat-11-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "In a highly right-skewed (positively skewed) unimodal distribution, what is the typical mathematical ordering of the mean, median, and mode?",
+        "back": "Mode < Median < Mean. The long tail on the right pulls the mean further to the right than the median."
+      }
+    },
+    {
+      "id": "descstat-12-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "What specifically does a kurtosis value greater than 3 (positive excess kurtosis or leptokurtic) indicate about a dataset compared to a normal distribution?",
+        "back": "It indicates a distribution with heavier (fatter) tails and a sharper peak, meaning there is a higher probability of extreme outlier events."
+      }
+    },
+    {
+      "id": "descstat-13-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "Mathematically, how is the Pearson correlation coefficient $\\rho_{X,Y}$ derived from the covariance of $X$ and $Y$?",
+        "back": "$\\rho_{X,Y} = \\frac{\\text{Cov}(X,Y)}{\\sigma_X \\sigma_Y}$, meaning correlation is covariance normalized by the product of the standard deviations."
+      }
+    },
+    {
+      "id": "descstat-14-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "If every value in a dataset is multiplied by a constant $c$, what is the effect on the variance of the new dataset?",
+        "options": [
+          "The variance is multiplied by $c$.",
+          "The variance is multiplied by $c^2$.",
+          "The variance remains unchanged.",
+          "The variance is increased by $c$."
+        ],
+        "correctAnswer": "The variance is multiplied by $c^2$.",
+        "explanation": "Variance measures squared deviations. If $Y = cX$, then $\\text{Var}(Y) = \\text{Var}(cX) = c^2 \\text{Var}(X)$."
+      }
+    },
+    {
+      "id": "descstat-15-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "What is the primary utility of the Coefficient of Variation ($CV = \\frac{\\sigma}{\\mu}$)?",
+        "options": [
+          "It determines the precise linearity between two distinct variables.",
+          "It normalizes dispersion to enable comparison of volatility across datasets with fundamentally different scales or units.",
+          "It serves as a completely robust estimator against infinite variance in Cauchy distributions.",
+          "It directly measures the skewness and kurtosis of a multi-modal distribution simultaneously."
+        ],
+        "correctAnswer": "It normalizes dispersion to enable comparison of volatility across datasets with fundamentally different scales or units.",
+        "explanation": "By dividing the standard deviation by the mean, the $CV$ provides a unitless measure of relative dispersion, ideal for comparing variation in datasets measured in different units (e.g., dollars vs. kilograms)."
+      }
+    },
+    {
+      "id": "descstat-16-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "In a standard box-and-whisker plot, how is the upper bound for identifying statistical outliers conventionally defined?",
+        "options": [
+          "Mean $+ 3 \\times$ Standard Deviation",
+          "Median $+ 2 \\times$ Standard Deviation",
+          "$Q_3 + 1.5 \\times \\text{IQR}$",
+          "Maximum value $- 1.5 \\times \\text{IQR}$"
+        ],
+        "correctAnswer": "$Q_3 + 1.5 \\times \\text{IQR}$",
+        "explanation": "The standard Tukey boxplot identifies outliers as values that fall below $Q_1 - 1.5 \\times \\text{IQR}$ or above $Q_3 + 1.5 \\times \\text{IQR}$."
+      }
+    },
+    {
+      "id": "descstat-17-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "You calculate a Pearson correlation of $0.02$ between two continuous variables. What is the most accurate statistical interpretation?",
+        "options": [
+          "The variables are entirely independent of one another.",
+          "There is virtually no linear relationship, though a strong non-linear relationship may still exist.",
+          "The variables share a highly significant, positive monotonic relationship.",
+          "The slope of the regression line between the variables is perfectly flat."
+        ],
+        "correctAnswer": "There is virtually no linear relationship, though a strong non-linear relationship may still exist.",
+        "explanation": "Pearson correlation specifically measures linear dependence. A value near zero means no linear relationship, but it cannot rule out structured non-linear associations (e.g., a perfect quadratic arc)."
+      }
+    },
+    {
+      "id": "descstat-18-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Which of the following statistics are considered 'robust' to the presence of significant outliers?",
+        "options": [
+          "Arithmetic Mean",
+          "Median",
+          "Standard Deviation",
+          "Interquartile Range",
+          "Pearson Correlation"
+        ],
+        "correctAnswers": [
+          "Median",
+          "Interquartile Range"
+        ],
+        "explanation": "Robust statistics are not overly influenced by extreme values. The median and IQR depend on the rank ordering of central data, whereas mean, variance, and Pearson correlation depend on the magnitude of all data points."
+      }
+    },
+    {
+      "id": "descstat-19-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Anscombe's Quartet demonstrates four datasets with nearly identical simple descriptive statistics. What are the key lessons data scientists must draw from this?",
+        "options": [
+          "Summary statistics (mean, variance, correlation) are insufficient to fully describe dataset structure.",
+          "Data visualization is an essential prerequisite step before fitting linear regression models.",
+          "Non-linear models always provide a better fit than ordinary least squares.",
+          "High correlation inherently proves a strong, uniform linear relationship devoid of outliers."
+        ],
+        "correctAnswers": [
+          "Summary statistics (mean, variance, correlation) are insufficient to fully describe dataset structure.",
+          "Data visualization is an essential prerequisite step before fitting linear regression models."
+        ],
+        "explanation": "Anscombe's quartet proves that datasets with identical summary statistics can have wildly different distributions and geometries, highlighting the necessity of visual exploratory data analysis."
+      }
+    },
+    {
+      "id": "descstat-20-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Which of the following are strict mathematical properties of the Pearson correlation coefficient ($r$)?",
+        "options": [
+          "It is bounded tightly between $-1$ and $1$.",
+          "It implies causal directionality if $|r| > 0.8$.",
+          "It is invariant to changes in scale (multiplying variables by a constant).",
+          "It is invariant to changes in location (adding a constant to variables)."
+        ],
+        "correctAnswers": [
+          "It is bounded tightly between $-1$ and $1$.",
+          "It is invariant to changes in scale (multiplying variables by a constant).",
+          "It is invariant to changes in location (adding a constant to variables)."
+        ],
+        "explanation": "Correlation ranges from $[-1, 1]$. By definition, normalizing covariance by standard deviations makes it invariant to linear transformations (scale and location). Correlation never implies causation, regardless of magnitude."
+      }
+    },
+    {
+      "id": "descstat-21-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 3,
+      "content": {
+        "front": "What is the formal mathematical definition of a probability distribution's skewness using the method of moments?",
+        "back": "Skewness is the third standardized moment: $\\mathbb{E}\\left[\\left(\\frac{X - \\mu}{\\sigma}\\right)^3\\right]$."
+      }
+    },
+    {
+      "id": "descstat-22-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 3,
+      "content": {
+        "front": "Why does the arithmetic mean mathematically minimize the sum of squared deviations for any dataset?",
+        "back": "Because setting the derivative of the sum of squared errors $\\sum (x_i - c)^2$ with respect to $c$ to zero algebraically solves strictly to $c = \\frac{1}{n}\\sum x_i$, which is the arithmetic mean."
+      }
+    },
+    {
+      "id": "descstat-23-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "For any dataset consisting entirely of strictly positive real numbers that are not all identical, what is the mathematical inequality binding the Arithmetic Mean (AM), Geometric Mean (GM), and Harmonic Mean (HM)?",
+        "options": [
+          "HM < GM < AM",
+          "AM < GM < HM",
+          "GM < HM < AM",
+          "HM < AM < GM"
+        ],
+        "correctAnswer": "HM < GM < AM",
+        "explanation": "This is a fundamental theorem in analysis known as the AM-GM-HM inequality. The equality holds true only if all numbers in the set are identical. Otherwise, the harmonic mean is heavily weighted by small values, pulling it the lowest."
+      }
+    },
+    {
+      "id": "descstat-24-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "A dataset is drawn from a Cauchy distribution. Which of the following statements about its descriptive statistics are mathematically accurate?",
+        "options": [
+          "The empirical sample mean will converge to the true population mean as sample size goes to infinity.",
+          "The theoretical population variance is mathematically undefined or infinite.",
+          "The Law of Large Numbers fails to apply to the sample mean.",
+          "The median remains a stable and well-defined measure of central tendency for the sample."
+        ],
+        "correctAnswers": [
+          "The theoretical population variance is mathematically undefined or infinite.",
+          "The Law of Large Numbers fails to apply to the sample mean.",
+          "The median remains a stable and well-defined measure of central tendency for the sample."
+        ],
+        "explanation": "The Cauchy distribution has heavy tails causing undefined moments. The population mean and variance do not exist. Therefore, the sample mean does not converge (LLN fails), but rank-based metrics like the median remain perfectly stable."
+      }
+    },
+    {
+      "id": "descstat-25-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "Which of the following are strict algebraic properties of a sample covariance matrix $\\Sigma$ constructed from continuous, linearly independent features?",
+        "options": [
+          "The main diagonal contains the variances of the individual features.",
+          "The matrix is inherently asymmetric.",
+          "The matrix is symmetric.",
+          "The matrix is positive semi-definite (all eigenvalues are non-negative)."
+        ],
+        "correctAnswers": [
+          "The main diagonal contains the variances of the individual features.",
+          "The matrix is symmetric.",
+          "The matrix is positive semi-definite (all eigenvalues are non-negative)."
+        ],
+        "explanation": "Covariance matrices are symmetric ($\\text{Cov}(X,Y) = \\text{Cov}(Y,X)$). The diagonal represents $\\text{Cov}(X,X)$, which is variance. They are mathematically proven to be positive semi-definite, ensuring variance cannot be negative in any linear projection."
+      }
+    }
+  ]
+}

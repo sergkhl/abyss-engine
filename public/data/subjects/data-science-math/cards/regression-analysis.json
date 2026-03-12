@@ -1,0 +1,385 @@
+{
+  "topicId": "regression-analysis",
+  "cards": [
+    {
+      "id": "reg-1-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "What is the primary objective of Ordinary Least Squares (OLS) linear regression?",
+        "back": "To find the optimal hyperplane (defined by weights) that mathematically minimizes the Residual Sum of Squares (RSS) between the predicted and actual values."
+      }
+    },
+    {
+      "id": "reg-2-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "What does the $R^2$ (coefficient of determination) metric represent in regression analysis?",
+        "back": "It represents the proportion of the total variance in the dependent variable that is mathematically predictable from the independent variables in the model."
+      }
+    },
+    {
+      "id": "reg-3-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "Despite its name, what kind of machine learning task is Logistic Regression specifically designed for?",
+        "back": "It is designed for binary classification tasks, mathematically outputting the predicted probability of an instance belonging to the positive class."
+      }
+    },
+    {
+      "id": "reg-4-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following is the correct closed-form analytical solution for computing the optimal weights $\\hat{\\beta}$ in Ordinary Least Squares (OLS) regression?",
+        "options": [
+          "$\\hat{\\beta} = (X^T X)^{-1} X^T \\mathbf{y}$",
+          "$\\hat{\\beta} = X^T (X X^T)^{-1} \\mathbf{y}$",
+          "$\\hat{\\beta} = (X X^T)^{-1} X^T \\mathbf{y}$",
+          "$\\hat{\\beta} = (X^T X) X^T \\mathbf{y}$"
+        ],
+        "correctAnswer": "$\\hat{\\beta} = (X^T X)^{-1} X^T \\mathbf{y}$",
+        "explanation": "The OLS estimator computes the inverse of the covariance matrix $(X^T X)$, multiplied by the projection of $X$ onto the target vector $\\mathbf{y}$, yielding the exact optimal parameters."
+      }
+    },
+    {
+      "id": "reg-5-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "In a simple linear regression model $y = \\beta_0 + \\beta_1 x + \\epsilon$, what does the coefficient $\\beta_1$ mathematically represent?",
+        "options": [
+          "The expected change in $y$ for a one-unit increase in $x$",
+          "The expected value of $y$ when $x$ is exactly zero",
+          "The total variance of the model's predictions across the dataset",
+          "The absolute probability that $y$ will increase given a positive $x$"
+        ],
+        "correctAnswer": "The expected change in $y$ for a one-unit increase in $x$",
+        "explanation": "$\\beta_1$ acts as the slope of the linear regression line, strictly quantifying the marginal effect of the independent variable $x$ on the dependent variable $y$."
+      }
+    },
+    {
+      "id": "reg-6-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "What is the primary mathematical function utilized in standard Logistic Regression to map any real-valued linear combination into a valid probability between $0$ and $1$?",
+        "options": [
+          "The Sigmoid (Logistic) function",
+          "The Rectified Linear Unit (ReLU) function",
+          "The Hyperbolic Tangent (Tanh) function",
+          "The Softplus function"
+        ],
+        "correctAnswer": "The Sigmoid (Logistic) function",
+        "explanation": "The sigmoid function, defined as $\\sigma(z) = \\frac{1}{1 + e^{-z}}$, smoothly squashes any continuous real number into the bounded range $(0, 1)$."
+      }
+    },
+    {
+      "id": "reg-7-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following are fundamental mathematical assumptions required for an Ordinary Least Squares (OLS) linear regression model to yield reliable, unbiased estimates?",
+        "options": [
+          "Linearity of the underlying relationship between variables",
+          "Homoscedasticity (constant variance of the error terms)",
+          "Independence of the error terms across all observations",
+          "The independent variables must all be strictly categorical",
+          "The target variable must be binomially distributed"
+        ],
+        "correctAnswers": [
+          "Linearity of the underlying relationship between variables",
+          "Homoscedasticity (constant variance of the error terms)",
+          "Independence of the error terms across all observations"
+        ],
+        "explanation": "The Gauss-Markov theorem relies on linearity, homoscedasticity, and independent errors. OLS requires a continuous (not binomial) target and easily handles continuous features."
+      }
+    },
+    {
+      "id": "reg-8-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following mathematical metrics are commonly utilized to evaluate the predictive performance of a continuous linear regression model?",
+        "options": [
+          "Mean Squared Error (MSE)",
+          "Mean Absolute Error (MAE)",
+          "Root Mean Squared Error (RMSE)",
+          "F1-Score",
+          "Area Under the ROC Curve (AUC)"
+        ],
+        "correctAnswers": [
+          "Mean Squared Error (MSE)",
+          "Mean Absolute Error (MAE)",
+          "Root Mean Squared Error (RMSE)"
+        ],
+        "explanation": "MSE, MAE, and RMSE rigorously quantify the magnitude of continuous residuals. F1-Score and AUC are strict classification metrics, completely inapplicable to continuous regression evaluation."
+      }
+    },
+    {
+      "id": "reg-9-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following algorithms are strictly categorized under the umbrella of regression analysis for modeling relationships between variables?",
+        "options": [
+          "Polynomial Regression",
+          "Ridge Regression",
+          "Logistic Regression",
+          "Support Vector Classification (SVC)",
+          "K-Means Clustering"
+        ],
+        "correctAnswers": [
+          "Polynomial Regression",
+          "Ridge Regression",
+          "Logistic Regression"
+        ],
+        "explanation": "Polynomial, Ridge, and Logistic algorithms fit mathematical regression models. SVC and K-Means belong to classification and unsupervised clustering paradigms, respectively."
+      }
+    },
+    {
+      "id": "reg-10-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "What are the typical mathematical signs indicating that a linear regression model is severely overfitting the training data?",
+        "options": [
+          "Extremely high magnitude variance in the estimated parameter weights",
+          "The model yields low error on training data but extremely high error on unseen validation data",
+          "The $R^2$ value on the training set approaches $1.0$ while the validation $R^2$ becomes negative",
+          "The training error is high and the validation error is equally high, showing no learning"
+        ],
+        "correctAnswers": [
+          "Extremely high magnitude variance in the estimated parameter weights",
+          "The model yields low error on training data but extremely high error on unseen validation data",
+          "The $R^2$ value on the training set approaches $1.0$ while the validation $R^2$ becomes negative"
+        ],
+        "explanation": "Overfitting implies memorization of noise, leading to highly inflated weight coefficients and a catastrophic divergence between training performance and out-of-sample test performance."
+      }
+    },
+    {
+      "id": "reg-11-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "What is the mathematical phenomenon known as 'multicollinearity' in multiple regression analysis?",
+        "back": "A state where two or more predictor variables are highly linearly correlated, making the estimated parameter coefficients computationally unstable and severely inflating standard errors."
+      }
+    },
+    {
+      "id": "reg-12-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "In mathematical regularization, how does the penalty term of Lasso ($L_1$) fundamentally differ from Ridge ($L_2$) regarding feature weights?",
+        "back": "Lasso applies an absolute value penalty that can shrink coefficients exactly to zero (performing feature selection). Ridge applies a squared penalty, shrinking coefficients asymptotically toward zero but rarely reaching exact zero."
+      }
+    },
+    {
+      "id": "reg-13-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "What defines the condition of 'heteroscedasticity' regarding the residuals of a linear regression model?",
+        "back": "Heteroscedasticity occurs when the statistical variance of the error terms is not constant across all levels of the independent variables, systematically violating a core OLS assumption."
+      }
+    },
+    {
+      "id": "reg-14-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "In the formulation of logistic regression, what does the mathematical expression $\\ln(\\frac{p}{1-p})$ represent?",
+        "options": [
+          "The log-odds (logit) function",
+          "The binary cross-entropy loss gradient",
+          "The standard Maximum Likelihood Estimator (MLE) penalty",
+          "The cumulative distribution function of the model residuals"
+        ],
+        "correctAnswer": "The log-odds (logit) function",
+        "explanation": "Logistic regression inherently models the log-odds (the natural logarithm of the odds ratio) of the positive class as a strict linear combination of the input features."
+      }
+    },
+    {
+      "id": "reg-15-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Why is Adjusted $R^2$ mathematically preferred over standard $R^2$ when evaluating and comparing multiple linear regression models?",
+        "options": [
+          "Adjusted $R^2$ introduces a mathematical penalty for adding non-informative predictor variables to the model",
+          "Adjusted $R^2$ can measure non-linear polynomial relationships whereas standard $R^2$ cannot",
+          "Adjusted $R^2$ automatically normalizes the input features before computing the total variance",
+          "Adjusted $R^2$ is strictly bounded between $0$ and $1$ while standard $R^2$ can approach infinity"
+        ],
+        "correctAnswer": "Adjusted $R^2$ introduces a mathematical penalty for adding non-informative predictor variables to the model",
+        "explanation": "Standard $R^2$ artificially inflates as more variables are added. Adjusted $R^2$ corrects for degrees of freedom, penalizing the model for incorporating statistically useless predictors."
+      }
+    },
+    {
+      "id": "reg-16-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "What does the Gauss-Markov Theorem rigorously state regarding the Ordinary Least Squares (OLS) estimator $\\hat{\\beta}$?",
+        "options": [
+          "Under the classical linear model assumptions, OLS provides the Best Linear Unbiased Estimator (BLUE)",
+          "OLS mathematically guarantees finding the absolute global minimum of any non-convex loss surface",
+          "The model residuals of the OLS estimator will always converge to a strict standard normal distribution",
+          "OLS parameter coefficients are mathematically immune to the presence of high-leverage data outliers"
+        ],
+        "correctAnswer": "Under the classical linear model assumptions, OLS provides the Best Linear Unbiased Estimator (BLUE)",
+        "explanation": "The theorem mathematically proves that among all unbiased estimators that are linear functions of the data, the OLS estimator unconditionally possesses the lowest possible variance."
+      }
+    },
+    {
+      "id": "reg-17-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "How does Ridge Regression algebraically resolve the failure of matrix inversion $(X^T X)^{-1}$ caused by perfect multicollinearity?",
+        "options": [
+          "By adding a scaled identity matrix penalty, making the matrix strictly positive definite: $(X^T X + \\lambda I)^{-1}$",
+          "By utilizing the Moore-Penrose pseudo-inverse to bypass standard analytical matrix inversion",
+          "By iteratively dropping feature columns until the matrix rank equals the number of remaining columns",
+          "By projecting the data into a higher-dimensional orthogonal polynomial kernel space"
+        ],
+        "correctAnswer": "By adding a scaled identity matrix penalty, making the matrix strictly positive definite: $(X^T X + \\lambda I)^{-1}$",
+        "explanation": "The addition of $\\lambda I$ forces all eigenvalues of the resulting matrix to be strictly positive, mathematically guaranteeing invertibility and providing a stable, unique solution."
+      }
+    },
+    {
+      "id": "reg-18-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Which of the following methods are mathematically sound approaches for rectifying severe multicollinearity in a regression dataset?",
+        "options": [
+          "Removing one or more of the highly correlated independent variables",
+          "Applying Principal Component Analysis (PCA) to orthogonalize the feature space",
+          "Utilizing Ridge ($L_2$) or Lasso ($L_1$) coefficient regularization techniques",
+          "Drastically increasing the learning rate of the optimization algorithm",
+          "Applying a non-linear Box-Cox transformation directly to the target variable"
+        ],
+        "correctAnswers": [
+          "Removing one or more of the highly correlated independent variables",
+          "Applying Principal Component Analysis (PCA) to orthogonalize the feature space",
+          "Utilizing Ridge ($L_2$) or Lasso ($L_1$) coefficient regularization techniques"
+        ],
+        "explanation": "Multicollinearity is a feature-space issue. Dropping redundant variables, projecting them into orthogonal bases (PCA), or penalizing large weights (Regularization) directly solves the rank-deficiency problem."
+      }
+    },
+    {
+      "id": "reg-19-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "What direct mathematical consequences occur when the core assumption of homoscedasticity is violated in an OLS regression model?",
+        "options": [
+          "The standard errors of the coefficient estimates become mathematically invalid and biased",
+          "Statistical hypothesis tests (like t-tests and F-tests) yield completely unreliable p-values",
+          "The estimated weight coefficients immediately become biased estimators of the true parameters",
+          "The analytical $R^2$ value mathematically collapses to exactly zero"
+        ],
+        "correctAnswers": [
+          "The standard errors of the coefficient estimates become mathematically invalid and biased",
+          "Statistical hypothesis tests (like t-tests and F-tests) yield completely unreliable p-values"
+        ],
+        "explanation": "Heteroscedasticity does not bias the actual coefficient estimates (they remain unbiased), but it mathematically breaks the variance formulas, rendering standard errors and confidence intervals entirely untrustworthy."
+      }
+    },
+    {
+      "id": "reg-20-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "In the mathematical context of Elastic Net regression, which of the following statements accurately describe its properties and objective function?",
+        "options": [
+          "It simultaneously minimizes the Residual Sum of Squares (RSS) alongside both an $L_1$ and $L_2$ penalty term",
+          "It mathematically stabilizes variable selection in cases where the number of predictors exceeds the number of observations ($p > n$)",
+          "It strictly eliminates the grouping effect, forcing the model to pick only one variable from a correlated group",
+          "It acts as a dynamic algorithm that transitions between linear and polynomial kernels per epoch"
+        ],
+        "correctAnswers": [
+          "It simultaneously minimizes the Residual Sum of Squares (RSS) alongside both an $L_1$ and $L_2$ penalty term",
+          "It mathematically stabilizes variable selection in cases where the number of predictors exceeds the number of observations ($p > n$)"
+        ],
+        "explanation": "Elastic Net explicitly linearly combines Lasso and Ridge penalties. Unlike pure Lasso, the $L_2$ component actually encourages the 'grouping effect' (selecting correlated variables together) and resolves instabilities when $p > n$."
+      }
+    },
+    {
+      "id": "reg-21-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 3,
+      "content": {
+        "front": "In standard Logistic Regression, how are the optimal parameter coefficients mathematically derived, given the absence of a closed-form analytical solution?",
+        "back": "The parameters are estimated by maximizing the Log-Likelihood function (equivalent to minimizing binary cross-entropy loss) via iterative numerical optimization algorithms such as Gradient Descent or Newton-Raphson."
+      }
+    },
+    {
+      "id": "reg-22-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 3,
+      "content": {
+        "front": "In the rigorous context of the Bias-Variance tradeoff, how does monotonically increasing the regularization parameter ($\\lambda$) mathematically affect the estimator?",
+        "back": "Increasing $\\lambda$ strictly constrains the permissible parameter space, which mathematically forces a decrease in the variance of the estimator while concurrently introducing systematic bias into the predictions."
+      }
+    },
+    {
+      "id": "reg-23-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "What is the formal mathematical definition of the Maximum Likelihood Estimator (MLE) objective for the coefficients $\\beta$ in a standard logistic regression model over $N$ independent observations?",
+        "options": [
+          "$\\arg\\max_{\\beta} \\sum_{i=1}^N [y_i \\ln(p_i) + (1 - y_i) \\ln(1 - p_i)]$",
+          "$\\arg\\min_{\\beta} \\sum_{i=1}^N (y_i - \\frac{1}{1 + e^{-\\beta^T x_i}})^2$",
+          "$\\arg\\max_{\\beta} \\prod_{i=1}^N \\frac{1}{\\sqrt{2\\pi\\sigma^2}} \\exp(-\\frac{(y_i - \\beta^T x_i)^2}{2\\sigma^2})$",
+          "$\\arg\\min_{\\beta} \\sum_{i=1}^N |y_i - \\beta^T x_i| + \\lambda \\|\\beta\\|_1$"
+        ],
+        "correctAnswer": "$\\arg\\max_{\\beta} \\sum_{i=1}^N [y_i \\ln(p_i) + (1 - y_i) \\ln(1 - p_i)]$",
+        "explanation": "The MLE for logistic regression strictly maximizes the log-likelihood of the Bernoulli distribution across all observations, which algebraically translates directly to minimizing the binary cross-entropy loss."
+      }
+    },
+    {
+      "id": "reg-24-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "Which of the following rigorous mathematical properties explicitly differentiate Generalized Linear Models (GLMs) from standard Ordinary Least Squares (OLS) linear regression?",
+        "options": [
+          "GLMs utilize a specific 'link function' to relate the linear predictor mathematically to the expected value of the target",
+          "GLMs permit the underlying error distribution to be any member of the exponential family (e.g., Poisson, Binomial)",
+          "GLMs strictly require the dependent target variable to be perfectly continuous and unbounded",
+          "GLMs inherently possess a universally valid closed-form analytical solution regardless of the chosen link function"
+        ],
+        "correctAnswers": [
+          "GLMs utilize a specific 'link function' to relate the linear predictor mathematically to the expected value of the target",
+          "GLMs permit the underlying error distribution to be any member of the exponential family (e.g., Poisson, Binomial)"
+        ],
+        "explanation": "GLMs extend classical OLS by supporting non-normal exponential family error distributions and mapping the expected value via a link function. Due to these non-linear transformations, they typically require Iteratively Reweighted Least Squares (IRLS) rather than closed-form solutions."
+      }
+    },
+    {
+      "id": "reg-25-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "In the context of structural equation modeling and econometrics, what are the primary mathematical consequences of 'endogeneity' (the correlation between an independent variable and the structural error term $\\epsilon$) in linear regression?",
+        "options": [
+          "The OLS coefficient estimator becomes fundamentally mathematically biased",
+          "The OLS estimator permanently loses its asymptotic property of statistical consistency",
+          "The regression model perfectly satisfies the rigorous strict exogeneity condition",
+          "The covariance matrix of the model's residuals becomes strictly positive definite"
+        ],
+        "correctAnswers": [
+          "The OLS coefficient estimator becomes fundamentally mathematically biased",
+          "The OLS estimator permanently loses its asymptotic property of statistical consistency"
+        ],
+        "explanation": "Endogeneity mathematically violates the core assumption that $E[\\epsilon | X] = 0$. Consequently, OLS yields persistently biased estimates that completely fail to converge to the true population parameters even as the sample size approaches infinity (loss of consistency)."
+      }
+    }
+  ]
+}

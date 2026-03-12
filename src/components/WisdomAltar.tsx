@@ -200,7 +200,7 @@ export const WisdomAltar: React.FC = () => {
       {/* Ritual availability glow */}
       {isRitualSubmissionAvailable && !isPaused && (
         <Billboard position={[0, 0.75, 0]}>
-          <Sparkles count={17} scale={1.2} size={2.0} speed={8.0} color={'white'} />
+          <Sparkles count={17} scale={1.2} size={2.0} speed={3.0} color={'white'} />
         </Billboard>
       )}
 

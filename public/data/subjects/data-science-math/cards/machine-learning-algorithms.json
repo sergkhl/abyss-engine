@@ -1,0 +1,387 @@
+{
+  "topicId": "machine-learning-algorithms",
+  "cards": [
+    {
+      "id": "mlalgo-1-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "What is the fundamental distinction between supervised and unsupervised machine learning paradigms?",
+        "back": "Supervised learning relies on labeled datasets to train algorithms to predict outcomes, whereas unsupervised learning extracts hidden structures and patterns from unlabeled datasets."
+      }
+    },
+    {
+      "id": "mlalgo-2-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "In the context of Decision Trees, what is a 'leaf node'?",
+        "back": "A leaf node is a terminal node in the tree structure that does not split further; it represents the final predicted class or continuous value for the input data."
+      }
+    },
+    {
+      "id": "mlalgo-3-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "What is the primary objective of the K-Means clustering algorithm?",
+        "back": "To partition an unlabeled dataset into $K$ distinct, non-overlapping clusters by minimizing the variance (within-cluster sum of squares) within each cluster."
+      }
+    },
+    {
+      "id": "mlalgo-4-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "What is the primary mathematical objective of a Support Vector Machine (SVM) when classifying linearly separable data?",
+        "options": [
+          "To find a hyperplane that maximizes the margin (distance) between the closest data points of different classes",
+          "To minimize the within-cluster sum of squares across all grouped data points",
+          "To iteratively update model weights based on the cross-entropy loss of the training data",
+          "To construct a network of decision rules that minimizes Gini impurity"
+        ],
+        "correctAnswer": "To find a hyperplane that maximizes the margin (distance) between the closest data points of different classes",
+        "explanation": "An SVM seeks the optimal decision boundary (hyperplane) that strictly maximizes the geometric margin between the support vectors (closest points) of the distinct classes."
+      }
+    },
+    {
+      "id": "mlalgo-5-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "In the context of machine learning model evaluation, what does 'overfitting' indicate?",
+        "options": [
+          "The model fails to capture the underlying trend of the data, exhibiting high error on both training and test sets",
+          "The model learns the training data and its noise too well, resulting in high accuracy on training data but poor generalization to unseen test data",
+          "The model's convergence algorithm halts prematurely before reaching a global minimum",
+          "The data contains too many features relative to the number of observations"
+        ],
+        "correctAnswer": "The model learns the training data and its noise too well, resulting in high accuracy on training data but poor generalization to unseen test data",
+        "explanation": "Overfitting occurs when a model is excessively complex, memorizing the training noise rather than the signal, leading to significant degradation in predictive performance on new data."
+      }
+    },
+    {
+      "id": "mlalgo-6-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which specific ensemble learning technique does the Random Forest algorithm utilize?",
+        "options": [
+          "Boosting",
+          "Stacking",
+          "Bagging (Bootstrap Aggregating)",
+          "Cascading"
+        ],
+        "correctAnswer": "Bagging (Bootstrap Aggregating)",
+        "explanation": "Random Forest is a bagging ensemble method. It builds multiple independent decision trees on bootstrap samples of the training data and averages their predictions to reduce variance."
+      }
+    },
+    {
+      "id": "mlalgo-7-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following are examples of supervised learning algorithms?",
+        "options": [
+          "Logistic Regression",
+          "K-Means Clustering",
+          "Support Vector Machines (SVM)",
+          "Principal Component Analysis (PCA)",
+          "Gradient Boosting Machines"
+        ],
+        "correctAnswers": [
+          "Logistic Regression",
+          "Support Vector Machines (SVM)",
+          "Gradient Boosting Machines"
+        ],
+        "explanation": "Logistic Regression, SVMs, and Gradient Boosting are supervised methods requiring labeled data. K-Means and PCA are unsupervised methods used for clustering and dimensionality reduction, respectively."
+      }
+    },
+    {
+      "id": "mlalgo-8-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following algorithms are strictly categorized as unsupervised learning?",
+        "options": [
+          "Random Forest",
+          "K-Means Clustering",
+          "Gaussian Mixture Models (GMM)",
+          "Linear Regression",
+          "Hierarchical Clustering"
+        ],
+        "correctAnswers": [
+          "K-Means Clustering",
+          "Gaussian Mixture Models (GMM)",
+          "Hierarchical Clustering"
+        ],
+        "explanation": "K-Means, GMMs, and Hierarchical Clustering do not utilize labeled target variables; they identify inherent structures within the data."
+      }
+    },
+    {
+      "id": "mlalgo-9-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following are necessary steps in the standard K-Means clustering algorithm iteration?",
+        "options": [
+          "Calculating the Gini impurity for potential data splits",
+          "Assigning each data point to the nearest cluster centroid based on a distance metric",
+          "Updating the cluster centroids to the arithmetic mean of the assigned data points",
+          "Applying a kernel function to project data into a higher dimension"
+        ],
+        "correctAnswers": [
+          "Assigning each data point to the nearest cluster centroid based on a distance metric",
+          "Updating the cluster centroids to the arithmetic mean of the assigned data points"
+        ],
+        "explanation": "K-Means iteratively performs two steps (Expectation-Maximization): assigning points to the closest centroid (E-step) and recalculating the centroid means (M-step). Gini impurity and kernel functions belong to Trees and SVMs."
+      }
+    },
+    {
+      "id": "mlalgo-10-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following are common hyperparameters used to control the complexity of a Decision Tree and prevent overfitting?",
+        "options": [
+          "Maximum depth of the tree (`max_depth`)",
+          "Minimum number of samples required to split an internal node (`min_samples_split`)",
+          "The number of hidden layers (`hidden_layers`)",
+          "Learning rate (`learning_rate`)",
+          "Minimum number of samples required to be at a leaf node (`min_samples_leaf`)"
+        ],
+        "correctAnswers": [
+          "Maximum depth of the tree (`max_depth`)",
+          "Minimum number of samples required to split an internal node (`min_samples_split`)",
+          "Minimum number of samples required to be at a leaf node (`min_samples_leaf`)"
+        ],
+        "explanation": "Tree depth and sample constraints per node are primary decision tree hyperparameters. Hidden layers and learning rates are parameters for neural networks and boosting/gradient descent algorithms."
+      }
+    },
+    {
+      "id": "mlalgo-11-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "In the context of Support Vector Machines, what is the 'Kernel Trick'?",
+        "back": "A mathematical technique that allows SVMs to perform non-linear classification by implicitly mapping input features into high-dimensional vector spaces using a kernel function, without explicitly computing the coordinates."
+      }
+    },
+    {
+      "id": "mlalgo-12-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "What does Gini Impurity quantify when evaluating splits in a Classification and Regression Tree (CART)?",
+        "back": "It measures the probability of incorrectly classifying a randomly chosen element from a node if it were randomly labeled according to the distribution of classes in that node."
+      }
+    },
+    {
+      "id": "mlalgo-13-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "What is the architectural difference between Bagging and Boosting ensemble methods?",
+        "back": "Bagging trains multiple independent models in parallel to reduce variance, while Boosting trains multiple models sequentially, where each new model attempts to correct the errors of the previous ensemble to reduce bias."
+      }
+    },
+    {
+      "id": "mlalgo-14-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "In a Gradient Boosting Machine (GBM) applied to regression, what exactly is the target variable that the $n$-th base learner (e.g., decision tree) is trained to predict?",
+        "options": [
+          "The original target variable $y$ from the training dataset",
+          "The average of the predictions made by all $n-1$ previous learners",
+          "The pseudo-residuals (negative gradient of the loss function) from the combined model of the previous $n-1$ learners",
+          "The variance of the input features relative to the initial prediction"
+        ],
+        "correctAnswer": "The pseudo-residuals (negative gradient of the loss function) from the combined model of the previous $n-1$ learners",
+        "explanation": "Gradient Boosting constructs additive models sequentially. Each new base learner is fitted to the pseudo-residuals of the current ensemble, thereby applying gradient descent in functional space."
+      }
+    },
+    {
+      "id": "mlalgo-15-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "What specific problem with the standard K-Means algorithm does the K-Means++ initialization algorithm solve?",
+        "options": [
+          "It allows K-Means to identify clusters of arbitrary, non-convex shapes",
+          "It determines the mathematically optimal number of clusters $K$ automatically",
+          "It prevents the algorithm from converging to a suboptimal local minimum due to poor random initialization of centroids",
+          "It reduces the dimensionality of the input data before clustering"
+        ],
+        "correctAnswer": "It prevents the algorithm from converging to a suboptimal local minimum due to poor random initialization of centroids",
+        "explanation": "Standard K-Means is highly sensitive to initial centroid placement. K-Means++ selects initial centroids such that they are statistically distributed far away from each other, drastically improving convergence to a global minimum."
+      }
+    },
+    {
+      "id": "mlalgo-16-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "In a Soft Margin SVM, how does increasing the regularization parameter $C$ impact the model's decision boundary?",
+        "options": [
+          "It heavily penalizes misclassifications, leading to a narrower margin and a higher risk of overfitting",
+          "It completely ignores misclassifications, leading to the widest possible margin and high bias",
+          "It explicitly forces the use of a linear kernel regardless of the underlying data structure",
+          "It dynamically reduces the number of support vectors to accelerate inference time"
+        ],
+        "correctAnswer": "It heavily penalizes misclassifications, leading to a narrower margin and a higher risk of overfitting",
+        "explanation": "The $C$ parameter controls the trade-off between margin width and misclassification penalty. A high $C$ values strict adherence to the training data (low bias, high variance), resulting in a narrower, complex boundary."
+      }
+    },
+    {
+      "id": "mlalgo-17-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Why is the Naive Bayes classifier described as 'naive'?",
+        "options": [
+          "Because it fundamentally relies on linear boundaries and cannot process complex, non-linear data sets",
+          "Because it assumes that the probability distributions of all features are strictly Gaussian",
+          "Because it assumes that all predictive features are conditionally independent given the class label",
+          "Because it requires zero hyperparameters to be tuned during the training phase"
+        ],
+        "correctAnswer": "Because it assumes that all predictive features are conditionally independent given the class label",
+        "explanation": "The 'naive' assumption in Naive Bayes is conditional independence: the presence or value of one feature is assumed to be completely unrelated to the presence or value of any other feature, given the class."
+      }
+    },
+    {
+      "id": "mlalgo-18-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Which of the following are valid, commonly used mathematical kernel functions in Support Vector Machines?",
+        "options": [
+          "Linear Kernel",
+          "Polynomial Kernel",
+          "Radial Basis Function (RBF) Kernel",
+          "Sigmoid Kernel",
+          "Softmax Kernel"
+        ],
+        "correctAnswers": [
+          "Linear Kernel",
+          "Polynomial Kernel",
+          "Radial Basis Function (RBF) Kernel",
+          "Sigmoid Kernel"
+        ],
+        "explanation": "Linear, Polynomial, RBF (Gaussian), and Sigmoid are standard SVM kernels fulfilling Mercer's condition. Softmax is an activation function used in neural networks for multi-class probability distributions, not an SVM kernel."
+      }
+    },
+    {
+      "id": "mlalgo-19-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Random Forests introduce randomness into the ensemble to ensure base trees are de-correlated. Which two specific techniques achieve this?",
+        "options": [
+          "Bootstrapping: Training each tree on a random sample of rows drawn with replacement from the dataset",
+          "Feature Subsampling: Considering only a random subset of features for evaluating splits at each node",
+          "Gradient Updating: Randomly altering the learning rate for each subsequent tree in the forest",
+          "Weight Initialization: Randomly initializing the weights of the leaf nodes before training"
+        ],
+        "correctAnswers": [
+          "Bootstrapping: Training each tree on a random sample of rows drawn with replacement from the dataset",
+          "Feature Subsampling: Considering only a random subset of features for evaluating splits at each node"
+        ],
+        "explanation": "Random Forests rely on row sampling (Bootstrapping) and column sampling (Feature Subsampling/Random Subspace Method) to ensure the generated trees exhibit diverse structures and uncorrelated errors."
+      }
+    },
+    {
+      "id": "mlalgo-20-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Which of the following techniques are mathematically utilized to prevent overfitting in complex Decision Tree models?",
+        "options": [
+          "Pre-pruning (early stopping criteria like maximum depth or minimum sample splits)",
+          "Post-pruning (Cost Complexity Pruning based on an alpha penalty)",
+          "Applying L1 (Lasso) regularization to the feature vectors before node splitting",
+          "Ensembling the tree via Bagging or Boosting frameworks"
+        ],
+        "correctAnswers": [
+          "Pre-pruning (early stopping criteria like maximum depth or minimum sample splits)",
+          "Post-pruning (Cost Complexity Pruning based on an alpha penalty)",
+          "Ensembling the tree via Bagging or Boosting frameworks"
+        ],
+        "explanation": "Decision trees use pre-pruning, post-pruning, and ensembling to combat high variance. L1 regularization is mathematically applied to linear models to induce sparsity, not directly to decision tree node splits."
+      }
+    },
+    {
+      "id": "mlalgo-21-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 3,
+      "content": {
+        "front": "In the mathematical derivation of Support Vector Machines, what is the significance of the Dual Formulation using Lagrange multipliers?",
+        "back": "The dual formulation expresses the optimization problem exclusively in terms of dot products between data points. This is strictly required to apply the kernel trick, enabling efficient computation in infinite-dimensional spaces."
+      }
+    },
+    {
+      "id": "mlalgo-22-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 3,
+      "content": {
+        "front": "How does the K-Means algorithm relate mathematically to the Expectation-Maximization (EM) algorithm?",
+        "back": "K-Means is a hard-assignment variant of EM applied to Gaussian Mixture Models. The cluster assignment step is the E-step, and the centroid recalculation is the M-step, guaranteeing convergence to a local minimum of the WCSS objective."
+      }
+    },
+    {
+      "id": "mlalgo-23-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "In the AdaBoost algorithm, how is the weight update factor mathematically structured for a misclassified observation $i$ after training the $m$-th weak learner?",
+        "options": [
+          "The weight is multiplied by $e^{\\alpha_m}$, where $\\alpha_m$ is the weight of the $m$-th learner proportional to its accuracy",
+          "The weight is set to the absolute residual error between the prediction and the target",
+          "The weight is divided by the Gini impurity of the weak learner's leaf node",
+          "The weight remains unchanged; only the learning rate of the subsequent tree is modified"
+        ],
+        "correctAnswer": "The weight is multiplied by $e^{\\alpha_m}$, where $\\alpha_m$ is the weight of the $m$-th learner proportional to its accuracy",
+        "explanation": "AdaBoost increases the importance of misclassified points by updating their sample weights: $w_i \\leftarrow w_i \\exp(\\alpha_m)$. $\\alpha_m = \\frac{1}{2} \\ln(\\frac{1-\\epsilon_m}{\\epsilon_m})$ where $\\epsilon_m$ is the error rate."
+      }
+    },
+    {
+      "id": "mlalgo-24-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "When building a decision tree utilizing the ID3 or C4.5 algorithm, Information Gain is calculated to determine the optimal split. Which mathematical components define Information Gain?",
+        "options": [
+          "The Shannon Entropy of the parent node",
+          "The weighted sum of the Shannon Entropies of the resulting child nodes",
+          "The Euclidean distance between the centroids of the child nodes",
+          "The $L_2$ norm of the feature vector being evaluated"
+        ],
+        "correctAnswers": [
+          "The Shannon Entropy of the parent node",
+          "The weighted sum of the Shannon Entropies of the resulting child nodes"
+        ],
+        "explanation": "Information Gain is defined as the Entropy of the system before the split (parent node) minus the expected Entropy after the split (weighted sum of child node entropies). It measures the reduction in uncertainty."
+      }
+    },
+    {
+      "id": "mlalgo-25-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "Under which specific structural data conditions is the standard K-Means algorithm mathematically guaranteed to yield suboptimal or misleading clustering results?",
+        "options": [
+          "When the underlying true clusters exhibit drastically different densities",
+          "When the underlying true clusters are non-spherical or highly anisotropic (e.g., concentric circles)",
+          "When the dataset exists in an extremely high-dimensional space without dimensionality reduction (Curse of Dimensionality)",
+          "When the dataset contains strictly linearly separable, uniformly distributed Gaussian clusters"
+        ],
+        "correctAnswers": [
+          "When the underlying true clusters exhibit drastically different densities",
+          "When the underlying true clusters are non-spherical or highly anisotropic (e.g., concentric circles)",
+          "When the dataset exists in an extremely high-dimensional space without dimensionality reduction (Curse of Dimensionality)"
+        ],
+        "explanation": "K-Means assumes isotropic (spherical) clusters of roughly equal variance/density. It fails on anisotropic structures (like moons or circles) and varying densities. High dimensions cause distance metrics to degrade."
+      }
+    }
+  ]
+}

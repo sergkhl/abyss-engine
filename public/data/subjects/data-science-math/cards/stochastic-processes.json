@@ -1,0 +1,384 @@
+{
+  "topicId": "stochastic-processes",
+  "cards": [
+    {
+      "id": "stochproc-1-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "What defines a stochastic process mathematically?",
+        "back": "A stochastic process is a collection of random variables indexed by time or space, formally denoted as $\\{X(t) : t \\in T\\}$, representing the evolution of a system subject to random variation."
+      }
+    },
+    {
+      "id": "stochproc-2-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "What is the defining characteristic of the Markov property?",
+        "back": "The Markov property (memorylessness) states that the future state of a process depends only on its present state, and is conditionally independent of its past states: $P(X_{n+1} | X_n, X_{n-1}, \\dots, X_0) = P(X_{n+1} | X_n)$."
+      }
+    },
+    {
+      "id": "stochproc-3-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "In the context of a discrete-time Markov chain, what is a transition matrix?",
+        "back": "A square matrix $P$ where the element $P_{ij}$ represents the probability of transitioning from state $i$ to state $j$ in exactly one time step."
+      }
+    },
+    {
+      "id": "stochproc-4-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "What mathematical property must hold true for every row in a valid transition probability matrix of a Markov chain?",
+        "options": [
+          "The elements of each row must sum to zero.",
+          "The elements of each row must sum to exactly one.",
+          "The row must be orthogonal to the columns of the matrix.",
+          "The sum of the squared elements in the row must equal one."
+        ],
+        "correctAnswer": "The elements of each row must sum to exactly one.",
+        "explanation": "Each row represents the probability distribution of transitioning from a specific state to all possible next states. By the axioms of probability, the sum of probabilities for all mutually exclusive exhaustive events must be exactly one."
+      }
+    },
+    {
+      "id": "stochproc-5-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which probability distribution mathematically models the number of events occurring in a fixed interval of time for a continuous-time stochastic process with a constant rate $\\lambda$?",
+        "options": [
+          "Exponential distribution",
+          "Normal distribution",
+          "Poisson distribution",
+          "Binomial distribution"
+        ],
+        "correctAnswer": "Poisson distribution",
+        "explanation": "The Poisson distribution evaluates the probability of a given number of events occurring in a fixed interval. The Exponential distribution models the time *between* these events."
+      }
+    },
+    {
+      "id": "stochproc-6-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "In a stochastic process state space, what does it mean if the space is classified as 'discrete'?",
+        "options": [
+          "The process only evolves at specific, isolated time intervals.",
+          "The set of all possible values the random variables can take is finite or countably infinite.",
+          "The probabilities of transitioning between states are all integers.",
+          "The stochastic process is completely deterministic and non-random."
+        ],
+        "correctAnswer": "The set of all possible values the random variables can take is finite or countably infinite.",
+        "explanation": "A discrete state space means the random variables $X(t)$ take values from a countable set (like integers), regardless of whether time is discrete or continuous."
+      }
+    },
+    {
+      "id": "stochproc-7-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following scenarios are classically modeled using stochastic processes?",
+        "options": [
+          "The fluctuating price of a stock asset over time.",
+          "The exact geometric area of a perfectly drawn circle.",
+          "The number of customers arriving at a queueing system per hour.",
+          "The decay of radioactive particles measured continuously."
+        ],
+        "correctAnswers": [
+          "The fluctuating price of a stock asset over time.",
+          "The number of customers arriving at a queueing system per hour.",
+          "The decay of radioactive particles measured continuously."
+        ],
+        "explanation": "Stochastic processes model phenomena that evolve over time with inherent randomness. The area of a circle is a deterministic geometric property, not a random process."
+      }
+    },
+    {
+      "id": "stochproc-8-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following are foundational assumptions defining a standard homogeneous Poisson process?",
+        "options": [
+          "The number of events occurring in non-overlapping intervals are mutually independent.",
+          "The probability of exactly one event occurring in a sufficiently short interval is proportional to the interval's length.",
+          "The time intervals between consecutive events follow a Gaussian distribution.",
+          "The probability of two or more events occurring in an infinitesimally small interval is negligible (zero)."
+        ],
+        "correctAnswers": [
+          "The number of events occurring in non-overlapping intervals are mutually independent.",
+          "The probability of exactly one event occurring in a sufficiently short interval is proportional to the interval's length.",
+          "The probability of two or more events occurring in an infinitesimally small interval is negligible (zero)."
+        ],
+        "explanation": "A Poisson process requires independent increments and proportional probabilities for single events in small intervals. The inter-arrival times strictly follow an Exponential distribution, not Gaussian."
+      }
+    },
+    {
+      "id": "stochproc-9-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Identify the correct statements regarding continuous-time and discrete-time Markov chains.",
+        "options": [
+          "A discrete-time Markov chain makes transitions at countable, sequential time steps ($t=0, 1, 2, \\dots$).",
+          "Continuous-time Markov chains transition between states at random, exponentially distributed time intervals.",
+          "Both types rely on the fundamental memoryless Markov property.",
+          "Discrete-time chains require a continuous state space to function properly."
+        ],
+        "correctAnswers": [
+          "A discrete-time Markov chain makes transitions at countable, sequential time steps ($t=0, 1, 2, \\dots$).",
+          "Continuous-time Markov chains transition between states at random, exponentially distributed time intervals.",
+          "Both types rely on the fundamental memoryless Markov property."
+        ],
+        "explanation": "Time discretization defines when state changes are measured. Neither discrete nor continuous time inherently dictates the state space; Markov chains usually refer to discrete state spaces."
+      }
+    },
+    {
+      "id": "stochproc-10-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "What parameters are strictly required to fully define a finite, discrete-time, time-homogeneous Markov chain?",
+        "options": [
+          "A finite set of defined states (the state space).",
+          "An initial probability distribution vector $\\pi(0)$.",
+          "A continuous time interval length for measurement.",
+          "A stationary transition probability matrix $P$."
+        ],
+        "correctAnswers": [
+          "A finite set of defined states (the state space).",
+          "An initial probability distribution vector $\\pi(0)$.",
+          "A stationary transition probability matrix $P$."
+        ],
+        "explanation": "A discrete-time Markov chain is completely specified by its state space, the initial state probabilities, and the matrix defining transition probabilities between states. Continuous time is irrelevant here."
+      }
+    },
+    {
+      "id": "stochproc-11-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "What mathematically defines a stationary distribution $\\pi$ for a Markov chain with transition matrix $P$?",
+        "back": "A stationary distribution is a row vector $\\pi$ such that $\\pi P = \\pi$, meaning the probability distribution over the states remains unchanged as the system evolves."
+      }
+    },
+    {
+      "id": "stochproc-12-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "What does it mean for a state in a Markov chain to be 'absorbing'?",
+        "back": "An absorbing state $i$ is one from which it is impossible to leave once entered. Mathematically, its transition probability is $P_{ii} = 1$ and $P_{ij} = 0$ for all $i \\neq j$."
+      }
+    },
+    {
+      "id": "stochproc-13-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "What are the Chapman-Kolmogorov equations used for in stochastic processes?",
+        "back": "They provide a method to calculate multi-step transition probabilities by summing over all possible intermediate states: $P_{ij}^{(n+m)} = \\sum_{k} P_{ik}^{(n)} P_{kj}^{(m)}$."
+      }
+    },
+    {
+      "id": "stochproc-14-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "If a discrete-time Markov chain has a one-step transition matrix $P$, how is the $n$-step transition probability matrix calculated?",
+        "options": [
+          "By multiplying the matrix $P$ by the scalar value $n$.",
+          "By taking the matrix exponential of $P$, denoted as $e^{nP}$.",
+          "By calculating the $n$-th power of the matrix $P$, denoted as $P^n$.",
+          "By applying the natural logarithm to each element of $P$ and multiplying by $n$."
+        ],
+        "correctAnswer": "By calculating the $n$-th power of the matrix $P$, denoted as $P^n$.",
+        "explanation": "Through repeated application of the Chapman-Kolmogorov equations, the matrix representing the probabilities of transitioning between states in exactly $n$ steps is simply the transition matrix multiplied by itself $n$ times ($P^n$)."
+      }
+    },
+    {
+      "id": "stochproc-15-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "In a Poisson process with arrival rate $\\lambda$, what is the exact probability density function (PDF) for the time $T$ between consecutive arrivals?",
+        "options": [
+          "$f(t) = \\lambda e^{-\\lambda t}$ for $t \\ge 0$",
+          "$f(t) = \\frac{(\\lambda t)^k e^{-\\lambda t}}{k!}$",
+          "$f(t) = 1 - e^{-\\lambda t}$ for $t \\ge 0$",
+          "$f(t) = e^{-\\lambda t}$ for $t \\ge 0$"
+        ],
+        "correctAnswer": "$f(t) = \\lambda e^{-\\lambda t}$ for $t \\ge 0$",
+        "explanation": "The inter-arrival times of a Poisson process follow an Exponential distribution. The PDF of an Exponential distribution is $\\lambda e^{-\\lambda t}$. The option with $k!$ represents the Poisson PMF, and $1 - e^{-\\lambda t}$ is the CDF."
+      }
+    },
+    {
+      "id": "stochproc-16-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "For a Markov chain, what defines a 'recurrent' state?",
+        "options": [
+          "A state that communicates with every other state in the process.",
+          "A state where the probability of eventually returning to it, starting from that state, is strictly equal to 1.",
+          "A state where the expected time to return to it is strictly infinite.",
+          "A state that can only be visited exactly once during the process."
+        ],
+        "correctAnswer": "A state where the probability of eventually returning to it, starting from that state, is strictly equal to 1.",
+        "explanation": "A state is recurrent if the chain is mathematically guaranteed to return to it eventually. If the probability of return is less than 1, the state is termed 'transient'."
+      }
+    },
+    {
+      "id": "stochproc-17-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Consider a simple symmetric random walk on a 1D integer lattice (moving $+1$ or $-1$ with equal probability $p=0.5$). What is the expected value of the position $X_n$ after $n$ steps, assuming $X_0 = 0$?",
+        "options": [
+          "$\\sqrt{n}$",
+          "$n$",
+          "$0$",
+          "$0.5n$"
+        ],
+        "correctAnswer": "$0$",
+        "explanation": "The expected value of each independent step is $0.5(1) + 0.5(-1) = 0$. By the linearity of expectation, the expected value of the sum of $n$ steps is $0$, even though the variance is $n$."
+      }
+    },
+    {
+      "id": "stochproc-18-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "A discrete-time Markov chain is guaranteed to have a unique stationary distribution to which it converges if it possesses which of the following properties? (Ergodic Theorem)",
+        "options": [
+          "Irreducible (all states communicate with each other).",
+          "Aperiodic (the greatest common divisor of return times to any state is 1).",
+          "Positive recurrent (the expected return time to any state is finite).",
+          "Transient (the probability of returning to any state is less than 1)."
+        ],
+        "correctAnswers": [
+          "Irreducible (all states communicate with each other).",
+          "Aperiodic (the greatest common divisor of return times to any state is 1).",
+          "Positive recurrent (the expected return time to any state is finite)."
+        ],
+        "explanation": "A Markov chain that is irreducible, aperiodic, and positive recurrent is called ergodic. Ergodic chains are mathematically guaranteed to converge to a unique stationary distribution, independent of the initial state."
+      }
+    },
+    {
+      "id": "stochproc-19-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "What are the core mathematical properties that define a discrete-time Martingale sequence $\\{X_n\\}$?",
+        "options": [
+          "The expected value of the next observation, given all past observations, is equal to the most recent observation: $\\mathbb{E}[X_{n+1} | X_1, \\dots, X_n] = X_n$.",
+          "The expected value of the sequence must be strictly zero at all times.",
+          "The expected value of the absolute value of the sequence is finite: $\\mathbb{E}[|X_n|] < \\infty$.",
+          "The sequence is completely independent of its filtration (historical information)."
+        ],
+        "correctAnswers": [
+          "The expected value of the next observation, given all past observations, is equal to the most recent observation: $\\mathbb{E}[X_{n+1} | X_1, \\dots, X_n] = X_n$.",
+          "The expected value of the absolute value of the sequence is finite: $\\mathbb{E}[|X_n|] < \\infty$."
+        ],
+        "explanation": "A Martingale formalizes a 'fair game' where future expectations equal the present state, and requires finite absolute expectation. The expectation does not need to be zero, and the sequence relies heavily on its filtration."
+      }
+    },
+    {
+      "id": "stochproc-20-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Suppose you have a Poisson process with rate $\\lambda$. Each event is randomly independently classified as type A with probability $p$ or type B with probability $1-p$. Which statements are true regarding this 'thinning' process?",
+        "options": [
+          "Type A events form a new Poisson process with rate $\\lambda p$.",
+          "Type B events form a new Poisson process with rate $\\lambda(1-p)$.",
+          "The process of Type A events and the process of Type B events are perfectly correlated.",
+          "The process of Type A events and the process of Type B events are mathematically independent."
+        ],
+        "correctAnswers": [
+          "Type A events form a new Poisson process with rate $\\lambda p$.",
+          "Type B events form a new Poisson process with rate $\\lambda(1-p)$.",
+          "The process of Type A events and the process of Type B events are mathematically independent."
+        ],
+        "explanation": "Poisson thinning splits the original process into independent sub-processes. Remarkably, knowing the number of Type A events provides zero information about the number of Type B events."
+      }
+    },
+    {
+      "id": "stochproc-21-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 3,
+      "content": {
+        "front": "What is a Wiener Process (also known as standard Brownian motion) in continuous time stochastic processes?",
+        "back": "A continuous-time stochastic process $W_t$ with continuous paths, where $W_0 = 0$, having independent increments, and where increments $W_t - W_s$ are normally distributed with mean $0$ and variance $t-s$."
+      }
+    },
+    {
+      "id": "stochproc-22-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 3,
+      "content": {
+        "front": "What is the 'detailed balance condition' which guarantees that a Markov chain is time-reversible?",
+        "back": "The equation $\\pi_i P_{ij} = \\pi_j P_{ji}$ for all states $i, j$. If a distribution $\\pi$ satisfies this, it is guaranteed to be the stationary distribution, and the chain is reversible."
+      }
+    },
+    {
+      "id": "stochproc-23-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "For a Continuous-Time Markov Chain (CTMC), the infinitesimal generator matrix is denoted as $Q$. What mathematical relationship connects the generator $Q$ to the transition probability matrix $P(t)$ at time $t$?",
+        "options": [
+          "$P(t) = Q^t$",
+          "$P(t) = e^{tQ}$",
+          "$P(t) = \\ln(I + tQ)$",
+          "$\\frac{d}{dt} P(t) = Q + P(t)$"
+        ],
+        "correctAnswer": "$P(t) = e^{tQ}$",
+        "explanation": "The transition matrix in continuous time is the matrix exponential of the generator matrix scaled by time. This is derived from the Kolmogorov backward equation $\\frac{d}{dt} P(t) = Q P(t)$."
+      }
+    },
+    {
+      "id": "stochproc-24-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "Which of the following are rigorous mathematical properties of paths generated by a standard Wiener process (Brownian motion)?",
+        "options": [
+          "The paths are continuous everywhere with probability 1.",
+          "The paths are differentiable almost everywhere with probability 1.",
+          "The quadratic variation over the interval $[0, t]$ is equal to $t$.",
+          "The paths exhibit infinite variation on any finite time interval."
+        ],
+        "correctAnswers": [
+          "The paths are continuous everywhere with probability 1.",
+          "The quadratic variation over the interval $[0, t]$ is equal to $t$.",
+          "The paths exhibit infinite variation on any finite time interval."
+        ],
+        "explanation": "Brownian motion paths are continuous but extremely erratic, resulting in infinite total variation. Because of this infinite jaggedness, they are nowhere differentiable (with probability 1), contrary to the false option."
+      }
+    },
+    {
+      "id": "stochproc-25-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "Under what conditions does the Optional Stopping Theorem state that the expected value of a Martingale at a stopping time $\\tau$ is equal to its initial expected value, i.e., $\\mathbb{E}[X_\\tau] = \\mathbb{E}[X_0]$?",
+        "options": [
+          "The stopping time $\\tau$ is bounded by a constant almost surely (e.g., $\\tau \\le N$).",
+          "The Martingale $X_n$ is uniformly bounded (e.g., there exists $M$ such that $|X_n| \\le M$).",
+          "The stopping time is infinite almost surely.",
+          "The expected stopping time is finite $\\mathbb{E}[\\tau] < \\infty$ and the increments of the martingale are bounded."
+        ],
+        "correctAnswers": [
+          "The stopping time $\\tau$ is bounded by a constant almost surely (e.g., $\\tau \\le N$).",
+          "The Martingale $X_n$ is uniformly bounded (e.g., there exists $M$ such that $|X_n| \\le M$).",
+          "The expected stopping time is finite $\\mathbb{E}[\\tau] < \\infty$ and the increments of the martingale are bounded."
+        ],
+        "explanation": "The Optional Stopping Theorem requires conditions to prevent pathological strategies (like the St. Petersburg paradox). Bounded stopping times, bounded martingales, or finite expected stopping times with bounded increments all fulfill these conditions. An infinite stopping time violates the core premise."
+      }
+    }
+  ]
+}

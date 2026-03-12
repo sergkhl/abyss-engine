@@ -1,0 +1,382 @@
+{
+  "topicId": "basic-probability",
+  "cards": [
+    {
+      "id": "prob-1-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "In probability theory, what is the definition of a Sample Space (often denoted by $\\Omega$ or $S$)?",
+        "back": "The Sample Space is the mathematical set of all possible distinct outcomes of a random experiment or phenomenon."
+      }
+    },
+    {
+      "id": "prob-2-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "What is a Random Variable formally defined as in the context of probability theory?",
+        "back": "A Random Variable is a measurable mathematical function that maps outcomes from the sample space $\\Omega$ to the set of real numbers $\\mathbb{R}$."
+      }
+    },
+    {
+      "id": "prob-3-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "State the mathematical formula for the Conditional Probability of event $A$ given that event $B$ has occurred.",
+        "back": "$P(A|B) = \\frac{P(A \\cap B)}{P(B)}$, provided that $P(B) > 0$."
+      }
+    },
+    {
+      "id": "prob-4-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "What is the fundamental difference between a Probability Mass Function (PMF) and a Probability Density Function (PDF)?",
+        "back": "A PMF is used for discrete random variables and yields exact probabilities for specific values, whereas a PDF is used for continuous random variables and must be integrated over an interval to yield a probability."
+      }
+    },
+    {
+      "id": "prob-5-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following equations represents the general Addition Rule for the probability of the union of any two events, $A$ and $B$?",
+        "options": [
+          "$P(A \\cup B) = P(A) + P(B)$",
+          "$P(A \\cup B) = P(A) + P(B) - P(A \\cap B)$",
+          "$P(A \\cup B) = P(A) \\cdot P(B)$",
+          "$P(A \\cup B) = 1 - P(A^c \\cap B^c)$"
+        ],
+        "correctAnswer": "$P(A \\cup B) = P(A) + P(B) - P(A \\cap B)$",
+        "explanation": "To find the probability of $A$ or $B$ occurring, we add their individual probabilities but must subtract the intersection $P(A \\cap B)$ to avoid double-counting the overlapping region."
+      }
+    },
+    {
+      "id": "prob-6-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Two events $A$ and $B$ are mathematically defined as statistically independent if and only if which of the following conditions holds true?",
+        "options": [
+          "$P(A \\cap B) = 0$",
+          "$P(A \\cup B) = P(A) + P(B)$",
+          "$P(A \\cap B) = P(A)P(B)$",
+          "$P(A|B) = P(B|A)$"
+        ],
+        "correctAnswer": "$P(A \\cap B) = P(A)P(B)$",
+        "explanation": "Statistical independence implies that the occurrence of one event does not alter the probability of the other, meaning the joint probability is strictly the product of their marginal probabilities."
+      }
+    },
+    {
+      "id": "prob-7-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "How is the Expected Value $\\mathbb{E}[X]$ computed for a discrete random variable $X$ with a probability mass function $P(x)$?",
+        "options": [
+          "$\\mathbb{E}[X] = \\sum_{x} P(x)$",
+          "$\\mathbb{E}[X] = \\int_{-\\infty}^{\\infty} x P(x) dx$",
+          "$\\mathbb{E}[X] = \\sum_{x} x P(x)$",
+          "$\\mathbb{E}[X] = \\sum_{x} (x - \\mu)^2 P(x)$"
+        ],
+        "correctAnswer": "$\\mathbb{E}[X] = \\sum_{x} x P(x)$",
+        "explanation": "The expected value of a discrete random variable is the probability-weighted average of all its possible values."
+      }
+    },
+    {
+      "id": "prob-8-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following statements represent Kolmogorov's Axioms of Probability?",
+        "options": [
+          "For any event $A$, $P(A) \\ge 0$",
+          "The probability of the entire sample space is 1, $P(\\Omega) = 1$",
+          "If $A$ and $B$ are independent, $P(A \\cap B) = P(A)P(B)$",
+          "For mutually exclusive events $E_1, E_2, \\dots$, $P(\\cup_{i=1}^\\infty E_i) = \\sum_{i=1}^\\infty P(E_i)$"
+        ],
+        "correctAnswers": [
+          "For any event $A$, $P(A) \\ge 0$",
+          "The probability of the entire sample space is 1, $P(\\Omega) = 1$",
+          "For mutually exclusive events $E_1, E_2, \\dots$, $P(\\cup_{i=1}^\\infty E_i) = \\sum_{i=1}^\\infty P(E_i)$"
+        ],
+        "explanation": "The multiplication rule for independent events is a derived property and a definition of independence, not one of the foundational Kolmogorov axioms. The axioms only state non-negativity, normalization, and additivity for disjoint sets."
+      }
+    },
+    {
+      "id": "prob-9-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following are necessary mathematical properties of a valid Probability Density Function (PDF), $f(x)$?",
+        "options": [
+          "$f(x) \\ge 0$ for all $x \\in \\mathbb{R}$",
+          "$\\int_{-\\infty}^{\\infty} f(x) dx = 1$",
+          "$f(x) \\le 1$ for all $x \\in \\mathbb{R}$",
+          "$P(X=x) = f(x)$ for any specific value $x$"
+        ],
+        "correctAnswers": [
+          "$f(x) \\ge 0$ for all $x \\in \\mathbb{R}$",
+          "$\\int_{-\\infty}^{\\infty} f(x) dx = 1$"
+        ],
+        "explanation": "A PDF must be non-negative and integrate to 1. Unlike a PMF, the value of a PDF $f(x)$ can exceed 1, and the probability at any single exact point for a continuous distribution is exactly 0."
+      }
+    },
+    {
+      "id": "prob-10-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Identify which of the following are widely used continuous probability distributions.",
+        "options": [
+          "Normal (Gaussian) Distribution",
+          "Poisson Distribution",
+          "Exponential Distribution",
+          "Uniform Distribution",
+          "Binomial Distribution"
+        ],
+        "correctAnswers": [
+          "Normal (Gaussian) Distribution",
+          "Exponential Distribution",
+          "Uniform Distribution"
+        ],
+        "explanation": "Normal, Exponential, and Uniform distributions apply to continuous variables (e.g., time, measurements). Poisson and Binomial are discrete distributions used for counting events."
+      }
+    },
+    {
+      "id": "prob-11-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "State the formula for Bayes' Theorem mathematically.",
+        "back": "$P(A|B) = \\frac{P(B|A)P(A)}{P(B)}$, which provides a principled way to update the prior probability $P(A)$ given new evidence $B$."
+      }
+    },
+    {
+      "id": "prob-12-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "What is the Linearity of Expectation principle?",
+        "back": "It states that the expected value of a sum of random variables equals the sum of their individual expected values, regardless of whether they are independent: $\\mathbb{E}[aX + bY] = a\\mathbb{E}[X] + b\\mathbb{E}[Y]$."
+      }
+    },
+    {
+      "id": "prob-13-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "Express the Variance of a random variable $X$, $Var(X)$, purely in terms of expected values.",
+        "back": "$Var(X) = \\mathbb{E}[X^2] - (\\mathbb{E}[X])^2$"
+      }
+    },
+    {
+      "id": "prob-14-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "According to the Law of Total Probability, if $\\{B_1, B_2, \\dots, B_n\\}$ forms a partition of the sample space, how can we compute $P(A)$?",
+        "options": [
+          "$P(A) = \\sum_{i=1}^n P(A \\cup B_i)$",
+          "$P(A) = \\sum_{i=1}^n P(A | B_i)P(B_i)$",
+          "$P(A) = \\prod_{i=1}^n P(A | B_i)P(B_i)$",
+          "$P(A) = \\sum_{i=1}^n \\frac{P(B_i | A)P(A)}{P(B_i)}$"
+        ],
+        "correctAnswer": "$P(A) = \\sum_{i=1}^n P(A | B_i)P(B_i)$",
+        "explanation": "The Law of Total Probability breaks down the calculation of $P(A)$ into a weighted sum of conditional probabilities across all mutually exclusive and exhaustive scenarios $B_i$."
+      }
+    },
+    {
+      "id": "prob-15-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "If two random variables $X$ and $Y$ have a Covariance of zero ($Cov(X,Y) = 0$), which of the following is strictly mathematically true?",
+        "options": [
+          "They are definitively independent random variables",
+          "They have no linear relationship",
+          "Their correlation coefficient is exactly 1",
+          "They must both follow a standard normal distribution"
+        ],
+        "correctAnswer": "They have no linear relationship",
+        "explanation": "A covariance of zero strictly implies zero linear correlation. However, it does not imply independence, as they could still be highly correlated via a non-linear relationship (e.g., $Y=X^2$ where $X$ is symmetric around 0)."
+      }
+    },
+    {
+      "id": "prob-16-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Which scenario is best modeled by a Poisson distribution?",
+        "options": [
+          "The number of heads obtained in 10 flips of a biased coin",
+          "The time until the next customer arrives at a checkout counter",
+          "The number of emails a server receives within a specific one-hour interval",
+          "The precise height of adult males in a given population"
+        ],
+        "correctAnswer": "The number of emails a server receives within a specific one-hour interval",
+        "explanation": "The Poisson distribution models the probability of a given number of discrete events occurring in a fixed interval of time or space, assuming events happen with a known constant mean rate and independently."
+      }
+    },
+    {
+      "id": "prob-17-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Which of the following conditions must be met for a random variable to follow a Binomial distribution?",
+        "options": [
+          "The experiment consists of $n$ identical and fixed trials",
+          "Each trial results in exactly one of two possible outcomes (success/failure)",
+          "The trials are independent of one another",
+          "The probability of success changes depending on previous outcomes",
+          "The variable measures continuous time until a success occurs"
+        ],
+        "correctAnswers": [
+          "The experiment consists of $n$ identical and fixed trials",
+          "Each trial results in exactly one of two possible outcomes (success/failure)",
+          "The trials are independent of one another"
+        ],
+        "explanation": "A binomial setup requires fixed, independent Bernoulli trials with a constant probability of success $p$. Changing probabilities would indicate a hypergeometric or dependent model."
+      }
+    },
+    {
+      "id": "prob-18-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Which of the following are mathematically correct properties of Variance for random variables $X$ and $Y$, and constants $a$ and $b$?",
+        "options": [
+          "$Var(aX + b) = a^2 Var(X)$",
+          "$Var(X + Y) = Var(X) + Var(Y)$ (Always true)",
+          "$Var(X + Y) = Var(X) + Var(Y) + 2Cov(X,Y)$",
+          "$Var(a) = 0$"
+        ],
+        "correctAnswers": [
+          "$Var(aX + b) = a^2 Var(X)$",
+          "$Var(X + Y) = Var(X) + Var(Y) + 2Cov(X,Y)$",
+          "$Var(a) = 0$"
+        ],
+        "explanation": "Variance scales by the square of a constant factor, and constants have zero variance. The variance of a sum only equals the sum of the variances if the variables are uncorrelated ($Cov=0$)."
+      }
+    },
+    {
+      "id": "prob-19-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Consider two events $A$ and $B$, each with a strictly positive probability ($P(A) > 0$ and $P(B) > 0$). Which of the following statements contrasting 'Mutually Exclusive' and 'Independent' are true?",
+        "options": [
+          "If $A$ and $B$ are mutually exclusive, they cannot be independent",
+          "If $A$ and $B$ are independent, they must be mutually exclusive",
+          "Mutually exclusive implies $P(A \\cap B) = 0$",
+          "Independence implies $P(A \\cap B) = 0$"
+        ],
+        "correctAnswers": [
+          "If $A$ and $B$ are mutually exclusive, they cannot be independent",
+          "Mutually exclusive implies $P(A \\cap B) = 0$"
+        ],
+        "explanation": "Since mutually exclusive means $P(A \\cap B) = 0$, and independence means $P(A \\cap B) = P(A)P(B)$, if both have non-zero probabilities, they cannot simultaneously be mutually exclusive and independent because $P(A)P(B) > 0$."
+      }
+    },
+    {
+      "id": "prob-20-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Which of the following probability distributions exhibit the 'Memoryless Property'?",
+        "options": [
+          "Normal Distribution",
+          "Exponential Distribution",
+          "Geometric Distribution",
+          "Poisson Distribution"
+        ],
+        "correctAnswers": [
+          "Exponential Distribution",
+          "Geometric Distribution"
+        ],
+        "explanation": "The Exponential distribution (continuous) and Geometric distribution (discrete) are the only two distributions that exhibit the memoryless property, where past survival time does not affect future survival probabilities: $P(X > s + t | X > s) = P(X > t)$."
+      }
+    },
+    {
+      "id": "prob-21-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 3,
+      "content": {
+        "front": "What is the formal definition of the Moment Generating Function (MGF) for a random variable $X$?",
+        "back": "$M_X(t) = \\mathbb{E}[e^{tX}]$. When evaluated, its $n$-th derivative at $t=0$ yields the $n$-th raw moment $\\mathbb{E}[X^n]$."
+      }
+    },
+    {
+      "id": "prob-22-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "Chebyshev's Inequality provides a bound on the probability that a random variable deviates from its mean. What is the mathematical formulation of this inequality for a random variable $X$ with mean $\\mu$ and variance $\\sigma^2$?",
+        "options": [
+          "$P(|X - \\mu| \\ge k\\sigma) \\le \\frac{1}{k^2}$",
+          "$P(|X - \\mu| < k\\sigma) \\le \\frac{1}{k^2}$",
+          "$P(X \\ge a) \\le \\frac{\\mu}{a}$",
+          "$P(|X - \\mu| \\ge k) \\le \\frac{\\sigma^2}{k}$"
+        ],
+        "correctAnswer": "$P(|X - \\mu| \\ge k\\sigma) \\le \\frac{1}{k^2}$",
+        "explanation": "Chebyshev's Inequality states that for any distribution with a finite variance, the probability that a value lies outside $k$ standard deviations from the mean is at most $1/k^2$. The third option is Markov's Inequality."
+      }
+    },
+    {
+      "id": "prob-23-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "Let $X$ be a continuous random variable with PDF $f_X(x)$. If we apply a strictly monotonic and differentiable transformation $Y = g(X)$, what is the PDF of the new random variable $Y$, $f_Y(y)$?",
+        "options": [
+          "$f_Y(y) = f_X(g^{-1}(y))$",
+          "$f_Y(y) = f_X(g^{-1}(y)) \\cdot g'(y)$",
+          "$f_Y(y) = f_X(g^{-1}(y)) \\cdot \\left| \\frac{d}{dy} g^{-1}(y) \\right|$",
+          "$f_Y(y) = \\int g(x) f_X(x) dx$"
+        ],
+        "correctAnswer": "$f_Y(y) = f_X(g^{-1}(y)) \\cdot \\left| \\frac{d}{dy} g^{-1}(y) \\right|$",
+        "explanation": "When transforming random variables, you must substitute the inverse function into the original PDF and multiply by the absolute value of the Jacobian (the derivative of the inverse transformation) to conserve total probability mass."
+      }
+    },
+    {
+      "id": "prob-24-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "Regarding the Limit Theorems in probability, which of the following statements distinguish the Weak Law of Large Numbers (WLLN) and the Strong Law of Large Numbers (SLLN)?",
+        "options": [
+          "The WLLN involves convergence in probability: $\\lim_{n \\to \\infty} P(|\\bar{X}_n - \\mu| \\ge \\epsilon) = 0$",
+          "The SLLN involves almost sure convergence: $P(\\lim_{n \\to \\infty} \\bar{X}_n = \\mu) = 1$",
+          "The SLLN is a strictly mathematically weaker condition than the WLLN",
+          "The Central Limit Theorem makes both the WLLN and SLLN obsolete"
+        ],
+        "correctAnswers": [
+          "The WLLN involves convergence in probability: $\\lim_{n \\to \\infty} P(|\\bar{X}_n - \\mu| \\ge \\epsilon) = 0$",
+          "The SLLN involves almost sure convergence: $P(\\lim_{n \\to \\infty} \\bar{X}_n = \\mu) = 1$"
+        ],
+        "explanation": "The Weak Law dictates that the sample mean converges in probability, while the Strong Law dictates almost sure convergence. SLLN implies WLLN, making SLLN the stronger, not weaker, condition. The CLT handles the distribution of the errors, not just convergence to a point."
+      }
+    },
+    {
+      "id": "prob-25-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "Given a joint Probability Density Function $f_{X,Y}(x,y)$, how can one extract the marginal PDF $f_X(x)$ and determine if $X$ and $Y$ are independent?",
+        "options": [
+          "The marginal $f_X(x)$ is calculated by taking the derivative with respect to $y$",
+          "The marginal $f_X(x)$ is calculated by integrating $f_{X,Y}(x,y)$ over all possible values of $y$",
+          "They are independent if and only if $f_{X,Y}(x,y) = f_X(x)f_Y(y)$ for all $x,y$",
+          "They are independent if the joint PDF is a symmetric matrix"
+        ],
+        "correctAnswers": [
+          "The marginal $f_X(x)$ is calculated by integrating $f_{X,Y}(x,y)$ over all possible values of $y$",
+          "They are independent if and only if $f_{X,Y}(x,y) = f_X(x)f_Y(y)$ for all $x,y$"
+        ],
+        "explanation": "To find a marginal PDF from a joint PDF, one integrates out the other variables. Continuous variables $X$ and $Y$ are independent if and only if their joint PDF can be perfectly factored into the product of their individual marginal PDFs."
+      }
+    }
+  ]
+}

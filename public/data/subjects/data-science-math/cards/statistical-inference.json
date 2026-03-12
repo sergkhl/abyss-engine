@@ -1,0 +1,384 @@
+{
+  "topicId": "statistical-inference",
+  "cards": [
+    {
+      "id": "statinf-1-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "What does the Central Limit Theorem (CLT) state regarding the sampling distribution of the sample mean?",
+        "back": "It states that as the sample size becomes large, the distribution of the sample means approximates a normal distribution, regardless of the underlying population's distribution, provided the population has a finite variance."
+      }
+    },
+    {
+      "id": "statinf-2-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "In hypothesis testing, what is the fundamental difference between a Type I Error and a Type II Error?",
+        "back": "A Type I error ($\\alpha$) occurs when a true null hypothesis is incorrectly rejected (false positive). A Type II error ($\\beta$) occurs when a false null hypothesis is not rejected (false negative)."
+      }
+    },
+    {
+      "id": "statinf-3-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 1,
+      "content": {
+        "front": "Define the mathematical meaning of a p-value in the context of hypothesis testing.",
+        "back": "The p-value is the probability of observing a test statistic as extreme as, or more extreme than, the one calculated from the sample data, assuming the null hypothesis ($H_0$) is strictly true."
+      }
+    },
+    {
+      "id": "statinf-4-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following is the correct interpretation of a 95% confidence interval for a population mean?",
+        "options": [
+          "There is a 95% probability that the true population mean falls within this specific interval.",
+          "95% of the data points in the sample fall within this calculated interval.",
+          "If we were to take many repeated samples and compute intervals, approximately 95% of those intervals would contain the true population mean.",
+          "The true population mean will vary within this interval 95% of the time."
+        ],
+        "correctAnswer": "If we were to take many repeated samples and compute intervals, approximately 95% of those intervals would contain the true population mean.",
+        "explanation": "A confidence interval does not imply a 95% probability for a single interval (the parameter is fixed, not a random variable in frequentist statistics). It represents the long-run success rate of the interval estimation procedure."
+      }
+    },
+    {
+      "id": "statinf-5-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "What is the standard error of the mean for a sample of size $n$ drawn from a population with standard deviation $\\sigma$?",
+        "options": [
+          "$\\frac{\\sigma^2}{n}$",
+          "$\\frac{\\sigma}{\\sqrt{n}}$",
+          "$\\frac{\\sigma}{n}$",
+          "$\\sqrt{\\frac{\\sigma}{n}}$"
+        ],
+        "correctAnswer": "$\\frac{\\sigma}{\\sqrt{n}}$",
+        "explanation": "The standard error of the mean quantifies the dispersion of sample means around the population mean, calculated as the population standard deviation divided by the square root of the sample size."
+      }
+    },
+    {
+      "id": "statinf-6-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "If a researcher sets the significance level ($\\alpha$) of a hypothesis test to 0.01 instead of 0.05, what is the direct consequence?",
+        "options": [
+          "The probability of making a Type I error increases.",
+          "The statistical power of the test inherently increases.",
+          "The probability of making a Type II error increases.",
+          "The p-value of the test statistic will decrease."
+        ],
+        "correctAnswer": "The probability of making a Type II error increases.",
+        "explanation": "Decreasing $\\alpha$ (making it harder to reject the null hypothesis) directly decreases the Type I error rate, but inversely increases the probability of failing to reject a false null hypothesis (Type II error, $\\beta$)."
+      }
+    },
+    {
+      "id": "statinf-7-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following components are mathematically required to construct a standard confidence interval for a population mean?",
+        "options": [
+          "The sample mean ($\\bar{x}$)",
+          "The standard error of the sample",
+          "A critical value based on the desired confidence level (e.g., z-score or t-score)",
+          "The exact shape of the underlying population distribution"
+        ],
+        "correctAnswers": [
+          "The sample mean ($\\bar{x}$)",
+          "The standard error of the sample",
+          "A critical value based on the desired confidence level (e.g., z-score or t-score)"
+        ],
+        "explanation": "A confidence interval is calculated as the point estimate (sample mean) $\\pm$ margin of error (critical value $\\times$ standard error). Thanks to the CLT, the exact shape of the population distribution is not required if the sample size is sufficiently large."
+      }
+    },
+    {
+      "id": "statinf-8-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following actions will mathematically decrease the margin of error in a confidence interval estimate?",
+        "options": [
+          "Increasing the sample size ($n$)",
+          "Increasing the confidence level (e.g., from 95% to 99%)",
+          "Decreasing the population variance ($\\sigma^2$)",
+          "Decreasing the sample size ($n$)"
+        ],
+        "correctAnswers": [
+          "Increasing the sample size ($n$)",
+          "Decreasing the population variance ($\\sigma^2$)"
+        ],
+        "explanation": "The margin of error is $Z_{\\alpha/2} \\times \\frac{\\sigma}{\\sqrt{n}}$. Increasing $n$ or decreasing $\\sigma$ makes this term smaller. Increasing the confidence level increases $Z_{\\alpha/2}$, thereby widening the margin of error."
+      }
+    },
+    {
+      "id": "statinf-9-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "Which of the following are valid examples of a null hypothesis ($H_0$) in a standard statistical test?",
+        "options": [
+          "The population mean is equal to 50 ($\\mu = 50$).",
+          "There is no difference between the means of two independent groups ($\\mu_1 - \\mu_2 = 0$).",
+          "The new drug is more effective than the placebo ($\\mu_1 > \\mu_2$).",
+          "The correlation coefficient between two variables is exactly zero ($\\rho = 0$)."
+        ],
+        "correctAnswers": [
+          "The population mean is equal to 50 ($\\mu = 50$).",
+          "There is no difference between the means of two independent groups ($\\mu_1 - \\mu_2 = 0$).",
+          "The correlation coefficient between two variables is exactly zero ($\\rho = 0$)."
+        ],
+        "explanation": "The null hypothesis generally represents the status quo, no effect, or no difference, and typically contains an equality sign ($=$, $\\le$, or $\\ge$). The statement $\\mu_1 > \\mu_2$ represents an alternative hypothesis."
+      }
+    },
+    {
+      "id": "statinf-10-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 1,
+      "content": {
+        "question": "What information does a z-score provide about a specific data point within a normal distribution?",
+        "options": [
+          "The absolute difference between the point and the population mean",
+          "The number of standard deviations the point is away from the mean",
+          "Whether the point lies above or below the mean",
+          "The probability of observing that exact point in the population"
+        ],
+        "correctAnswers": [
+          "The number of standard deviations the point is away from the mean",
+          "Whether the point lies above or below the mean"
+        ],
+        "explanation": "A z-score $z = \\frac{x - \\mu}{\\sigma}$ standardizes a value. Its magnitude tells how many standard deviations away it is, and its sign (positive/negative) indicates if it is above or below the mean."
+      }
+    },
+    {
+      "id": "statinf-11-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "In the context of hypothesis testing, what is 'Statistical Power' mathematically defined as?",
+        "back": "Statistical Power is the probability of correctly rejecting a false null hypothesis. It is mathematically defined as $1 - \\beta$, where $\\beta$ is the probability of making a Type II error."
+      }
+    },
+    {
+      "id": "statinf-12-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "What is the primary condition that dictates the use of Student's t-distribution instead of the standard normal (z) distribution for estimating a population mean?",
+        "back": "The t-distribution must be used when the true population standard deviation ($\\sigma$) is unknown and is estimated using the sample standard deviation ($s$), especially for small sample sizes."
+      }
+    },
+    {
+      "id": "statinf-13-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 2,
+      "content": {
+        "front": "What is the fundamental objective of Maximum Likelihood Estimation (MLE)?",
+        "back": "MLE seeks to find the parameter values that maximize the likelihood function, effectively selecting the parameters under which the observed sample data is most probable."
+      }
+    },
+    {
+      "id": "statinf-14-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "What does it mean for a point estimator $\\hat{\\theta}$ to be an mathematically 'unbiased' estimator of a population parameter $\\theta$?",
+        "options": [
+          "The variance of $\\hat{\\theta}$ is equal to the variance of the population parameter.",
+          "The expected value of the estimator equals the true population parameter: $E[\\hat{\\theta}] = \\theta$.",
+          "The estimator converges strictly to the parameter as the sample size approaches infinity.",
+          "The median of the sampling distribution of $\\hat{\\theta}$ is exactly zero."
+        ],
+        "correctAnswer": "The expected value of the estimator equals the true population parameter: $E[\\hat{\\theta}] = \\theta$.",
+        "explanation": "An estimator is unbiased if, on average over many samples, its expected value exactly equals the target parameter. Convergence as $n \\to \\infty$ refers to consistency, not unbiasedness."
+      }
+    },
+    {
+      "id": "statinf-15-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Which of the following test statistics is appropriate for testing the difference between two population means when the population variances are unknown and not assumed to be equal (Welch's t-test)?",
+        "options": [
+          "$t = \\frac{\\bar{x}_1 - \\bar{x}_2}{s_p \\sqrt{\\frac{1}{n_1} + \\frac{1}{n_2}}}$",
+          "$t = \\frac{\\bar{x}_1 - \\bar{x}_2}{\\sqrt{\\frac{s_1^2}{n_1} + \\frac{s_2^2}{n_2}}}$",
+          "$z = \\frac{\\bar{x}_1 - \\bar{x}_2}{\\sqrt{\\frac{\\sigma_1^2}{n_1} + \\frac{\\sigma_2^2}{n_2}}}$",
+          "$F = \\frac{s_1^2}{s_2^2}$"
+        ],
+        "correctAnswer": "$t = \\frac{\\bar{x}_1 - \\bar{x}_2}{\\sqrt{\\frac{s_1^2}{n_1} + \\frac{s_2^2}{n_2}}}$",
+        "explanation": "When variances are unknown and unequal, we use Welch's t-test, which calculates the standard error using the individual sample variances ($s_1^2$ and $s_2^2$) rather than a pooled variance ($s_p$)."
+      }
+    },
+    {
+      "id": "statinf-16-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "When deriving the Maximum Likelihood Estimator (MLE), why is it standard practice to maximize the log-likelihood function rather than the likelihood function itself?",
+        "options": [
+          "The log-likelihood inherently penalizes model complexity to prevent overfitting.",
+          "Taking the logarithm transforms products of probabilities into sums, simplifying calculus derivations without changing the location of the maximum.",
+          "The log-likelihood function guarantees that the estimator is strictly unbiased.",
+          "The likelihood function is undefined for continuous probability density functions."
+        ],
+        "correctAnswer": "Taking the logarithm transforms products of probabilities into sums, simplifying calculus derivations without changing the location of the maximum.",
+        "explanation": "Since probabilities are multiplied together in a joint likelihood, taking the natural logarithm converts the product into a summation, making the derivative much easier to calculate. Because the logarithm is a monotonic function, it preserves the optimal parameter."
+      }
+    },
+    {
+      "id": "statinf-17-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Which of the following mathematically describe the characteristics of Student's t-distribution compared to the standard normal distribution?",
+        "options": [
+          "It is perfectly symmetric and centered at zero.",
+          "It has thicker (heavier) tails than the standard normal distribution.",
+          "Its shape changes depending on the degrees of freedom ($\\nu$).",
+          "As degrees of freedom approach infinity, it diverges from the normal distribution."
+        ],
+        "correctAnswers": [
+          "It is perfectly symmetric and centered at zero.",
+          "It has thicker (heavier) tails than the standard normal distribution.",
+          "Its shape changes depending on the degrees of freedom ($\\nu$)."
+        ],
+        "explanation": "The t-distribution is symmetric and centered at zero, but its tails are heavier to account for the additional uncertainty of estimating $\\sigma$. As degrees of freedom approach infinity, it converges to, not diverges from, the standard normal distribution."
+      }
+    },
+    {
+      "id": "statinf-18-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "Which of the following strategies will generally increase the statistical power ($1 - \\beta$) of an inference test?",
+        "options": [
+          "Increasing the sample size ($n$).",
+          "Decreasing the significance level ($\\alpha$) from 0.05 to 0.01.",
+          "Increasing the true effect size (the difference between the true parameter and the null hypothesized value).",
+          "Reducing the variance of the underlying population measurement."
+        ],
+        "correctAnswers": [
+          "Increasing the sample size ($n$).",
+          "Increasing the true effect size (the difference between the true parameter and the null hypothesized value).",
+          "Reducing the variance of the underlying population measurement."
+        ],
+        "explanation": "Power is increased by larger sample sizes, larger effect sizes, and lower variance (less noise). Decreasing $\\alpha$ actually decreases power because it makes rejecting the null hypothesis more difficult."
+      }
+    },
+    {
+      "id": "statinf-19-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "When computing a sample variance $s^2$, why do we divide by $n - 1$ instead of $n$?",
+        "options": [
+          "To correct for the fact that sample means tend to underestimate the true population variance.",
+          "To ensure the estimator is perfectly unbiased, satisfying $E[s^2] = \\sigma^2$.",
+          "Because one degree of freedom is lost when we estimate the population mean with the sample mean $\\bar{x}$.",
+          "To convert the variance into standard error for hypothesis testing."
+        ],
+        "correctAnswers": [
+          "To correct for the fact that sample means tend to underestimate the true population variance.",
+          "To ensure the estimator is perfectly unbiased, satisfying $E[s^2] = \\sigma^2$.",
+          "Because one degree of freedom is lost when we estimate the population mean with the sample mean $\\bar{x}$."
+        ],
+        "explanation": "Dividing by $n$ produces a biased estimator that systematically underestimates population variance because the sample points are closer to their own sample mean than to the true population mean. Using $n-1$ corrects this bias (Bessel's correction)."
+      }
+    },
+    {
+      "id": "statinf-20-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 2,
+      "content": {
+        "question": "What are the common assumptions required for conducting an independent two-sample t-test?",
+        "options": [
+          "The observations within each sample must be independent of one another.",
+          "The two samples must be independent of each other.",
+          "The underlying populations should be approximately normally distributed.",
+          "The sample sizes of both groups must be exactly equal."
+        ],
+        "correctAnswers": [
+          "The observations within each sample must be independent of one another.",
+          "The two samples must be independent of each other.",
+          "The underlying populations should be approximately normally distributed."
+        ],
+        "explanation": "A two-sample t-test requires independence (both within and between groups) and normality of the population distribution. It does not strictly require equal sample sizes, especially when using Welch's correction."
+      }
+    },
+    {
+      "id": "statinf-21-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 3,
+      "content": {
+        "front": "What does the Cramér-Rao Lower Bound (CRLB) establish in estimation theory?",
+        "back": "The CRLB establishes the absolute theoretical lower limit on the variance of any unbiased estimator of a deterministic parameter. An estimator achieving this bound is considered fully efficient."
+      }
+    },
+    {
+      "id": "statinf-22-flashcard",
+      "type": "FLASHCARD",
+      "difficulty": 3,
+      "content": {
+        "front": "State the core conclusion of the Neyman-Pearson Lemma for simple hypothesis testing.",
+        "back": "It states that when testing a simple null hypothesis against a simple alternative, a Likelihood Ratio Test (LRT) is the Uniformly Most Powerful (UMP) test for a given significance level $\\alpha$."
+      }
+    },
+    {
+      "id": "statinf-23-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "According to the Rao-Blackwell Theorem, how can an arbitrary unbiased estimator $\\hat{\\theta}$ be mathematically improved to have equal or lower variance?",
+        "options": [
+          "By taking the limit of the estimator as the sample size $n$ approaches infinity.",
+          "By taking the expected value of $\\hat{\\theta}$ conditional on a sufficient statistic $T(X)$.",
+          "By substituting the parameter with its corresponding Maximum Likelihood Estimator.",
+          "By multiplying the estimator by the inverse of the Fisher Information Matrix."
+        ],
+        "correctAnswer": "By taking the expected value of $\\hat{\\theta}$ conditional on a sufficient statistic $T(X)$.",
+        "explanation": "The Rao-Blackwell Theorem demonstrates that conditioning any unbiased estimator on a sufficient statistic yields a new unbiased estimator whose variance is less than or equal to the original estimator."
+      }
+    },
+    {
+      "id": "statinf-24-single",
+      "type": "SINGLE_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "In asymptotic theory, Wilks' Theorem dictates that under certain regularity conditions, the test statistic of the Likelihood Ratio Test converges in distribution to what specific distribution as $n \\to \\infty$?",
+        "options": [
+          "A Standard Normal distribution ($N(0,1)$).",
+          "A Student's t-distribution.",
+          "A Chi-square distribution ($\\chi^2$) with degrees of freedom equal to the difference in dimensionality of the parameter spaces.",
+          "An F-distribution."
+        ],
+        "correctAnswer": "A Chi-square distribution ($\\chi^2$) with degrees of freedom equal to the difference in dimensionality of the parameter spaces.",
+        "explanation": "Wilks' Theorem is foundational for building confidence regions and hypothesis tests for complex models, proving that $-2 \\ln \\Lambda$ asymptotically follows a $\\chi^2$ distribution, where $\\Lambda$ is the likelihood ratio."
+      }
+    },
+    {
+      "id": "statinf-25-multi",
+      "type": "MULTI_CHOICE",
+      "difficulty": 3,
+      "content": {
+        "question": "Under standard regularity conditions, which of the following asymptotic properties mathematically apply to Maximum Likelihood Estimators (MLEs) as sample size $n \\to \\infty$?",
+        "options": [
+          "Consistency (they converge in probability to the true parameter value).",
+          "Asymptotic Normality (their distribution approaches a Gaussian).",
+          "Efficiency (they achieve the Cramér-Rao Lower Bound).",
+          "Invariance (the MLE of $g(\\theta)$ is $g(\\hat{\\theta}_{MLE})$)."
+        ],
+        "correctAnswers": [
+          "Consistency (they converge in probability to the true parameter value).",
+          "Asymptotic Normality (their distribution approaches a Gaussian).",
+          "Efficiency (they achieve the Cramér-Rao Lower Bound).",
+          "Invariance (the MLE of $g(\\theta)$ is $g(\\hat{\\theta}_{MLE})$)."
+        ],
+        "explanation": "Under regularity conditions, MLEs possess all four properties: they are consistent, asymptotically normal, asymptotically efficient (achieving the CRLB), and functionally invariant to transformations."
+      }
+    }
+  ]
+}
