@@ -4,6 +4,7 @@ import { RenderableCard } from '../../features/studyPanel/cardPresenter';
 import { Rating } from '../../types';
 import { Card } from '../../types/core';
 import { SM2Data } from '../../features/progression/sm2';
+import { StudyPanelFeedbackMessage } from './StudyPanelFeedbackMessage';
 
 interface StudyPanelStudyViewProps {
   renderedCard: RenderableCard;
@@ -16,6 +17,7 @@ interface StudyPanelStudyViewProps {
   isCorrect: boolean;
   isCardFlipped: boolean;
   feedbackMessage?: string | null;
+  feedbackMessageDurationMs?: number;
   sm2State: SM2Data | null;
   activeCard: Card | null;
   onSelectAnswer: (answer: string) => void;
@@ -25,6 +27,9 @@ interface StudyPanelStudyViewProps {
   onRate: (rating: Rating) => void;
   getRatingLabel: (rating: Rating) => string;
   getRatingColor: (rating: Rating) => string;
+  xpGainAmount?: number | null;
+  xpGainVersion?: number | string | null;
+  onXpGainDone?: () => void;
 }
 
 export function StudyPanelStudyView({
@@ -38,6 +43,7 @@ export function StudyPanelStudyView({
   isCorrect,
   isCardFlipped,
   feedbackMessage,
+  feedbackMessageDurationMs = 1500,
   sm2State,
   activeCard,
   onSelectAnswer,
@@ -47,6 +53,9 @@ export function StudyPanelStudyView({
   onRate,
   getRatingLabel,
   getRatingColor,
+  xpGainAmount,
+  xpGainVersion,
+  onXpGainDone,
 }: StudyPanelStudyViewProps) {
   const formatTestId = isFlashcard
     ? 'study-card-format-flashcard'
@@ -57,7 +66,7 @@ export function StudyPanelStudyView({
         : 'study-card-format-unknown';
 
   return (
-    <div className="w-full" data-testid="study-panel-card-root">
+    <div className="w-full relative" data-testid="study-panel-card-root">
       <div className="bg-slate-900 rounded-[15px] p-5 min-h-[150px] flex flex-col justify-center">
         {/* Format Type Badge */}
         <div className="mb-3 flex items-center gap-2">
@@ -145,22 +154,6 @@ export function StudyPanelStudyView({
           </div>
         )}
 
-        {/* Result Feedback for Choice Questions */}
-        {isChoiceQuestion && isAnswerSubmitted && (
-          <div
-            className={`mt-4 p-3 rounded-lg text-center ${
-            isCorrect
-              ? 'bg-green-900/50 border border-green-500'
-              : 'bg-red-900/50 border border-red-500'
-          }`}
-            data-testid="study-card-feedback"
-          >
-            <span className={isCorrect ? 'text-green-400' : 'text-red-400'}>
-              {isCorrect ? '✓ Correct!' : '✗ Incorrect'}
-            </span>
-          </div>
-        )}
-
         {/* Card Metadata */}
         <div className="flex gap-4 text-xs text-slate-500 border-t border-slate-700 pt-3 mt-4">
           <span>ID: {renderedCard.id.slice(0, 8)}</span>
@@ -170,15 +163,14 @@ export function StudyPanelStudyView({
         </div>
       </div>
 
-      {/* Feedback Message */}
-      {feedbackMessage && (
-        <div
-          className="mt-3 text-center text-amber-400 text-lg font-semibold animate-pulse"
-          data-testid="study-panel-feedback-message"
-        >
-          {feedbackMessage}
-        </div>
-      )}
+      {/* Feedback + XP Gain Message */}
+      <StudyPanelFeedbackMessage
+        key={xpGainVersion}
+        feedbackMessage={feedbackMessage}
+        xpGainAmount={xpGainAmount}
+        onDone={onXpGainDone}
+        durationMs={feedbackMessageDurationMs}
+      />
 
       {/* Actions */}
       <div className="mt-4 text-center sticky bottom-0 z-10 bg-slate-800 pt-3">

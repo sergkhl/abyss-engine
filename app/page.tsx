@@ -109,6 +109,7 @@ const HomeContent: React.FC = () => {
   }, [initialize]);
 
   // Feedback messages for positive ratings (rating >= 3)
+  const FEEDBACK_MESSAGE_DURATION_MS = 1500;
   const positiveMessages = [
     '✨ Excellent!',
     '🌟 Perfect!',
@@ -136,14 +137,14 @@ const HomeContent: React.FC = () => {
       setStudyFeedback(randomMessage);
 
       // Clear feedback after a short delay
-      setTimeout(() => setStudyFeedback(null), 1500);
+      setTimeout(() => setStudyFeedback(null), FEEDBACK_MESSAGE_DURATION_MS);
     } else {
       // Negative feedback - only show encouraging message (no sound)
       const randomMessage = negativeMessages[Math.floor(Math.random() * negativeMessages.length)];
       setStudyFeedback(randomMessage);
 
       // Clear feedback after a short delay
-      setTimeout(() => setStudyFeedback(null), 1500);
+      setTimeout(() => setStudyFeedback(null), FEEDBACK_MESSAGE_DURATION_MS);
     }
 
     // Delay submitting result to allow feedback to be visible first
@@ -255,6 +256,7 @@ const HomeContent: React.FC = () => {
           isCardFlipped={isCurrentCardFlipped}
           totalCards={currentSession?.totalCards ?? totalCards}
           feedbackMessage={studyFeedback}
+          feedbackMessageDurationMs={FEEDBACK_MESSAGE_DURATION_MS}
           levelUpMessage={levelUpMessage}
           onClose={handleCloseStudyPanel}
           onFlip={flipCurrentCard}

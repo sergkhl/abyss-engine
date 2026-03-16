@@ -134,6 +134,7 @@ test.describe('Challenge Format Types', () => {
 
     // Verify flashcard badge
     await expect(page.getByTestId('study-card-format-flashcard')).toBeVisible({ timeout: 3000 });
+    await expect(page.getByTestId('study-card-xp-gain')).not.toBeVisible();
 
     // Click Show Answer button
     const showAnswerButton = page.getByTestId('study-card-show-answer');
@@ -147,6 +148,13 @@ test.describe('Challenge Format Types', () => {
     const goodButton = page.locator('button:has-text("Good")');
     await goodButton.click();
     await page.waitForTimeout(500);
+
+    // Verify feedback message is visible
+    await expect(page.getByTestId('study-panel-feedback-message')).toBeVisible({ timeout: 3000 });
+
+    // Verify XP gain animation appears
+    await expect(page.getByTestId('study-card-xp-gain')).toBeVisible({ timeout: 3000 });
+    await expect(page.getByTestId('study-card-xp-gain')).toContainText(/\+\d+ XP/);
 
     // Verify we can still see the current card's content (feedback visible)
     await expect(page.getByTestId('study-card-question-label')).toBeVisible({ timeout: 3000 });
@@ -165,6 +173,7 @@ test.describe('Challenge Format Types', () => {
 
     // Verify single choice badge
     await expect(page.getByTestId('study-card-format-single-choice')).toBeVisible({ timeout: 3000 });
+    await expect(page.getByTestId('study-card-xp-gain')).not.toBeVisible();
 
     // Find and click an option
     const optionButton = page.getByTestId('study-card-choice-options').locator('button').nth(0);
@@ -176,11 +185,18 @@ test.describe('Challenge Format Types', () => {
     await submitButton.click();
     await page.waitForTimeout(500);
 
-    // Verify feedback is visible
-    await expect(page.getByTestId('study-card-feedback')).toBeVisible({ timeout: 3000 });
+    // Verify choice feedback and XP are not shown on submit
+    await expect(page.getByTestId('study-panel-feedback-message')).not.toBeVisible();
+    await expect(page.getByTestId('study-card-xp-gain')).not.toBeVisible();
 
-    // Verify Continue button exists
-    await expect(page.getByTestId('study-card-continue')).toBeVisible({ timeout: 3000 });
+    // Click Continue to finalize the answer
+    const continueButton = page.getByTestId('study-card-continue');
+    await continueButton.click();
+
+    // Verify feedback message and XP gain animation appear after continue
+    await expect(page.getByTestId('study-panel-feedback-message')).toBeVisible({ timeout: 3000 });
+    await expect(page.getByTestId('study-card-xp-gain')).toBeVisible({ timeout: 3000 });
+    await expect(page.getByTestId('study-card-xp-gain')).toContainText(/\+\d+ XP/);
   });
 
   /**
@@ -197,6 +213,7 @@ test.describe('Challenge Format Types', () => {
 
     // Verify multi choice badge
     await expect(page.getByTestId('study-card-format-multi-choice')).toBeVisible({ timeout: 3000 });
+    await expect(page.getByTestId('study-card-xp-gain')).not.toBeVisible();
 
     // Verify submit is disabled initially
     const submitButton = page.getByTestId('study-card-submit-answer');
@@ -213,10 +230,15 @@ test.describe('Challenge Format Types', () => {
     await submitButton.click();
     await page.waitForTimeout(500);
 
-    // Verify feedback is visible
-    await expect(page.getByTestId('study-card-feedback')).toBeVisible({ timeout: 3000 });
+    // Verify choice feedback and XP are not shown on submit
+    await expect(page.getByTestId('study-panel-feedback-message')).not.toBeVisible();
+    await expect(page.getByTestId('study-card-xp-gain')).not.toBeVisible();
 
-    // Verify Continue button exists
-    await expect(page.getByTestId('study-card-continue')).toBeVisible({ timeout: 3000 });
+    // Verify feedback message and XP gain animation appear after continue
+    await page.getByTestId('study-card-continue').click();
+    await expect(page.getByTestId('study-panel-feedback-message')).toBeVisible({ timeout: 3000 });
+    await expect(page.getByTestId('study-card-xp-gain')).toBeVisible({ timeout: 3000 });
+    await expect(page.getByTestId('study-card-xp-gain')).toContainText(/\+\d+ XP/);
+
   });
 });

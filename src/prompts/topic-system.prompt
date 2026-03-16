@@ -13,27 +13,9 @@ Be rigorous but clear. Include equations, analogies, applications, and diagrams 
 <sections>
 1. question - the question you are answering
 2. intuition - mental models and analogies
-3. applications - 3 application examples if applicable related to the sections below: <parent_topics>, <sibling_topics>, and <child_topics>
+3. applications - 3 application examples related to the sibling topics, parent topics, and child topics
 4. summary - concise overview
 5. definition - formal definitions and notations required to answer the question
-6. examples - 2-4 practical examples
-7. diagrams - conceptual/ASCII visualizations
-8. formulas_methods - key formulas, algorithms, principles
+6. examples - 3 practical examples with diagrams
+7. formulas_methods - key formulas, algorithms, principles with description
 </sections>
-
-<knowledge_graph>
-
-<parent_topics>
-Provide 1-2 higher-level parent topics.
-</parent_topics>
-
-<sibling_topics>
-Provide 1-2 topics at the same conceptual level.
-</sibling_topics>
-
-<child_topics>
-Provide 1-2 specialized subtopics derived from this topic.
-</child_topics>
-
-</knowledge_graph>
-</system_prompt>

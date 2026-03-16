@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Rating } from '../types';
 import {
   getRatingColor,
   getRatingLabel,
+  calculateXPReward,
   useProgressionStore as useStudyStore,
 } from '../features/progression';
 import { evaluateAnswer as evaluateChoiceAnswer } from '../features/content';
@@ -23,10 +24,16 @@ interface StudyPanelModalProps {
   isCardFlipped: boolean;
   totalCards: number;
   feedbackMessage?: string | null;
+  feedbackMessageDurationMs?: number;
   levelUpMessage?: string | null;
   onClose: () => void;
   onFlip: () => void;
   onSubmitResult: (cardId: string, isCorrect?: boolean, rating?: Rating) => void;
+}
+
+interface XpGainEvent {
+  id: string;
+  amount: number;
 }
 
 export function StudyPanelModal({
@@ -36,6 +43,7 @@ export function StudyPanelModal({
   isCardFlipped,
   totalCards,
   feedbackMessage,
+  feedbackMessageDurationMs = 1500,
   levelUpMessage,
   onClose,
   onFlip,
@@ -55,6 +63,7 @@ export function StudyPanelModal({
   const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
+  const [xpGainEvent, setXpGainEvent] = useState<XpGainEvent | null>(null);
   const systemPromptRef = useRef<HTMLPreElement>(null);
 
   useEffect(() => {
@@ -79,6 +88,23 @@ export function StudyPanelModal({
     setIsAnswerSubmitted(false);
     setIsCorrect(false);
   }, [model.activeCard?.id]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedAnswers([]);
+      setIsAnswerSubmitted(false);
+      setIsCorrect(false);
+      setXpGainEvent(null);
+    }
+  }, [isOpen]);
+
+  const triggerXpGain = (rating: Rating) => {
+    const amount = calculateXPReward(undefined, rating);
+    setXpGainEvent({
+      id: `${model.activeCard?.id ?? 'card'}-${Date.now()}-${amount}`,
+      amount,
+    });
+  };
 
   const handleSelectSystemPrompt = () => {
     const promptElement = systemPromptRef.current;
@@ -124,6 +150,7 @@ export function StudyPanelModal({
     const cardId = model.activeCard?.id || currentCardId || currentSession?.currentCardId || null;
     if (!cardId) return;
 
+    triggerXpGain(isCorrect ? 3 : 1);
     onSubmitResult(cardId, isCorrect);
     setSelectedAnswers([]);
     setIsAnswerSubmitted(false);
@@ -134,8 +161,13 @@ export function StudyPanelModal({
     const cardId = model.activeCard?.id || currentCardId || currentSession?.currentCardId || null;
     if (!cardId) return;
 
+    triggerXpGain(rating);
     onSubmitResult(cardId, undefined, rating);
   };
+
+  const clearXpGainEvent = useCallback(() => {
+    setXpGainEvent(null);
+  }, []);
 
   if (!isOpen) return null;
 
@@ -189,8 +221,12 @@ export function StudyPanelModal({
               isCorrect={isCorrect}
               isCardFlipped={isCardFlipped}
               feedbackMessage={feedbackMessage}
+              feedbackMessageDurationMs={feedbackMessageDurationMs}
               sm2State={model.sm2State}
               activeCard={model.activeCard}
+              xpGainAmount={xpGainEvent?.amount ?? null}
+              xpGainVersion={xpGainEvent?.id}
+              onXpGainDone={clearXpGainEvent}
               onSelectAnswer={handleAnswerSelect}
               onChoiceSubmit={handleChoiceSubmit}
               onChoiceContinue={handleChoiceContinue}
