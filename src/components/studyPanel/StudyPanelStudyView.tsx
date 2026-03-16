@@ -6,6 +6,65 @@ import { Card } from '../../types/core';
 import { SM2Data } from '../../features/progression/sm2';
 import { StudyPanelFeedbackMessage } from './StudyPanelFeedbackMessage';
 
+type OptionState =
+  | 'default'
+  | 'selected'
+  | 'selected-correct'
+  | 'selected-incorrect'
+  | 'unselected-correct'
+  | 'unselected-incorrect';
+
+const optionStateByAnswer = (isSubmitted: boolean, isSelected: boolean, isCorrectOption: boolean): OptionState => {
+  if (!isSubmitted) {
+    return isSelected ? 'selected' : 'default';
+  }
+
+  if (isSelected) {
+    return isCorrectOption ? 'selected-correct' : 'selected-incorrect';
+  }
+
+  return isCorrectOption ? 'unselected-correct' : 'unselected-incorrect';
+};
+
+type OptionPresentation = {
+  marker: '✓' | '✗' | null;
+  style: string;
+  markerClass: string;
+};
+
+const optionPresentation: Record<OptionState, OptionPresentation> = {
+  default: {
+    marker: null,
+    style: 'bg-transparent border-slate-600 hover:border-slate-400',
+    markerClass: '',
+  },
+  selected: {
+    marker: null,
+    style: 'bg-cyan-900/50 border-cyan-500',
+    markerClass: '',
+  },
+  'selected-correct': {
+    marker: '✓',
+    style: 'bg-green-900/50 border-green-500',
+    markerClass: 'text-green-300',
+  },
+  'selected-incorrect': {
+    marker: '✗',
+    style: 'bg-red-900/50 border-red-500',
+    markerClass: 'text-red-300',
+  },
+  'unselected-correct': {
+    marker: '✗',
+    style: 'bg-transparent border-red-500',
+    markerClass: 'text-red-300',
+  },
+  'unselected-incorrect': {
+    marker: null,
+    style: 'bg-transparent border-slate-600 hover:border-slate-400',
+    markerClass: '',
+  },
+};
+
 interface StudyPanelStudyViewProps {
   renderedCard: RenderableCard;
   isFlashcard: boolean;
@@ -111,32 +170,34 @@ export function StudyPanelStudyView({
             {renderedCard.options.map((option, index) => {
               const isSelected = selectedAnswers.includes(option);
               const isCorrectOption = renderedCard.correctAnswers?.includes(option);
-
-              let optionClass = 'bg-slate-800 border-slate-600 hover:bg-slate-700';
-              if (isAnswerSubmitted) {
-                if (isCorrectOption) {
-                  optionClass = 'bg-green-900/50 border-green-500';
-                } else if (isSelected && !isCorrectOption) {
-                  optionClass = 'bg-red-900/50 border-red-500';
-                }
-              } else if (isSelected) {
-                optionClass = 'bg-cyan-900/50 border-cyan-500';
-              }
+              const optionState = optionStateByAnswer(isAnswerSubmitted, isSelected, isCorrectOption);
+              const optionStyle = optionPresentation[optionState].style;
+              const optionMarker = optionPresentation[optionState].marker;
+              const optionMarkerClass = optionPresentation[optionState].markerClass;
 
               return (
                 <button
                   key={index}
                   onClick={() => onSelectAnswer(option)}
                   disabled={isAnswerSubmitted}
-                  className={`w-full text-left p-3 rounded-lg border-2 transition-colors ${optionClass} ${
+                  className={`w-full text-left p-3 rounded-lg border-2 transition-colors ${optionStyle} ${
                     isAnswerSubmitted ? 'cursor-default' : 'cursor-pointer'
                   }`}
                   data-testid={`study-card-choice-option-${index}`}
+                  aria-label={`${option} ${isAnswerSubmitted ? optionState : 'not submitted'}`}
                 >
-                  <MathMarkdownRenderer
-                    source={option}
-                    className="text-slate-300 markdown-body markdown-body--inline"
-                  />
+                  <span className="inline-flex items-center gap-2">
+                    {isAnswerSubmitted && optionMarker && (
+                      <span className={`inline-flex items-center justify-center w-4 leading-none text-lg ${optionMarkerClass}`}>
+                        {optionMarker}
+                      </span>
+                    )}
+                    <MathMarkdownRenderer
+                      source={option}
+                      className="text-slate-300 markdown-body markdown-body--inline"
+                    />
+                  </span>
+                  <span className="sr-only">{isAnswerSubmitted && optionMarker ? optionMarker : ''}</span>
                 </button>
               );
             })}
