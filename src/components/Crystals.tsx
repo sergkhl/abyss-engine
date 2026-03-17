@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber/webgpu';
+import { Html } from '@react-three/drei/webgpu';
 import * as THREE from 'three/webgpu';
 import { ActiveCrystal } from '../types';
 import { calculateLevelFromXP, getCrystalScale } from '../features/progression';
@@ -11,6 +12,14 @@ import { useTopicMetadata } from '../features/content';
 import { GrowthParticles } from '../graphics/GrowthParticles';
 import { playLevelUpSound } from '../utils/sound';
 import { useSceneInvalidator } from '../hooks/useSceneInvalidator';
+import {
+  getLabelOpacity,
+  getVisibleLabelCandidates,
+  LabelVisibilityState,
+  MAX_LABEL_DISTANCE,
+  MAX_VISIBLE_LABELS,
+  CRYSTAL_LABEL_OFFSET_Y,
+} from './crystalLabelVisibility';
 
 const crystalInnerGeometry = new THREE.SphereGeometry(0.15, 8, 6);
 const levelIndicatorGeometry = new THREE.SphereGeometry(0.08, 16, 16);
@@ -35,6 +44,7 @@ interface SingleCrystalProps {
   topicMeta?: TopicMetadata;
   onSelect: (crystal: ActiveCrystal) => void;
   isStudyPanelOpen: boolean;
+  labelVisibility: LabelVisibilityState;
 }
 
 const SingleCrystal: React.FC<SingleCrystalProps> = ({
@@ -43,12 +53,14 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
   topicMeta,
   onSelect,
   isStudyPanelOpen,
+  labelVisibility,
 }) => {
   const [x, z] = crystal.gridPosition;
   const groupRef = useRef<THREE.Group>(null);
   const innerRef = useRef<THREE.Mesh>(null);
   const levelRef = useRef<THREE.Mesh>(null);
   const glowRingRef = useRef<THREE.Mesh>(null);
+  const labelRef = useRef<HTMLDivElement>(null);
   const { invalidate, isPaused } = useSceneInvalidator();
   const animationRef = useRef({
     start: performance.now(),
@@ -77,6 +89,26 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
   const pendingLevelUpSound = useRef(false);
   const burstTimerRef = useRef<number | null>(null);
   const initialized = useRef(false);
+  const suppressNextClickRef = useRef(false);
+
+  const handleCrystalSelection = () => {
+    onSelect(crystal);
+  };
+
+  const handleCrystalPointerUp = (e: ThreeEvent<PointerEvent>) => {
+    e.stopPropagation();
+    suppressNextClickRef.current = true;
+    handleCrystalSelection();
+  };
+
+  const handleCrystalClick = (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    if (suppressNextClickRef.current) {
+      suppressNextClickRef.current = false;
+      return;
+    }
+    handleCrystalSelection();
+  };
 
   const triggerParticleBurst = () => {
     if (burstTimerRef.current !== null) {
@@ -316,6 +348,14 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
       glowRingRef.current.quaternion.copy(camera.quaternion);
       glowRingRef.current.scale.setScalar(pulse * (isSelected ? 1.25 : 1));
     }
+
+    if (labelRef.current) {
+      const isLabelVisible = labelVisibility.visibleIds.has(crystal.topicId);
+      const distance = isLabelVisible ? labelVisibility.distances.get(crystal.topicId) ?? Infinity : Infinity;
+      const opacity = topicMeta?.topicName ? getLabelOpacity(distance) : 0;
+      labelRef.current.style.opacity = `${opacity}`;
+      labelRef.current.style.display = opacity === 0 ? 'none' : 'block';
+    }
   });
 
   return (
@@ -323,10 +363,8 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
       <mesh
         geometry={crystalGeometry}
         material={outerMaterial}
-        onClick={(e: ThreeEvent<MouseEvent>) => {
-          e.stopPropagation();
-          onSelect(crystal);
-        }}
+        onPointerUp={handleCrystalPointerUp}
+        onClick={handleCrystalClick}
       />
 
       <mesh
@@ -358,6 +396,48 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
         rotation={[-Math.PI / 2, 0, 0]}
         position={[0, 0.05, 0]}
       />
+
+      {topicMeta?.topicName && (
+        <Html
+          center
+          transform
+          sprite
+          position={[0, -0.7, 0]}
+          zIndexRange={isSelected ? [50, 100] : [0, 10]}
+          style={{
+            pointerEvents: 'none',
+            width: '100px',
+            textAlign: 'center',
+            display: 'flex',
+            justifyContent: 'center',
+          }}
+        >
+          <div
+            ref={labelRef}
+            style={{
+              pointerEvents: 'none',
+              fontFamily: 'ui-sans-serif, system-ui, -apple-system, Segoe UI',
+              fontSize: '5px',
+              fontWeight: 400,
+              lineHeight: 1,
+              letterSpacing: '0.01em',
+              textShadow: '0 1px 3px rgba(3, 7, 18, 0.75)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              opacity: 0,
+              maxWidth: '100px',
+              padding: '2px 2px',
+              borderRadius: '2px',
+              background: 'rgba(15, 23, 42, 0.65)',
+              // border: '1px solid rgba(148, 163, 184, 0.35)',
+              color: 'white',
+            }}
+          >
+            {topicMeta.topicName}
+          </div>
+        </Html>
+      )}
     </group>
   );
 };
@@ -371,6 +451,33 @@ export const Crystals: React.FC<CrystalsProps> = ({
   const resolvedMetadata = metadataLookup;
   const selectedTopicId = useUIStore((state) => state.selectedTopicId);
   const selectTopic = useUIStore((state) => state.selectTopic);
+  const labelVisibility = useRef<LabelVisibilityState>({
+    visibleIds: new Set(),
+    distances: new Map(),
+  });
+  const { isPaused } = useSceneInvalidator();
+
+  useFrame(({ camera }) => {
+    if (isPaused) {
+      return;
+    }
+
+    const candidates = getVisibleLabelCandidates(
+      crystals,
+      camera.position,
+      CRYSTAL_LABEL_OFFSET_Y,
+      MAX_LABEL_DISTANCE,
+      MAX_VISIBLE_LABELS,
+    );
+    const { visibleIds, distances } = labelVisibility.current;
+    visibleIds.clear();
+    distances.clear();
+
+    candidates.forEach((candidate) => {
+      visibleIds.add(candidate.topicId);
+      distances.set(candidate.topicId, candidate.distance);
+    });
+  });
 
   if (crystals.length === 0) {
     return <group />;
@@ -394,6 +501,7 @@ export const Crystals: React.FC<CrystalsProps> = ({
           onSelect={handleCrystalClick}
           topicMeta={resolvedMetadata[crystal.topicId]}
           isStudyPanelOpen={!!isStudyPanelOpen}
+          labelVisibility={labelVisibility.current}
         />
       ))}
     </group>
