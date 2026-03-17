@@ -6,6 +6,7 @@ import { useUIStore } from '../store/uiStore';
 import { playTimerFinishedSound } from '../utils/sound';
 import { formatPomodoroRemaining, pomodoroStore } from '../features/pomodoro';
 import { GRID_SIZE } from './Grid';
+import { Button } from '@/components/ui/button';
 
 const TIMER_CORNER_OFFSET = 0.72;
 const TIMER_HEIGHT = 2.45;
@@ -96,7 +97,7 @@ export const PomodoroTimer3D: React.FC = () => {
     >
       <div>{timerText}</div>
       <div style={{ display: 'flex', gap: '8px' }}>
-        <button
+        <Button
           type="button"
           onClick={() => {
             if (isRunning) {
@@ -105,41 +106,56 @@ export const PomodoroTimer3D: React.FC = () => {
               resume();
             }
           }}
-          style={buttonStyle}
+          style={{
+            border: '1px solid rgba(125, 211, 252, 0.5)',
+            borderRadius: '999px',
+            background: 'rgba(15, 23, 42, 0.7)',
+            color: '#7dd3fc',
+            width: '30px',
+            height: '30px',
+            padding: 0,
+            margin: 0,
+            cursor: 'pointer',
+            lineHeight: '28px',
+            textAlign: 'center',
+            display: 'inline-flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            fontSize: '16px',
+            fontWeight: 600,
+          }}
           aria-label={isRunning ? 'Pause timer' : 'Resume timer'}
         >
           {isRunning ? '⏸' : '▶'}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={reset}
-          style={buttonStyle}
+          style={{
+            border: '1px solid rgba(125, 211, 252, 0.5)',
+            borderRadius: '999px',
+            background: 'rgba(15, 23, 42, 0.7)',
+            color: '#7dd3fc',
+            width: '30px',
+            height: '30px',
+            padding: 0,
+            margin: 0,
+            cursor: 'pointer',
+            lineHeight: '28px',
+            textAlign: 'center',
+            display: 'inline-flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            fontSize: '16px',
+            fontWeight: 600,
+          }}
           aria-label="Reset timer"
         >
           ⟲
-        </button>
+        </Button>
       </div>
     </Html>
   );
-};
-
-const buttonStyle: React.CSSProperties = {
-  border: '1px solid rgba(125, 211, 252, 0.5)',
-  borderRadius: '999px',
-  background: 'rgba(15, 23, 42, 0.7)',
-  color: '#7dd3fc',
-  width: '30px',
-  height: '30px',
-  padding: 0,
-  margin: 0,
-  cursor: 'pointer',
-  lineHeight: '28px',
-  textAlign: 'center',
-  display: 'inline-flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  fontSize: '16px',
-  fontWeight: 600,
 };
 
 export default PomodoroTimer3D;

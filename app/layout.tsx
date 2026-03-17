@@ -2,6 +2,10 @@ import type { Metadata } from 'next';
 import React from 'react';
 import './globals.css';
 import QueryProvider from './providers/QueryProvider';
+import { Geist } from "next/font/google";
+import { ThemeProvider } from "@/components/theme-provider";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: 'Abyss Engine',
@@ -14,10 +18,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${geist.variable} font-sans`}
+    >
       <body style={{ margin: 0, padding: 0 }}>
         <React.StrictMode>
-          <QueryProvider>{children}</QueryProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <QueryProvider>{children}</QueryProvider>
+          </ThemeProvider>
         </React.StrictMode>
       </body>
     </html>

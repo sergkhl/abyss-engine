@@ -10,7 +10,6 @@ const progressionState = {
   unlockTopic: () => null,
   unlockedTopicIds: [],
   activeCrystals: [],
-  lockedTopics: [],
   getTopicUnlockStatus: () => ({
     canUnlock: false,
     hasPrerequisites: false,
@@ -55,7 +54,7 @@ describe('DiscoveryModal', () => {
       onClose,
     });
 
-    const openRitualButton = container.querySelector('[aria-label="Open attunement ritual"]') as
+    const openRitualButton = document.body.querySelector('[aria-label="Open attunement ritual"]') as
       | HTMLButtonElement
       | null;
     expect(openRitualButton).not.toBeNull();
@@ -75,7 +74,7 @@ describe('DiscoveryModal', () => {
       onClose: vi.fn(),
     });
 
-    const openRitualButton = container.querySelector('[aria-label="Open attunement ritual"]') as
+    const openRitualButton = document.body.querySelector('[aria-label="Open attunement ritual"]') as
       | HTMLButtonElement
       | null;
     expect(openRitualButton).not.toBeNull();

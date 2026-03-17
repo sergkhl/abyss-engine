@@ -64,7 +64,7 @@ export interface ParticlesAnimationProps {
 export function ParticlesAnimation({
   isActive,
   particles = RITUAL_PARTICLE_ANIMATION,
-  particleClassName = 'bg-violet-200/90',
+  particleClassName = 'bg-primary/90',
   particleSize = 6,
   particleGlow = '0 0 8px 2px rgba(196, 181, 253, 0.7)',
   particleStyle = {},

@@ -38,7 +38,7 @@ test.describe('Discovery/Unlock Journey', () => {
     await page.waitForTimeout(1500);
 
     // Check for modal container (discovery modal opened)
-    const modalContainer = page.locator('[class*="fixed inset-0 bg-black"]');
+    const modalContainer = page.locator('[class*="fixed inset-0"]').first();
     await expect(modalContainer).toBeVisible();
 
     // Check for tier labels (there are multiple tiers, so use first())
@@ -80,15 +80,14 @@ test.describe('Discovery/Unlock Journey', () => {
     await page.waitForTimeout(1500);
 
     // Look for any topic buttons and click them
-    const modalContainer = page.locator('[class*="fixed inset-0 bg-black"]');
+    const modalContainer = page.locator('[class*="fixed inset-0"]').first();
 
-    // Get all buttons in the modal
-    const buttons = modalContainer.locator('button');
-    const buttonCount = await buttons.count();
+    // Get topic buttons in the modal
+    const topicButtons = modalContainer.locator('div.grid button');
+    const buttonCount = await topicButtons.count();
 
-    // Click a topic button if available
-    if (buttonCount > 2) {
-      await buttons.nth(2).click();
+    if (buttonCount > 0) {
+      await topicButtons.first().click();
       await page.waitForTimeout(500);
 
       // Check for details popup (prerequisites or topic info)

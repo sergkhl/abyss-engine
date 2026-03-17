@@ -10,12 +10,13 @@ import {
   useProgressionStore as useStudyStore,
 } from '../features/progression';
 import { evaluateAnswer as evaluateChoiceAnswer } from '../features/content';
-import { ModalWrapper } from './ui/modal-wrapper';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
+import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { TARGET_AUDIENCE_OPTIONS, useStudySettingsStore } from '../store/studySettingsStore';
-import { StudyPanelHeader, StudyPanelTab } from './studyPanel/StudyPanelHeader';
 import { StudyPanelStateViews } from './studyPanel/StudyPanelStateViews';
 import { StudyPanelStudyView } from './studyPanel/StudyPanelStudyView';
 import { useStudyPanelModel } from '../hooks/useStudyPanelModel';
+import { StudyPanelTab } from './studyPanel/types';
 
 interface StudyPanelModalProps {
   isOpen: boolean;
@@ -65,17 +66,6 @@ export function StudyPanelModal({
   const [isCorrect, setIsCorrect] = useState(false);
   const [xpGainEvent, setXpGainEvent] = useState<XpGainEvent | null>(null);
   const systemPromptRef = useRef<HTMLPreElement>(null);
-
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
 
   useEffect(() => {
     if (!model.resolvedTopicId || (activeTab === 'theory' && !model.hasTheory)) {
@@ -172,24 +162,45 @@ export function StudyPanelModal({
   if (!isOpen) return null;
 
   return (
-    <ModalWrapper onClose={onClose} panelClassName="w-[min(95%,60rem)] max-h-[95vh]">
-      <div data-testid="study-panel-modal-content" className="relative flex min-h-0 flex-col">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 bg-transparent border-none text-slate-400 text-2xl cursor-pointer leading-none p-1 hover:text-slate-200 transition-colors z-30"
-          aria-label="Close modal"
-        >
-          ×
-        </button>
-
-        <StudyPanelHeader
-          activeTab={activeTab}
-          hasTheory={model.hasTheory}
-          resolvedTopicId={model.resolvedTopicId}
-          onTabChange={setActiveTab}
-        />
-
-        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) {
+        onClose();
+      }
+    }}>
+      <DialogContent
+        className="max-h-[95vh] flex flex-col"
+      >
+      <DialogHeader>
+        <DialogTitle data-testid="study-session-title">
+          📚 Study Session
+        </DialogTitle>
+        <DialogDescription>
+          Review cards, answer prompts, and track your study session progress.
+        </DialogDescription>
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as StudyPanelTab)}>
+            <TabsList className="mx-auto">
+              <TabsTrigger value="study" data-testid="study-tab-study">
+                📖 Study
+              </TabsTrigger>
+              {model.hasTheory && (
+                <TabsTrigger value="theory" data-testid="study-tab-theory">
+                  💡 Theory
+                </TabsTrigger>
+              )}
+              <TabsTrigger
+                value="system_prompt"
+                disabled={!model.resolvedTopicId}
+                data-testid="study-tab-system-prompt"
+              >
+                🧠
+              </TabsTrigger>
+              <TabsTrigger value="settings" data-testid="study-tab-settings">
+                ⚙️
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+      </DialogHeader>
+        <div data-testid="study-panel-modal-content" className="-mx-4 px-4 no-scrollbar overflow-y-auto">
           <StudyPanelStateViews
             levelUpMessage={levelUpMessage}
             activeTab={activeTab}
@@ -236,9 +247,9 @@ export function StudyPanelModal({
               getRatingColor={getRatingColor}
             />
           )}
-        </div>
       </div>
-    </ModalWrapper>
+      </DialogContent>
+    </Dialog>
   );
 }
 

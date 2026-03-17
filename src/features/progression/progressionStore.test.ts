@@ -15,11 +15,11 @@ function createCard(id: string): Card {
   };
 }
 
-function crystal(topicId: string): ActiveCrystal {
+function crystal(topicId: string, xp = 0): ActiveCrystal {
   return {
     topicId,
     gridPosition: [0, 0],
-    xp: 0,
+    xp,
     spawnedAt: Date.now(),
   };
 }
@@ -53,7 +53,6 @@ function resetStore() {
   useProgressionStore.setState({
     isCurrentCardFlipped: false,
     unlockedTopicIds: [],
-    lockedTopics: [],
     sm2Data: {},
     activeCrystals: [],
     activeBuffs: [],
@@ -95,7 +94,6 @@ describe('progressionStore card-only canonical API', () => {
       unlockedTopicIds: ['topic-a'],
       activeCrystals: [crystal('topic-a')],
       unlockPoints: 3,
-      lockedTopics: ['topic-b'],
     });
 
     const startResult = useProgressionStore.getState().startTopicStudySession('topic-a', cards);
@@ -115,9 +113,24 @@ describe('progressionStore card-only canonical API', () => {
     expect(updated.interval).toBeGreaterThan(0);
   });
 
+  it('adds an unlock point when a study result levels up a crystal', () => {
+    const cards = [createCard('a-1')];
+    useProgressionStore.setState({
+      unlockedTopicIds: ['topic-a'],
+      activeCrystals: [crystal('topic-a', 95)],
+      unlockPoints: 0,
+    });
+
+    useProgressionStore.getState().startTopicStudySession('topic-a', cards);
+    useProgressionStore.getState().submitStudyResult('a-1', 4);
+
+    const updatedState = useProgressionStore.getState();
+    expect(updatedState.activeCrystals[0]).toMatchObject({ xp: 110 });
+    expect(updatedState.unlockPoints).toBe(1);
+  });
+
   it('uses graph prerequisites and unlock points when unlocking topics', () => {
     useProgressionStore.setState({
-      lockedTopics: ['topic-a', 'topic-b'],
       unlockedTopicIds: [],
       activeCrystals: [],
       unlockPoints: 2,
@@ -152,7 +165,6 @@ describe('progressionStore card-only canonical API', () => {
       unlockedTopicIds: ['topic-a'],
       activeCrystals: [crystal('topic-a')],
       unlockPoints: 3,
-      lockedTopics: ['topic-b'],
     });
 
     const result = useProgressionStore.getState().submitAttunement(ritualPayload('topic-a'));
@@ -191,7 +203,6 @@ describe('progressionStore card-only canonical API', () => {
       unlockedTopicIds: ['topic-a'],
       activeCrystals: [crystal('topic-a')],
       unlockPoints: 3,
-      lockedTopics: ['topic-b'],
       attunementSessions: [
         {
           sessionId: 'previous-session',
@@ -217,7 +228,6 @@ describe('progressionStore card-only canonical API', () => {
       unlockedTopicIds: ['topic-a'],
       activeCrystals: [crystal('topic-a')],
       unlockPoints: 3,
-      lockedTopics: ['topic-b'],
       attunementSessions: [
         {
           sessionId: 'previous-session',

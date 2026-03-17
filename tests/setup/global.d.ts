@@ -30,7 +30,6 @@ declare global {
       getState: () => {
         activeCards: number;
         activeCrystals: number;
-        lockedTopics: number;
         unlockPoints: number;
         queuedCards: number;
       };

@@ -24,7 +24,7 @@ import SubjectNavigation from '@/components/SubjectNavigation';
 const Scene = dynamic(() => import('@/components/Scene'), {
   ssr: false,
   loading: () => (
-    <div className="w-screen h-screen flex items-center justify-center bg-slate-900 text-slate-200 text-2xl">
+    <div className="w-screen h-screen flex items-center justify-center bg-background text-foreground text-2xl">
       Loading 3D Scene...
     </div>
   ),
@@ -60,11 +60,9 @@ const HomeContent: React.FC = () => {
     return state.getTotalCardsCount ? state.getTotalCardsCount(queueCardRefs) : queueCardIds.length;
   });
   const activeCrystals = useStudyStore(s => s.activeCrystals);
-  const lockedTopics = useStudyStore(s => s.lockedTopics);
   const levelUpMessage = useStudyStore(s => s.levelUpMessage);
   const unlockPoints = useStudyStore(s => s.unlockPoints);
   const activeBuffs = useStudyStore((state) => state.activeBuffs);
-  const attunementSessions = useStudyStore((state) => state.attunementSessions);
   const getRemainingAttunementCooldownMs = useStudyStore((state) => state.getRemainingAttunementCooldownMs);
 
   // Get store actions - stable references
@@ -89,8 +87,6 @@ const HomeContent: React.FC = () => {
   // Study panel feedback state
   const [studyFeedback, setStudyFeedback] = useState<string | null>(null);
   const ritualCooldownRemainingMs = getRemainingAttunementCooldownMs(Date.now());
-
-  const latestSession = attunementSessions.length > 0 ? attunementSessions[attunementSessions.length - 1] : null;
 
   const currentTopicId = currentSession?.topicId || null;
 
@@ -164,7 +160,6 @@ const HomeContent: React.FC = () => {
   };
 
   const handleOpenRitualModal = () => {
-    closeDiscoveryModal();
     openRitualModal();
   };
 
@@ -188,7 +183,7 @@ const HomeContent: React.FC = () => {
 
   if (!isClient) {
     return (
-      <div className="w-screen h-screen flex items-center justify-center bg-slate-900 text-slate-200 text-2xl">
+      <div className="w-screen h-screen flex items-center justify-center bg-background text-foreground text-2xl">
         Loading...
       </div>
     );
@@ -212,10 +207,7 @@ const HomeContent: React.FC = () => {
           totalCards={totalCards}
           dueCards={dueCards}
           activeTopics={activeCrystals.length}
-          lockedTopics={lockedTopics.length}
           activeBuffs={activeBuffs}
-          latestHarmonyScore={latestSession?.harmonyScore}
-          latestReadinessBucket={latestSession?.readinessBucket}
         />
 
         <AttunementRitualModal
@@ -228,11 +220,11 @@ const HomeContent: React.FC = () => {
 
         {/* Title */}
         <div className="absolute top-5 right-5 z-10 text-right">
-          <h1 className="text-2xl m-0 bg-gradient-to-r from-cyan-400 to-violet-500 bg-clip-text text-transparent">
+          <h1 className="text-2xl m-0 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             🌊 Abyss Engine
           </h1>
           {unlockPoints > 0 && (
-            <p className="text-amber-400 text-sm m-0 font-semibold">
+            <p className="text-accent-foreground text-sm m-0 font-semibold">
               🔓 {unlockPoints} Unlock Point{unlockPoints !== 1 ? 's' : ''} available
             </p>
           )}
@@ -241,7 +233,6 @@ const HomeContent: React.FC = () => {
         {/* Discovery Modal - Tiered Skill Tree */}
         <DiscoveryModal
           isOpen={isDiscoveryModalOpen}
-          lockedTopicsCount={lockedTopics.length}
           unlockPoints={unlockPoints}
           onOpenRitual={handleOpenRitualModal}
           ritualCooldownRemainingMs={ritualCooldownRemainingMs}
@@ -278,7 +269,7 @@ export default function Home() {
   return (
     <Suspense
       fallback={
-        <div className="w-screen h-screen flex items-center justify-center bg-slate-900 text-slate-200 text-2xl">
+        <div className="w-screen h-screen flex items-center justify-center bg-background text-foreground text-2xl">
           Loading deck data...
         </div>
       }

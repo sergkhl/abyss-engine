@@ -5,6 +5,7 @@ import { useUIStore } from '../store/uiStore';
 import { calculateLevelFromXP } from '../features/progression';
 import type { TopicMetadata } from '../features/content';
 import type { Card } from '../types/core';
+import { Button } from '@/components/ui/button';
 
 interface TopicSelectionBarProps {
   /** Whether this bar is embedded in the 3D scene (vs standalone) */
@@ -64,37 +65,38 @@ export default function TopicSelectionBar({
 
   return (
     <div className={containerClass}>
-      <div className="flex items-center gap-2 px-2 py-2 bg-black/80 backdrop-blur-sm rounded-lg border border-white/10 shadow-lg">
+    <div className="flex items-center gap-2 px-2 py-2 bg-card/80 backdrop-blur-sm rounded-lg border border-border shadow-lg">
         <div className="flex flex-col items-start">
-          <span className="text-xs text-white/50 uppercase tracking-wider">Selected</span>
-          <div className="flex items-center gap-2 text-white">
+          <span className="text-xs text-foreground/50 uppercase tracking-wider">Selected</span>
+          <div className="flex items-center gap-2 text-foreground">
             <span className="font-semibold min-w-[100px]">{topicName}</span>
-            <span className="text-white/40">•</span>
-            <span className="text-sm text-amber-400 min-w-[50px]">Level {level} ({xp} XP)</span>
+            <span className="text-foreground/40">•</span>
+            <span className="text-sm text-muted-foreground min-w-[50px]">Level {level} ({xp} XP)</span>
           </div>
         </div>
 
-        <div className="w-px h-8 bg-white/20" />
+        <div className="w-px h-8 bg-foreground/20" />
 
-        <button
+        <Button
           type="button"
           onClick={handleBegin}
           onPointerDown={stopPropagation}
           onMouseDown={stopPropagation}
           onTouchStart={stopPropagation}
-          className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded transition-colors duration-200"
+          className="px-4 py-1.5 text-sm font-medium rounded transition-colors duration-200"
         >
           Begin
-        </button>
+        </Button>
 
-        <button
+        <Button
           type="button"
           aria-label="Clear selection"
           onClick={handleClear}
           onPointerDown={stopPropagation}
           onMouseDown={stopPropagation}
           onTouchStart={stopPropagation}
-          className="p-1.5 text-white/60 hover:text-white hover:bg-white/10 rounded transition-colors duration-200"
+          variant="outline"
+          className="p-1.5 rounded transition-colors duration-200"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -108,7 +110,7 @@ export default function TopicSelectionBar({
               clipRule="evenodd"
             />
           </svg>
-        </button>
+        </Button>
       </div>
     </div>
   );

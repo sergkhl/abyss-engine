@@ -1,8 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useProgressionStore as useStudyStore } from '../features/progression';
 import { useAllGraphs, useSubjects } from '../features/content';
-import { ModalWrapper } from './ui/modal-wrapper';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { ParticlesAnimation, RITUAL_PARTICLE_ANIMATION } from './ui/particles-animation';
+import { Button } from '@/components/ui/button';
 
 // ============================================================================
 // Types
@@ -36,7 +43,6 @@ interface UnlockStatus {
 
 interface DiscoveryModalProps {
   isOpen: boolean;
-  lockedTopicsCount: number;
   unlockPoints: number;
   getTopicUnlockStatus?: (topicId: string, allGraphs?: unknown[]) => UnlockStatus;
   onOpenRitual?: () => void;
@@ -51,6 +57,7 @@ interface DiscoveryModalProps {
 interface DetailsPopupProps {
   topic: TopicTierData['topics'][0];
   unlockStatus: UnlockStatus;
+  isOpen: boolean;
   onClose: () => void;
   onUnlock: () => void;
   isContentAvailable: boolean;
@@ -59,36 +66,28 @@ interface DetailsPopupProps {
 const DetailsPopup: React.FC<DetailsPopupProps> = ({
   topic,
   unlockStatus,
+  isOpen,
   onClose,
   onUnlock,
   isContentAvailable,
 }) => {
   return (
-    <ModalWrapper
-      onClose={onClose}
-      overlayClassName="bg-black/60 z-[200]"
-      panelClassName="w-[min(95%,30rem)] border-slate-600 shadow-2xl"
-    >
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        className="w-[min(95%,30rem)] max-h-[95vh] bg-card border border-border shadow-2xl rounded-[20px] overflow-hidden p-3 sm:p-6 flex flex-col min-h-0"
+      >
+      <DialogHeader>
+        <DialogTitle>{topic.name}</DialogTitle>
+        <DialogDescription>
+          {topic.subjectName}
+        </DialogDescription>
+      </DialogHeader>
       <div className="overflow-y-auto">
-        {/* Header */}
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h3 className="text-xl font-bold text-slate-200 m-0">{topic.name}</h3>
-            <p className="text-cyan-400 text-sm mt-1">{topic.subjectName}</p>
-          </div>
-          <button
-            onClick={onClose}
-            className="bg-transparent border-none text-slate-400 text-xl cursor-pointer p-1 hover:text-slate-200"
-          >
-            ✕
-          </button>
-        </div>
-
         {/* Description */}
-        <p className="text-slate-300 text-sm mb-4">{topic.description}</p>
+        <p className="text-muted-foreground text-sm mb-4">{topic.description}</p>
 
         {!isContentAvailable && (
-          <p className="text-amber-400 text-sm font-semibold mb-3">
+          <p className="text-accent-foreground text-sm font-semibold mb-3">
             📦 Content not available yet
           </p>
         )}
@@ -97,21 +96,21 @@ const DetailsPopup: React.FC<DetailsPopupProps> = ({
         {topic.isLocked && (
           <div className="mb-4">
             {unlockStatus.hasPrerequisites ? (
-              <div className="bg-emerald-900/30 border border-emerald-500 rounded-lg p-3">
-                <div className="text-emerald-400 text-sm font-semibold mb-1">
+              <div className="bg-accent/10 border border-accent rounded-lg p-3">
+                <div className="text-accent-foreground text-sm font-semibold mb-1">
                   ✅ Prerequisites Met
                 </div>
-                <div className="text-emerald-300/70 text-sm">
+                <div className="text-muted-foreground text-sm">
                   Cost: 1 Unlock Point
                 </div>
               </div>
             ) : (
-              <div className="bg-red-900/30 border border-red-500 rounded-lg p-3">
-                <div className="text-red-400 text-sm font-semibold mb-2">
+                <div className="bg-destructive/10 border border-destructive rounded-lg p-3">
+                <div className="text-destructive text-sm font-semibold mb-2">
                   🔒 Requires Prerequisites
                 </div>
                 {unlockStatus.missingPrerequisites.map((prereq, idx) => (
-                  <div key={idx} className="text-red-300/70 text-sm">
+                  <div key={idx} className="text-destructive text-sm">
                     • {prereq.topicName} Level {prereq.requiredLevel} (Current: Level {prereq.currentLevel})
                   </div>
                 ))}
@@ -122,29 +121,30 @@ const DetailsPopup: React.FC<DetailsPopupProps> = ({
 
         {/* Unlock Button */}
         {topic.isLocked && (
-          <button
+          <Button
             onClick={onUnlock}
             disabled={!unlockStatus.canUnlock || !isContentAvailable}
-            className={`w-full py-3 px-6 rounded-lg font-semibold text-white border-none cursor-pointer transition-all ${
+            className={`w-full py-3 px-6 rounded-lg font-semibold border-none cursor-pointer transition-all ${
               unlockStatus.canUnlock && isContentAvailable
-                ? 'bg-emerald-600 hover:bg-emerald-500'
-                : 'bg-slate-600 cursor-not-allowed opacity-50'
+                ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
+                : 'bg-muted text-muted-foreground cursor-not-allowed opacity-50'
             }`}
           >
             {isContentAvailable
               ? (unlockStatus.canUnlock ? '🔓 Unlock & Spawn' : '🔒 Locked')
               : '📦 Content Not Available'}
-          </button>
+          </Button>
         )}
 
         {/* Already Unlocked Message */}
         {topic.isUnlocked && (
-          <div className="text-center text-slate-400 text-sm">
+          <div className="text-center text-muted-foreground text-sm">
             ✅ This topic is already unlocked
           </div>
         )}
       </div>
-    </ModalWrapper>
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -154,7 +154,6 @@ const DetailsPopup: React.FC<DetailsPopupProps> = ({
 
 export function DiscoveryModal({
   isOpen,
-  lockedTopicsCount,
   unlockPoints,
   getTopicUnlockStatus,
   onOpenRitual,
@@ -167,12 +166,11 @@ export function DiscoveryModal({
   // Get store actions
   const getTopicsByTier = useStudyStore((state) => state.getTopicsByTier);
   const unlockTopic = useStudyStore((state) => state.unlockTopic);
-  const lockedTopics = useStudyStore((state) => state.lockedTopics);
   const unlockedTopicIds = useStudyStore((state) => state.unlockedTopicIds);
   const storeGetTopicUnlockStatus = useStudyStore((state) => state.getTopicUnlockStatus);
   const allGraphs = useAllGraphs();
   const { data: subjects = [] } = useSubjects();
-  const topicUnlockStatusGetter = React.useMemo(() => {
+  const topicUnlockStatusGetter = useMemo(() => {
     return (topicId: string) =>
       getTopicUnlockStatus
         ? getTopicUnlockStatus(topicId, allGraphs)
@@ -184,7 +182,13 @@ export function DiscoveryModal({
   // Get topics grouped by tier
   const topicsByTier = useMemo(() => {
     return getTopicsByTier(allGraphs, unlockedTopicIds, subjectList);
-  }, [getTopicsByTier, unlockPoints, lockedTopics, unlockedTopicIds, allGraphs, subjectList]);
+  }, [getTopicsByTier, unlockPoints, unlockedTopicIds, allGraphs, subjectList]);
+
+  const lockedTopicsCount = useMemo(() => {
+    return topicsByTier.reduce((count, tierData) => {
+      return count + tierData.topics.filter((topic) => topic.isLocked).length;
+    }, 0);
+  }, [topicsByTier]);
 
   // Get unlock status for selected topic
   const selectedTopicStatus = useMemo(() => {
@@ -207,132 +211,105 @@ export function DiscoveryModal({
     onClose();
   };
 
-  // Handle escape key
-  React.useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleEscape);
-    return () => window.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
-
   if (!isOpen) return null;
 
   return (
-    <>
-      <ModalWrapper
-        onClose={onClose}
-        panelClassName="w-[min(95%,56rem)]"
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        className="max-h-[95vh] flex flex-col"
       >
-          {/* Close Button */}
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 bg-transparent border-none text-slate-400 text-2xl cursor-pointer leading-none p-1 hover:text-slate-200 transition-colors z-30"
-            aria-label="Close modal"
-          >
-            ✕
-          </button>
-
-          <div className="sticky top-0 z-20 bg-slate-800">
-            {/* Header */}
-            <header className="text-center mb-6">
-              <h2 className="text-2xl font-semibold text-slate-200 m-0">🏛️ Wisdom Altar</h2>
-              <p className="text-slate-400 mt-1.5 text-sm">
-                Unlock topic crystals to expand your knowledge
-              </p>
-              <p className="text-slate-500 mt-1 text-xs">
-                {lockedTopicsCount} locked topic{lockedTopicsCount !== 1 ? 's' : ''}
-              </p>
-            </header>
-
-            {/* Unlock Points Display */}
-            <div className="text-center mb-6">
-              <div className="inline-flex flex-wrap items-center justify-center gap-3">
-                <div className="inline-block bg-amber-900/40 border border-amber-500 rounded-full py-2 px-6">
-                  <span className="text-amber-400 font-bold text-lg">
-                    ✨ {unlockPoints} Unlock Point{unlockPoints !== 1 ? 's' : ''}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onOpenRitual?.()}
-                  className={`relative inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
-                    isRitualSubmissionAvailable ? 'bg-violet-600 hover:bg-violet-500' : 'bg-violet-700'
-                  }`}
-                  aria-label="Open attunement ritual"
-                  title="Open attunement ritual"
-                >
-                  <span
-                    className={`relative z-10 text-lg leading-none text-white ${
-                      isRitualSubmissionAvailable ? 'animate-pulse' : ''
-                    }`}
-                    aria-hidden="true"
-                  >
-                    🧪
-                  </span>
-                  <ParticlesAnimation
-                    isActive={isRitualSubmissionAvailable}
-                    particles={RITUAL_PARTICLE_ANIMATION}
-                  />
-                </button>
+        <DialogHeader>
+          <DialogTitle>🏛️ Wisdom Altar</DialogTitle>
+          <DialogDescription>
+            Unlock topic crystals to expand your knowledge
+          </DialogDescription>
+          <p className="text-muted-foreground mt-1 text-xs">
+            {lockedTopicsCount} locked topic{lockedTopicsCount !== 1 ? 's' : ''}
+          </p>
+          <div className="text-center mb-6">
+            <div className="inline-flex flex-wrap items-center justify-center gap-3">
+              <div className="inline-block bg-secondary/40 border border-border rounded-full py-2 px-6">
+                <span>
+                  ✨ {unlockPoints} Unlock Point{unlockPoints !== 1 ? 's' : ''}
+                </span>
               </div>
+              <Button
+                type="button"
+                onClick={() => onOpenRitual?.()}
+                className={`relative inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors ${isRitualSubmissionAvailable ? 'bg-accent' : 'bg-muted'
+                  }`}
+                aria-label="Open attunement ritual"
+                title="Open attunement ritual"
+              >
+                <span
+                  className={`relative z-10 text-lg leading-none text-foreground ${isRitualSubmissionAvailable ? 'animate-pulse' : ''
+                    }`}
+                  aria-hidden="true"
+                >
+                  🧪
+                </span>
+                <ParticlesAnimation
+                  isActive={isRitualSubmissionAvailable}
+                  particles={RITUAL_PARTICLE_ANIMATION}
+                />
+              </Button>
             </div>
           </div>
-
-          <div className="min-h-0 flex-1 overflow-y-auto pr-2">
+        </DialogHeader>
+        <div className="-mx-4 overflow-y-auto px-4 no-scrollbar">
             {/* Tiered Grid Layout */}
             <div className="space-y-6">
               {topicsByTier.map((tierData) => (
                 <div key={tierData.tier}>
                   {/* Tier Label */}
                   <div className="flex items-center mb-3">
-                    <div className="flex-1 h-px bg-slate-600"></div>
-                    <span className="px-4 text-slate-400 text-sm font-semibold">
+                    <div className="flex-1 h-px bg-border"></div>
+                    <span className="px-4 text-muted-foreground text-sm font-semibold">
                       Tier {tierData.tier}
                     </span>
-                    <div className="flex-1 h-px bg-slate-600"></div>
+                    <div className="flex-1 h-px bg-border"></div>
                   </div>
 
                   {/* Topics in this tier */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     {tierData.topics.map((topic) => (
-                      <button
+                      <Button
                         key={topic.id}
                         onClick={() => setSelectedTopic(topic)}
+                        multiline
+                        variant="ghost"
                         className={`text-left p-4 rounded-lg border transition-all ${
                           topic.isLocked
-                            ? 'bg-slate-700/50 border-slate-600 hover:border-slate-500'
-                            : 'bg-cyan-900/30 border-cyan-500/50 hover:border-cyan-400'
+                            ? 'bg-muted/60 border-border hover:border-muted-foreground/60'
+                            : 'bg-secondary/30 border-border/70 hover:border-secondary'
                         }`}
                       >
-                        <div className="flex items-start justify-between">
+                        <div className="flex items-start justify-between w-full">
                           <div className="flex-1 min-w-0">
                             <h4 className={`font-semibold text-sm truncate ${
-                              topic.isLocked ? 'text-slate-400' : 'text-cyan-400'
+                              topic.isLocked ? 'text-muted-foreground' : 'text-primary'
                             }`}>
                               {topic.name}
                             </h4>
                             <p className={`text-xs mt-1 line-clamp-2 ${
-                              topic.isLocked ? 'text-slate-500' : 'text-slate-400'
+                              topic.isLocked ? 'text-muted-foreground' : 'text-muted-foreground'
                             }`}>
                               {topic.description}
                             </p>
                             {!topic.isContentAvailable && (
-                              <p className="mt-2 text-amber-400 text-xs">
+                              <p className="mt-2 text-accent-foreground text-xs">
                                 📦 Content not available yet
                               </p>
                             )}
                           </div>
                           {topic.isLocked && (
-                            <span className="text-slate-500 text-lg ml-2">🔒</span>
+                            <span className="text-muted-foreground text-lg ml-2">🔒</span>
                           )}
                           {topic.isUnlocked && (
-                            <span className="text-emerald-400 text-lg ml-2">✅</span>
+                            <span className="text-accent-foreground text-lg ml-2">✅</span>
                           )}
                         </div>
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 </div>
@@ -342,24 +319,16 @@ export function DiscoveryModal({
             {/* Empty state if no topics */}
             {topicsByTier.length === 0 && (
               <div className="text-center py-8">
-                <p className="text-slate-400">No topics available</p>
+                <p className="text-muted-foreground">No topics available</p>
               </div>
             )}
           </div>
-
-          <div className="sticky bottom-0 z-20 bg-slate-800 pt-3 pb-1 text-center">
-            <button
-              onClick={onClose}
-              className="text-slate-200 bg-slate-700 border-none px-6 py-2 rounded-md cursor-pointer hover:bg-slate-600"
-            >
-              Close
-            </button>
-          </div>
-      </ModalWrapper>
+      </DialogContent>
 
       {/* Details Popup */}
       {selectedTopic && selectedTopicStatus && (
         <DetailsPopup
+          isOpen={Boolean(selectedTopic && selectedTopicStatus)}
           topic={selectedTopic}
           unlockStatus={selectedTopicStatus}
           onClose={() => setSelectedTopic(null)}
@@ -367,7 +336,7 @@ export function DiscoveryModal({
           isContentAvailable={selectedTopic.isContentAvailable}
         />
       )}
-    </>
+    </Dialog>
   );
 }
 

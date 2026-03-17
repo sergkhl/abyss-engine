@@ -104,7 +104,6 @@ export interface ProgressionState {
     nextReview: number;
   }>;
   unlockedTopicIds: string[];
-  lockedTopics: string[];
   unlockPoints: number;
   currentSubjectId: string | null;
   currentSession: StudySession | null;

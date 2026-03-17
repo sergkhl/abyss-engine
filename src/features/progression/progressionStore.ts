@@ -165,7 +165,6 @@ export const useProgressionStore = create<ProgressionStore>()(
       activeCrystals: [],
       sm2Data: {},
       unlockedTopicIds: [],
-      lockedTopics: [],
       unlockPoints: INITIAL_UNLOCK_POINTS,
       currentSubjectId: null,
       currentSession: null,
@@ -322,6 +321,9 @@ export const useProgressionStore = create<ProgressionStore>()(
         const activeBuffs = state.activeBuffs.map((buff) => BuffEngine.get().hydrateBuff(buff));
         const buffedReward = Math.max(0, Math.round(reward * BuffEngine.get().getModifierTotal('xp_multiplier', activeBuffs)));
         const xp = crystal.xp + buffedReward;
+        const previousLevel = calculateLevelFromXP(crystal.xp);
+        const nextLevel = calculateLevelFromXP(xp);
+        const unlockedLevels = nextLevel - previousLevel;
         const difficulty = session.cardDifficultyById?.[cardId] ?? 1;
         const isCorrect = rating >= 3;
         const sessionId = session.sessionId ?? makeSessionId(session.topicId);
@@ -388,6 +390,7 @@ export const useProgressionStore = create<ProgressionStore>()(
         }
 
         set((current) => ({
+          unlockPoints: unlockedLevels > 0 ? current.unlockPoints + unlockedLevels : current.unlockPoints,
           sm2Data: {
             ...current.sm2Data,
             [cardId]: updatedSM2,
@@ -438,7 +441,6 @@ export const useProgressionStore = create<ProgressionStore>()(
 
         set((current) => ({
           unlockedTopicIds: [...current.unlockedTopicIds, topicId],
-          lockedTopics: current.lockedTopics.filter((item) => item !== topicId),
           activeCrystals: [
             ...current.activeCrystals,
             {
@@ -514,7 +516,6 @@ export const useProgressionStore = create<ProgressionStore>()(
         activeCrystals: state.activeCrystals,
         sm2Data: state.sm2Data,
         unlockedTopicIds: state.unlockedTopicIds,
-        lockedTopics: state.lockedTopics,
         unlockPoints: state.unlockPoints,
         currentSubjectId: state.currentSubjectId,
         currentSession: state.currentSession,

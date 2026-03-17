@@ -11,7 +11,6 @@ import { SubjectGraph, Card } from '../types/core';
 interface StoreStateLike {
   sm2Data: Record<string, SM2Data>;
   activeCrystals: Array<{ topicId: string; gridPosition: [number, number]; xp: number; spawnedAt: number }>;
-  lockedTopics: string[];
   unlockPoints: number;
   currentSession: {
     queueCardIds: string[];
@@ -27,7 +26,6 @@ interface TopicCardSelection {
 export interface AbyssDevState {
   activeCards: number;
   activeCrystals: number;
-  lockedTopics: number;
   unlockPoints: number;
   queuedCards: number;
 }
@@ -209,12 +207,11 @@ const abyssDev: AbyssDev = {
   },
 
   getState: (): AbyssDevState => {
-    const { sm2Data, activeCrystals, lockedTopics, unlockPoints, currentSession } = getStore();
+    const { sm2Data, activeCrystals, unlockPoints, currentSession } = getStore();
 
     const state: AbyssDevState = {
       activeCards: Object.keys(sm2Data).length,
       activeCrystals: activeCrystals.length,
-      lockedTopics: lockedTopics.length,
       unlockPoints,
       queuedCards: currentSession?.queueCardIds.length ?? 0,
     };

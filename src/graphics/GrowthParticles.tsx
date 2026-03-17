@@ -1,28 +1,31 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef } from 'react';
-import { useFrame, useUniform } from '@react-three/fiber/webgpu';
+import { useFrame } from '@react-three/fiber/webgpu';
 import * as THREE from 'three/webgpu';
 import { useSceneInvalidator } from '../hooks/useSceneInvalidator';
 
 interface GrowthParticlesProps {
   position: [number, number, number];
   active: boolean;
-  scope?: string;
 }
 
-const sanitizeUniformName = (value: string) => `u_${value.replace(/[^a-zA-Z0-9_]/g, '_')}`;
-
-export function GrowthParticles({ position, active, scope }: GrowthParticlesProps) {
+export function GrowthParticles({ position, active }: GrowthParticlesProps) {
   const pointsRef = useRef<THREE.Points>(null);
   const count = 24;
   const { isPaused } = useSceneInvalidator();
-  const scopeId = useMemo(
-    () => scope ?? `growth_particles_${position[0]}_${position[1]}_${position[2]}`,
-    [scope, position],
-  );
-  const uniformName = useMemo(() => sanitizeUniformName(`${scopeId}_opacity`), [scopeId]);
-  const opacity = useUniform(uniformName, 1);
+
+  const material = useMemo(() => {
+    const m = new THREE.PointsNodeMaterial({
+      color: '#fef08c',
+      size: 0.06,
+      transparent: true,
+      depthWrite: false,
+      opacity: active ? 1 : 0,
+      blending: THREE.AdditiveBlending,
+    });
+    return m;
+  }, [active]);
 
   const { positions, colors, sizes } = useMemo(() => {
     const pos = new Float32Array(count * 3);
@@ -51,27 +54,20 @@ export function GrowthParticles({ position, active, scope }: GrowthParticlesProp
     return g;
   }, [positions, colors, sizes]);
 
-  const material = useMemo(() => {
-    const m = new THREE.PointsNodeMaterial({
-      color: '#fef08c',
-      size: 0.06,
-      transparent: true,
-      depthWrite: false,
-      opacityNode: opacity,
-      blending: THREE.AdditiveBlending,
-    });
-    return m;
-  }, [opacity]);
-
   useEffect(() => {
     if (!active) {
+      material.opacity = 0;
+      if (pointsRef.current) {
+        pointsRef.current.visible = false;
+      }
       return;
     }
-    opacity.value = 1;
+    material.opacity = 1;
     if (pointsRef.current) {
       pointsRef.current.visible = true;
+      pointsRef.current.position.set(position[0], position[1], position[2]);
     }
-  }, [active, opacity]);
+  }, [active, material, position]);
 
   useFrame((_state, delta) => {
     if (isPaused || !pointsRef.current || !active) {
@@ -79,9 +75,9 @@ export function GrowthParticles({ position, active, scope }: GrowthParticlesProp
     }
 
     pointsRef.current.position.y += delta * 1.8;
-    opacity.value = Math.max(0, opacity.value - delta * 2);
+    material.opacity = Math.max(0, material.opacity - delta * 2);
 
-    if (opacity.value <= 0) {
+    if (material.opacity <= 0) {
       pointsRef.current.visible = false;
     }
   });

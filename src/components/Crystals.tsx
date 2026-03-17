@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useFrame, useThree, useUniforms, type ThreeEvent } from '@react-three/fiber/webgpu';
+import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber/webgpu';
 import * as THREE from 'three/webgpu';
-import { color } from 'three/tsl';
 import { ActiveCrystal } from '../types';
 import { calculateLevelFromXP, getCrystalScale } from '../features/progression';
 import { useUIStore } from '../store/uiStore';
@@ -38,8 +37,6 @@ interface SingleCrystalProps {
   isStudyPanelOpen: boolean;
 }
 
-const sanitizeUniformScope = (value: string) => `crystal_${value.replace(/[^a-zA-Z0-9_]/g, '_')}`;
-
 const SingleCrystal: React.FC<SingleCrystalProps> = ({
   crystal,
   isSelected,
@@ -65,19 +62,6 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
   });
   const selectedEmissiveIntensity = isSelected ? 1.5 : 0.6;
   const selectedEmissiveIntensityInner = isSelected ? 5 : 1.5;
-  const crystalUniformScope = useMemo(
-    () => sanitizeUniformScope(crystal.topicId),
-    [crystal.topicId],
-  );
-  const crystalUniforms = useUniforms(
-    {
-      outerEmissiveIntensity: selectedEmissiveIntensity,
-      glowRingOpacity: isSelected ? 0.55 : 0.35,
-    },
-    crystalUniformScope,
-  );
-  const { outerEmissiveIntensity, glowRingOpacity } = crystalUniforms;
-
   const subjectColor = useSubjectColor(topicMeta?.subjectId || null);
   const crystalGeometry = useSubjectGeometry(topicMeta?.subjectId || null, 'crystal');
   const colors = useMemo(() => ({
@@ -86,7 +70,6 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
     emissiveColor: subjectColor,
   }), [subjectColor]);
   const level = calculateLevelFromXP(crystal.xp);
-  const [targetScale, setTargetScale] = useState(() => getCrystalScale(level));
   const [showParticles, setShowParticles] = useState(false);
   const previousLevel = useRef(level);
   const pendingTargetScale = useRef<number | null>(null);
@@ -112,7 +95,6 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
     if (!initialized.current) {
       initialized.current = true;
       pendingTargetScale.current = null;
-      setTargetScale(nextScale);
       const currentScale = groupRef.current?.scale.x ?? 0;
       animationRef.current = {
         start: performance.now(),
@@ -136,7 +118,6 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
       pendingTargetScale.current = nextScale;
     } else {
       pendingTargetScale.current = null;
-      setTargetScale(nextScale);
       if (!isStudyPanelOpen) {
         const currentScale = groupRef.current?.scale.x ?? 0;
         animationRef.current = {
@@ -160,7 +141,6 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
     }
     const nextScale = pendingTargetScale.current;
     pendingTargetScale.current = null;
-    setTargetScale(nextScale);
 
     const currentScale = groupRef.current?.scale.x ?? 0;
     animationRef.current = {
@@ -216,11 +196,12 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
         color: colors.outerColor,
         metalness: 0.4,
         roughness: 0.3,
-        emissiveNode: color(colors.emissiveColor).mul(outerEmissiveIntensity),
+        emissive: colors.emissiveColor,
+        emissiveIntensity: selectedEmissiveIntensity,
       });
       return material;
     },
-    [colors, outerEmissiveIntensity],
+    [colors, selectedEmissiveIntensity],
   );
 
   const innerMaterial = useMemo(
@@ -258,12 +239,12 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
       new THREE.MeshBasicNodeMaterial({
         color: colors.emissiveColor,
         transparent: true,
-        opacityNode: glowRingOpacity,
+        opacity: isSelected ? 0.55 : 0.35,
         blending: THREE.AdditiveBlending,
         side: THREE.DoubleSide,
         depthWrite: false,
       }),
-    [colors.emissiveColor, glowRingOpacity],
+    [colors.emissiveColor, isSelected],
   );
 
   useFrame(() => {
@@ -274,6 +255,9 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
     const state = animationRef.current;
     const elapsedTime = performance.now() / 1000;
 
+    innerMaterial.emissiveIntensity = selectedEmissiveIntensityInner;
+    glowMaterial.opacity = isSelected ? 0.55 : 0.35;
+
     if (groupRef.current) {
       const bob = Math.sin(elapsedTime * 2 + x * 0.5) * 0.03;
       groupRef.current.position.y = 0.3 + bob;
@@ -281,7 +265,7 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
     }
 
     if (!state.running) {
-      outerEmissiveIntensity.value = selectedEmissiveIntensity;
+      outerMaterial.emissiveIntensity = selectedEmissiveIntensity;
     }
 
     if (state.running && groupRef.current) {
@@ -307,7 +291,7 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
         levelRef.current.position.y = 0.4 * nextScale + Math.sin(pop * Math.PI) * 0.15;
       }
 
-      outerEmissiveIntensity.value = THREE.MathUtils.lerp(
+        outerMaterial.emissiveIntensity = THREE.MathUtils.lerp(
         selectedEmissiveIntensity,
         selectedEmissiveIntensity + 1.2,
         Math.sin(progress * Math.PI * 6) * 0.5 + 0.5,
@@ -317,7 +301,7 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
         state.running = false;
         growthRef.current.phase = 1;
         growthRef.current.progress = 1;
-        outerEmissiveIntensity.value = selectedEmissiveIntensity;
+        outerMaterial.emissiveIntensity = selectedEmissiveIntensity;
         innerRef.current && (innerRef.current.position.y = 0.1 * nextScale);
         if (levelRef.current && level > 0) {
           levelRef.current.position.y = 0.4 * nextScale;
@@ -365,7 +349,6 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
       <GrowthParticles
         position={[0, 0.3, 0]}
         active={showParticles}
-        scope={crystalUniformScope}
       />
 
       <mesh

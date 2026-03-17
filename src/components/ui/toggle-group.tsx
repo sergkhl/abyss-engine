@@ -1,56 +1,89 @@
-import * as React from 'react';
+"use client"
 
-interface ToggleContextValue {
-  value: string;
-  onValueChange: (value: string) => void;
-}
+import * as React from "react"
+import { type VariantProps } from "class-variance-authority"
+import { ToggleGroup as ToggleGroupPrimitive } from "radix-ui"
 
-const ToggleGroupContext = React.createContext<ToggleContextValue | null>(null);
+import { cn } from "@/lib/utils"
+import { toggleVariants } from "@/components/ui/toggle"
 
-interface ToggleGroupProps {
-  type?: 'single' | 'multiple';
-  value: string;
-  onValueChange: (value: string) => void;
-  className?: string;
-  children: React.ReactNode;
-}
+const ToggleGroupContext = React.createContext<
+  VariantProps<typeof toggleVariants> & {
+    spacing?: number
+    orientation?: "horizontal" | "vertical"
+  }
+>({
+  size: "default",
+  variant: "default",
+  spacing: 0,
+  orientation: "horizontal",
+})
 
-export function ToggleGroup({
-  type = 'single',
-  value,
-  onValueChange,
-  className = '',
+function ToggleGroup({
+  className,
+  variant,
+  size,
+  spacing = 0,
+  orientation = "horizontal",
   children,
-}: ToggleGroupProps) {
+  ...props
+}: React.ComponentProps<typeof ToggleGroupPrimitive.Root> &
+  VariantProps<typeof toggleVariants> & {
+    spacing?: number
+    orientation?: "horizontal" | "vertical"
+  }) {
   return (
-    <ToggleGroupContext.Provider value={{ value, onValueChange }}>
-      <div
-        role={type === 'single' ? 'radiogroup' : 'group'}
-        className={`inline-flex rounded-md overflow-hidden border border-slate-700 ${className}`}
+    <ToggleGroupPrimitive.Root
+      data-slot="toggle-group"
+      data-variant={variant}
+      data-size={size}
+      data-spacing={spacing}
+      data-orientation={orientation}
+      style={{ "--gap": spacing } as React.CSSProperties}
+      className={cn(
+        "group/toggle-group flex w-fit flex-row items-center gap-[--spacing(var(--gap))] rounded-lg data-[size=sm]:rounded-[min(var(--radius-md),10px)] data-vertical:flex-col data-vertical:items-stretch",
+        className
+      )}
+      {...props}
+    >
+      <ToggleGroupContext.Provider
+        value={{ variant, size, spacing, orientation }}
       >
         {children}
-      </div>
-    </ToggleGroupContext.Provider>
-  );
+      </ToggleGroupContext.Provider>
+    </ToggleGroupPrimitive.Root>
+  )
 }
 
-interface ToggleGroupItemProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  value: string;
-}
+function ToggleGroupItem({
+  className,
+  children,
+  variant = "default",
+  size = "default",
+  ...props
+}: React.ComponentProps<typeof ToggleGroupPrimitive.Item> &
+  VariantProps<typeof toggleVariants>) {
+  const context = React.useContext(ToggleGroupContext)
 
-export function ToggleGroupItem({ value, className = '', children, ...props }: ToggleGroupItemProps) {
-  const group = React.useContext(ToggleGroupContext);
-  const isSelected = group?.value === value;
   return (
-    <button
-      type="button"
-      aria-pressed={isSelected}
-      className={`px-3 py-1 border-r border-slate-700 last:border-r-0 transition-colors ${isSelected ? 'bg-cyan-500 text-slate-900' : 'bg-slate-700 text-slate-200'} ${className}`}
-      onClick={() => group?.onValueChange(value)}
+    <ToggleGroupPrimitive.Item
+      data-slot="toggle-group-item"
+      data-variant={context.variant || variant}
+      data-size={context.size || size}
+      data-spacing={context.spacing}
+      className={cn(
+        "shrink-0 group-data-[spacing=0]/toggle-group:rounded-none group-data-[spacing=0]/toggle-group:px-2 focus:z-10 focus-visible:z-10 group-data-horizontal/toggle-group:data-[spacing=0]:first:rounded-l-lg group-data-vertical/toggle-group:data-[spacing=0]:first:rounded-t-lg group-data-horizontal/toggle-group:data-[spacing=0]:last:rounded-r-lg group-data-vertical/toggle-group:data-[spacing=0]:last:rounded-b-lg group-data-horizontal/toggle-group:data-[spacing=0]:data-[variant=outline]:border-l-0 group-data-vertical/toggle-group:data-[spacing=0]:data-[variant=outline]:border-t-0 group-data-horizontal/toggle-group:data-[spacing=0]:data-[variant=outline]:first:border-l group-data-vertical/toggle-group:data-[spacing=0]:data-[variant=outline]:first:border-t",
+        toggleVariants({
+          variant: context.variant || variant,
+          size: context.size || size,
+        }),
+        className
+      )}
       {...props}
     >
       {children}
-    </button>
-  );
+    </ToggleGroupPrimitive.Item>
+  )
 }
 
+export { ToggleGroup, ToggleGroupItem }

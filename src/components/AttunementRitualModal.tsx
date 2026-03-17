@@ -19,11 +19,26 @@ import {
   SLEEP_OPTIONS,
 } from '../features/progression';
 import { useProgressionStore } from '../features/progression';
-import { Button } from './ui/button';
-import { NativeSelect } from './ui/native-select';
+import { Button } from '@/components/ui/button';
 import { Switch } from './ui/switch';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
-import { ModalWrapper } from './ui/modal-wrapper';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from './ui/field';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import { useTopicMetadata } from '../features/content';
 import { deckRepository } from '../infrastructure/di';
 import { Card } from '../types/core';
@@ -180,201 +195,240 @@ export function AttunementRitualModal({
   };
 
   return (
-    <ModalWrapper onClose={onClose} panelClassName="w-[min(95%,48rem)]">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="w-full h-full overflow-y-auto"
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) {
+        onClose();
+      }
+    }}>
+      <DialogContent
+        className="max-h-[95vh] overflow-hidden flex flex-col"
       >
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-3 right-4 text-slate-300 hover:text-white text-2xl leading-none"
-          aria-label="Close ritual modal"
-        >
-          ×
-        </button>
-        <h2 className="text-2xl mb-2 text-cyan-200">🧪 Attunement Ritual</h2>
-        <p className="text-sm text-slate-300 mb-4">
-          Filling out the ritual will unlock focused growth effects.
-        </p>
-        {isSubmitBlockedByCooldown && (
-          <p className="text-sm text-amber-300 mb-4">
-            Ritual cooldown: {cooldownLabel} left.
-          </p>
-        )}
-      <section className="space-y-2 mb-5">
-        <h3 className="text-slate-200">🧬 1. Biological Foundation</h3>
-        <p className="text-xs text-slate-300 mb-1">Section unlocks</p>
-        <ul className="mb-3 flex flex-wrap gap-2 text-slate-300 text-sm">
-          {sectionBuffs.biological.map((buff) => (
-            <li key={buff.buffId} className="inline-flex items-center gap-2 rounded border border-slate-700 px-2 py-1">
-              <span className="text-lg" aria-hidden="true">
-                {getBuffIcon(buff.modifierType)}
-              </span>
-              <span>{getBuffSummary(buff)}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="space-y-1">
-          <label className="text-sm text-slate-300">😴 Sleep (Biological Readiness)</label>
-          <ToggleGroup
-            value={sleepQuality}
-            onValueChange={setSleepQuality}
+        <DialogHeader>
+          <DialogTitle>🧪 Attunement Ritual</DialogTitle>
+          <DialogDescription>
+            Filling out the ritual will unlock focused growth effects.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="-mx-4 max-h-full overflow-y-auto px-4 no-scrollbar">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="w-full"
           >
-            {SLEEP_OPTIONS.map((option) => (
-              <ToggleGroupItem key={option.value} value={option.value}>
-                {option.label}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </div>
-        <div className="space-y-1">
-          <label className="text-sm text-slate-300">🍽️ Fuel Quality</label>
-          <ToggleGroup
-            value={fuelQuality}
-            onValueChange={setFuelQuality}
-          >
-            {FUEL_QUALITY_OPTIONS.map((option) => (
-              <ToggleGroupItem key={option.value} value={option.value}>
-                {option.label}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </div>
-        <div className="space-y-1">
-          <label className="text-sm text-slate-300">💧 Hydration</label>
-          <ToggleGroup
-            value={hydration}
-            onValueChange={setHydration}
-          >
-            {HYDRATION_OPTIONS.map((option) => (
-              <ToggleGroupItem key={option.value} value={option.value}>
-                {option.label}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </div>
-        <div className="space-y-1">
-          <label className="text-sm text-slate-300">🏃 Movement</label>
-          <ToggleGroup
-            value={movementQuality}
-            onValueChange={setMovementQuality}
-          >
-            {MOVEMENT_OPTIONS.map((option) => (
-              <ToggleGroupItem key={option.value} value={option.value}>
-                {option.label}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </div>
-      </section>
+            {isSubmitBlockedByCooldown && (
+              <p className="text-sm text-foreground mb-4">
+                Ritual cooldown: {cooldownLabel} left.
+              </p>
+            )}
+            <FieldSet className="space-y-2 mb-5">
+              <FieldLegend>🧬 1. Biological Foundation</FieldLegend>
+              <FieldDescription className="text-xs">Section unlocks</FieldDescription>
+              <ul className="mb-3 flex flex-wrap gap-2 text-muted-foreground text-sm">
+                {sectionBuffs.biological.map((buff) => (
+                  <li key={buff.buffId} className="inline-flex items-center gap-2 rounded border border-border px-2 py-1">
+                    <span className="text-lg" aria-hidden="true">
+                      {getBuffIcon(buff.modifierType)}
+                    </span>
+                    <span>{getBuffSummary(buff)}</span>
+                  </li>
+                ))}
+              </ul>
+              <FieldGroup className="space-y-1">
+                <Field>
+                  <FieldLabel>😴 Sleep (Biological Readiness)</FieldLabel>
+                  <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    value={sleepQuality}
+                    onValueChange={setSleepQuality}
+                  >
+                    {SLEEP_OPTIONS.map((option) => (
+                      <ToggleGroupItem key={option.value} value={option.value}>
+                        {option.label}
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
+                </Field>
+                <Field>
+                  <FieldLabel>🍽️ Fuel Quality</FieldLabel>
+                  <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    value={fuelQuality}
+                    onValueChange={setFuelQuality}
+                  >
+                    {FUEL_QUALITY_OPTIONS.map((option) => (
+                      <ToggleGroupItem key={option.value} value={option.value}>
+                        {option.label}
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
+                </Field>
+                <Field>
+                  <FieldLabel>💧 Hydration</FieldLabel>
+                  <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    value={hydration}
+                    onValueChange={setHydration}
+                  >
+                    {HYDRATION_OPTIONS.map((option) => (
+                      <ToggleGroupItem key={option.value} value={option.value}>
+                        {option.label}
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
+                </Field>
+                <Field>
+                  <FieldLabel>🏃 Movement</FieldLabel>
+                  <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    value={movementQuality}
+                    onValueChange={setMovementQuality}
+                  >
+                    {MOVEMENT_OPTIONS.map((option) => (
+                      <ToggleGroupItem key={option.value} value={option.value}>
+                        {option.label}
+                      </ToggleGroupItem>
+                    ))}
+                  </ToggleGroup>
+                </Field>
+              </FieldGroup>
+            </FieldSet>
 
-      <section className="space-y-2 mb-5">
-        <h3 className="text-slate-200">🧠 2. Cognitive Environment</h3>
-        <p className="text-xs text-slate-300 mb-1">Section unlocks</p>
-        <ul className="mb-3 flex flex-wrap gap-2 text-slate-300 text-sm">
-          {sectionBuffs.cognitive.map((buff) => (
-            <li key={buff.buffId} className="inline-flex items-center gap-2 rounded border border-slate-700 px-2 py-1">
-              <span className="text-lg" aria-hidden="true">
-                {getBuffIcon(buff.modifierType)}
-              </span>
-              <span>{getBuffSummary(buff)}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="space-y-1">
-          <label className="text-sm text-slate-300">🔕 Digital Silence</label>
-          <Switch
-            checked={digitalSilence}
-            onCheckedChange={setDigitalSilence}
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="text-sm text-slate-300">👁️ Visual Clarity</label>
-          <Switch
-            checked={visualClarity}
-            onCheckedChange={setVisualClarity}
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="text-sm text-slate-300">💡 Lighting & Ventilation</label>
-          <Switch
-            checked={lightingAndAir}
-            onCheckedChange={setLightingAndAir}
-          />
-        </div>
-      </section>
+            <FieldSet className="space-y-2 mb-5">
+              <FieldLegend>🧠 2. Cognitive Environment</FieldLegend>
+              <FieldDescription className="text-xs">Section unlocks</FieldDescription>
+              <ul className="mb-3 flex flex-wrap gap-2 text-muted-foreground text-sm">
+                {sectionBuffs.cognitive.map((buff) => (
+                  <li key={buff.buffId} className="inline-flex items-center gap-2 rounded border border-border px-2 py-1">
+                    <span className="text-lg" aria-hidden="true">
+                      {getBuffIcon(buff.modifierType)}
+                    </span>
+                    <span>{getBuffSummary(buff)}</span>
+                  </li>
+                ))}
+              </ul>
+              <FieldGroup className="space-y-1">
+                <Field orientation="horizontal">
+                  <Switch
+                    id="cognitive-digital-silence"
+                    checked={digitalSilence}
+                    onCheckedChange={setDigitalSilence}
+                  />
+                  <FieldLabel htmlFor="cognitive-digital-silence">🔕 Digital Silence</FieldLabel>
+                </Field>
+                <Field orientation="horizontal">
+                  <Switch
+                    id="cognitive-visual-clarity"
+                    checked={visualClarity}
+                    onCheckedChange={setVisualClarity}
+                  />
+                  <FieldLabel htmlFor="cognitive-visual-clarity">👁️ Visual Clarity</FieldLabel>
+                </Field>
+                <Field orientation="horizontal">
+                  <Switch
+                    id="cognitive-lighting-and-air"
+                    checked={lightingAndAir}
+                    onCheckedChange={setLightingAndAir}
+                  />
+                  <FieldLabel htmlFor="cognitive-lighting-and-air">💡 Lighting &amp; Ventilation</FieldLabel>
+                </Field>
+              </FieldGroup>
+            </FieldSet>
 
-      <section className="space-y-2 mb-5">
-        <h3 className="text-slate-200">🎯 3. Quest Intent</h3>
-        <p className="text-xs text-slate-300 mb-1">Section unlocks</p>
-        <ul className="mb-3 flex flex-wrap gap-2 text-slate-300 text-sm">
-          {sectionBuffs.quest.map((buff) => (
-            <li key={buff.buffId} className="inline-flex items-center gap-2 rounded border border-slate-700 px-2 py-1">
-              <span className="text-lg" aria-hidden="true">
-                {getBuffIcon(buff.modifierType)}
-              </span>
-              <span>{getBuffSummary(buff)}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="space-y-1">
-          <label className="text-sm text-slate-300">💎 Target Crystal</label>
-          <NativeSelect
-            value={targetCrystal}
-            onValueChange={setTargetCrystal}
-            placeholder="Pick a crystal"
-            options={[
-              ...(targetCrystalOptions.length === 0
-                ? [{ value: '__empty__', label: 'No unlocked crystals', disabled: true }]
-                : targetCrystalOptions),
-            ]}
-          />
-          {targetCrystal.length === 0 && (
-            <p className="text-xs text-slate-400">
-              Pick a crystal to target this ritual.
-            </p>
-          )}
+            <FieldSet className="space-y-2 mb-5">
+              <FieldLegend>🎯 3. Quest Intent</FieldLegend>
+              <FieldDescription className="text-xs">Section unlocks</FieldDescription>
+              <ul className="mb-3 flex flex-wrap gap-2 text-muted-foreground text-sm">
+                {sectionBuffs.quest.map((buff) => (
+                  <li key={buff.buffId} className="inline-flex items-center gap-2 rounded border border-border px-2 py-1">
+                    <span className="text-lg" aria-hidden="true">
+                      {getBuffIcon(buff.modifierType)}
+                    </span>
+                    <span>{getBuffSummary(buff)}</span>
+                  </li>
+                ))}
+              </ul>
+              <FieldGroup className="space-y-1">
+                <Field>
+                  <FieldLabel>💎 Target Crystal</FieldLabel>
+                  <Select value={targetCrystal} onValueChange={setTargetCrystal}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Pick a crystal" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {targetCrystalOptions.length === 0 ? (
+                        <SelectItem value="__empty__" disabled>
+                          No unlocked crystals
+                        </SelectItem>
+                      ) : (
+                        targetCrystalOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field>
+                  <FieldLabel>🎯 Micro-Goal</FieldLabel>
+                  <Select value={microGoal} onValueChange={setMicroGoal}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Pick a micro-goal" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MICRO_GOAL_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field>
+                  <FieldLabel>🧠 Readiness (1-5)</FieldLabel>
+                  <FieldContent>
+                    <ToggleGroup
+                      variant="outline"
+                      type="single"
+                      value={confidenceRating === 0 ? '' : String(confidenceRating)}
+                      onValueChange={(value) => setConfidenceRating(value.length ? Number(value) : 0)}
+                    >
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <ToggleGroupItem key={rating} value={String(rating)}>
+                          {rating}
+                        </ToggleGroupItem>
+                      ))}
+                    </ToggleGroup>
+                  </FieldContent>
+                </Field>
+                {targetCrystal.length === 0 && (
+                  <FieldDescription className="text-xs">
+                    Pick a crystal to target this ritual.
+                  </FieldDescription>
+                )}
+              </FieldGroup>
+            </FieldSet>
+          </motion.div>
         </div>
-        <div className="space-y-1">
-          <label className="text-sm text-slate-300">🎯 Micro-Goal</label>
-          <NativeSelect
-            value={microGoal}
-            onValueChange={setMicroGoal}
-            placeholder="Pick a micro-goal"
-            options={MICRO_GOAL_OPTIONS.map((option) => ({ value: option.value, label: option.label }))}
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="text-sm text-slate-300">🧠 Readiness (1-5)</label>
-          <ToggleGroup
-            type="single"
-            value={confidenceRating === 0 ? '' : String(confidenceRating)}
-            onValueChange={(value) => setConfidenceRating(value.length ? Number(value) : 0)}
-          >
-            {[1, 2, 3, 4, 5].map((rating) => (
-              <ToggleGroupItem key={rating} value={String(rating)}>
-                {rating}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </div>
-      </section>
-
-      <div className="flex gap-3 justify-end">
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-          <Button
-            onClick={handleSubmit}
-            disabled={isSubmitBlockedByCooldown || !canStartWithSelection}
-            className="bg-violet-500 hover:bg-violet-400"
-          >
-            Submit Ritual
-          </Button>
-        </motion.div>
-      </div>
-      </motion.div>
-    </ModalWrapper>
+        <DialogFooter className="sticky bottom-0 z-20">
+          <DialogClose asChild>
+            <Button variant="outline">Close</Button>
+          </DialogClose>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Button
+              onClick={handleSubmit}
+              disabled={isSubmitBlockedByCooldown || !canStartWithSelection}
+            >
+              Submit Ritual
+            </Button>
+          </motion.div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

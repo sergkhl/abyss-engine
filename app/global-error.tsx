@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+
 /**
  * Global error component for static export.
  * This must be a client component but kept minimal to avoid
@@ -33,20 +35,9 @@ export default function GlobalError({
           <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>
             {error?.message || 'An unexpected error occurred'}
           </p>
-          <button
-            onClick={() => reset()}
-            style={{
-              padding: '0.75rem 1.5rem',
-              backgroundColor: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '0.375rem',
-              cursor: 'pointer',
-              fontSize: '1rem',
-            }}
-          >
+          <Button onClick={() => reset()}>
             Try again
-          </button>
+          </Button>
         </div>
       </body>
     </html>

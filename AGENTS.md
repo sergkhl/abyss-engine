@@ -53,6 +53,7 @@ Core systems: SM-2 progression, ritual-based attunement, buff engine, procedural
 - **No Legacy Burden**: Deprecated behavior must be refactored or removed. Do not preserve dead code.
 - **WebGPU Strictness**: Any pull request or code generation that introduces a legacy WebGL material, `WebGLRenderer`, `state.gl`, `THREE.Clock`, or non-TSL shader string into the codebase will be rejected.
 - **Mobile-First**: All UI must be adapted to mobile devices.
+- **UI Composition**: Build 2D UI only from existing `src/components/ui/*` primitives. Do not add or modify files in this directory unless explicitly instructed to do so with mention of the filename in request.
 
 ## Agent Workflow & Decision Framework
 Agents must execute the following structured decision process before outputting code modifications to force planned, architectural alignment.

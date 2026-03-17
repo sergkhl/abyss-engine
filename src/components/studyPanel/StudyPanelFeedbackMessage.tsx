@@ -37,7 +37,7 @@ export function StudyPanelFeedbackMessage({
 
   return (
     <motion.div
-      className="mt-3 text-center text-amber-400 text-lg font-semibold"
+      className="mt-3 text-center text-accent-foreground text-lg font-semibold"
       data-testid="study-panel-feedback-message"
       initial={{ opacity: 0, y: 10, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -55,7 +55,7 @@ export function StudyPanelFeedbackMessage({
         >
           <span
             data-testid="study-card-xp-gain"
-            className="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-300 text-emerald-200 text-sm font-semibold shadow-lg inline-block"
+            className="px-3 py-1 rounded-full bg-secondary/30 border border-secondary text-secondary-foreground text-sm font-semibold shadow-lg inline-block"
           >
             +{xpGainAmount} XP
           </span>
@@ -64,4 +64,3 @@ export function StudyPanelFeedbackMessage({
     </motion.div>
   );
 }
-
