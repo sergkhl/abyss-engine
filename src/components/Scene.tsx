@@ -364,7 +364,7 @@ export const Scene: React.FC<SceneProps> = ({
           />
         </Suspense>
 
-        <GlowPostProcessing bloomExcludeLayer={BLOOM_EXCLUDE_LAYER} />
+        {/* <GlowPostProcessing bloomExcludeLayer={BLOOM_EXCLUDE_LAYER} /> */}
 
         {/* Topic Selection Bar - rendered as HTML overlay following selected crystal */}
         {selectedCrystalPosition && (
