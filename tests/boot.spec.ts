@@ -56,7 +56,7 @@ test.describe('Boot Test', () => {
     await expect(statsContainer).toContainText('Total');
     await expect(statsContainer).toContainText('Due');
     await expect(statsContainer).toContainText('Topics');
-    await expect(statsContainer).toContainText('Locked');
+    await expect(statsContainer).toContainText('Active Buffs');
 
     // 8. Check the main container
     const mainContainer = page.locator('.w-screen.h-screen').first();

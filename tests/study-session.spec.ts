@@ -62,6 +62,19 @@ async function openCardByType(
   await page.waitForTimeout(500);
 }
 
+async function assertFeedbackMessage(page: any) {
+  const feedbackMessageLocator = page.getByTestId('study-panel-feedback-message');
+  await expect(feedbackMessageLocator).toBeVisible({ timeout: 3000 });
+
+  const feedbackText = (await feedbackMessageLocator.textContent())?.trim() ?? '';
+  expect(feedbackText).not.toBe('');
+  expect(feedbackText).not.toContain('+0 XP');
+
+  if (feedbackText.includes('+')) {
+    expect(feedbackText).toMatch(/\+\d+ XP/);
+  }
+}
+
 test.describe('Study Session', () => {
   /**
    * Happy Path: Complete Study Session
@@ -150,11 +163,10 @@ test.describe('Challenge Format Types', () => {
     await page.waitForTimeout(500);
 
     // Verify feedback message is visible
-    await expect(page.getByTestId('study-panel-feedback-message')).toBeVisible({ timeout: 3000 });
+    await assertFeedbackMessage(page);
 
     // Verify XP gain animation appears
     await expect(page.getByTestId('study-card-xp-gain')).toBeVisible({ timeout: 3000 });
-    await expect(page.getByTestId('study-card-xp-gain')).toContainText(/\+\d+ XP/);
 
     // Verify we can still see the current card's content (feedback visible)
     await expect(page.getByTestId('study-card-question-label')).toBeVisible({ timeout: 3000 });
@@ -194,9 +206,8 @@ test.describe('Challenge Format Types', () => {
     await continueButton.click();
 
     // Verify feedback message and XP gain animation appear after continue
-    await expect(page.getByTestId('study-panel-feedback-message')).toBeVisible({ timeout: 3000 });
+    await assertFeedbackMessage(page);
     await expect(page.getByTestId('study-card-xp-gain')).toBeVisible({ timeout: 3000 });
-    await expect(page.getByTestId('study-card-xp-gain')).toContainText(/\+\d+ XP/);
   });
 
   /**
@@ -236,9 +247,8 @@ test.describe('Challenge Format Types', () => {
 
     // Verify feedback message and XP gain animation appear after continue
     await page.getByTestId('study-card-continue').click();
-    await expect(page.getByTestId('study-panel-feedback-message')).toBeVisible({ timeout: 3000 });
+    await assertFeedbackMessage(page);
     await expect(page.getByTestId('study-card-xp-gain')).toBeVisible({ timeout: 3000 });
-    await expect(page.getByTestId('study-card-xp-gain')).toContainText(/\+\d+ XP/);
 
   });
 });

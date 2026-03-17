@@ -32,8 +32,7 @@ const baseProps: StudyPanelStudyViewProps = {
   onRate: vi.fn(),
   getRatingLabel: vi.fn(),
   getRatingColor: vi.fn(),
-  feedbackMessage: null,
-  feedbackMessageDurationMs: 1500,
+  feedbackEvent: null,
 };
 
 function renderStudyPanelView(override: Partial<StudyPanelStudyViewProps> = {}) {

@@ -4,6 +4,7 @@ import './globals.css';
 import QueryProvider from './providers/QueryProvider';
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -31,6 +32,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
+            <Toaster />
             <QueryProvider>{children}</QueryProvider>
           </ThemeProvider>
         </React.StrictMode>

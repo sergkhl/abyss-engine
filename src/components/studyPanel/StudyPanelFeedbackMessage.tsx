@@ -1,66 +1,49 @@
-import React, { useEffect } from 'react';
-import { motion } from 'motion/react';
+import { useEffect } from 'react';
+import { toast } from 'sonner';
+import { StudyPanelFeedbackEvent } from './types';
 
 interface StudyPanelFeedbackMessageProps {
-  feedbackMessage?: string | null;
-  xpGainAmount?: number | null;
-  onDone?: () => void;
-  durationMs?: number;
+  feedbackEvent?: StudyPanelFeedbackEvent | null;
+  onDone?: (feedbackEventId?: string) => void;
 }
 
 export function StudyPanelFeedbackMessage({
-  feedbackMessage,
-  xpGainAmount,
+  feedbackEvent,
   onDone,
-  durationMs = 1500,
 }: StudyPanelFeedbackMessageProps) {
-  const showXpGain = xpGainAmount !== undefined && xpGainAmount !== null;
-  const show = Boolean(feedbackMessage) || showXpGain;
+  const show = Boolean(feedbackEvent);
+  const toastId = feedbackEvent ? `study-panel-feedback-${feedbackEvent.id}` : undefined;
+  const toastMessage = feedbackEvent
+    ? feedbackEvent.xpAmount != null && feedbackEvent.xpAmount > 0
+      ? `${feedbackEvent.message} +${feedbackEvent.xpAmount} XP`
+      : feedbackEvent.message
+    : '';
 
   useEffect(() => {
-    if (!onDone || !show) {
+    if (!show) {
       return;
     }
 
-    const timeout = window.setTimeout(() => {
-      onDone();
-    }, durationMs);
-
-    return () => {
-      window.clearTimeout(timeout);
+    let doneCalled = false;
+    const handleDone = () => {
+      if (doneCalled) {
+        return;
+      }
+      doneCalled = true;
+      onDone?.(feedbackEvent?.id);
     };
-  }, [onDone, show, durationMs]);
 
-  if (!show) {
-    return null;
-  }
+    toast.success(
+      <span data-testid="study-card-xp-gain">
+        <span data-testid="study-panel-feedback-message">{toastMessage}</span>
+      </span>,
+      {
+        duration: feedbackEvent?.durationMs,
+        onAutoClose: handleDone,
+        id: toastId,
+      }
+    );
+  }, [toastMessage, show, feedbackEvent?.durationMs, onDone, feedbackEvent?.id, toastId]);
 
-  return (
-    <motion.div
-      className="mt-3 text-center text-accent-foreground text-lg font-semibold"
-      data-testid="study-panel-feedback-message"
-      initial={{ opacity: 0, y: 10, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -8, scale: 0.98 }}
-      transition={{ duration: 0.2, ease: 'easeOut' }}
-    >
-      {feedbackMessage && <div>{feedbackMessage}</div>}
-
-      {showXpGain && (
-        <motion.div
-          className="mt-2 inline-flex justify-center pointer-events-none"
-          initial={{ opacity: 0, y: 6, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.2, ease: 'easeOut', delay: 0.08 }}
-        >
-          <span
-            data-testid="study-card-xp-gain"
-            className="px-3 py-1 rounded-full bg-secondary/30 border border-secondary text-secondary-foreground text-sm font-semibold shadow-lg inline-block"
-          >
-            +{xpGainAmount} XP
-          </span>
-        </motion.div>
-      )}
-    </motion.div>
-  );
+  return null;
 }

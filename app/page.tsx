@@ -19,6 +19,8 @@ import { AttunementRitualModal } from '@/components/AttunementRitualModal';
 import DiscoveryModal from '@/components/DiscoveryModal';
 import StudyPanelModal from '@/components/StudyPanelModal';
 import SubjectNavigation from '@/components/SubjectNavigation';
+import { StudyPanelFeedbackEvent } from '@/components/studyPanel/types';
+import { calculateXPReward } from '@/features/progression';
 
 // Dynamic import for Scene to avoid SSR issues with Three.js
 const Scene = dynamic(() => import('@/components/Scene'), {
@@ -85,7 +87,7 @@ const HomeContent: React.FC = () => {
   const closeRitualModal = useUIStore(s => s.closeRitualModal);
 
   // Study panel feedback state
-  const [studyFeedback, setStudyFeedback] = useState<string | null>(null);
+  const [studyFeedbackEvent, setStudyFeedbackEvent] = useState<StudyPanelFeedbackEvent | null>(null);
   const ritualCooldownRemainingMs = getRemainingAttunementCooldownMs(Date.now());
 
   const currentTopicId = currentSession?.topicId || null;
@@ -125,24 +127,23 @@ const HomeContent: React.FC = () => {
 
   const handleRate = (cardId: string, isCorrect?: boolean, selfRating?: Rating) => {
     const reviewRating = selfRating ?? (isCorrect === undefined ? 3 : isCorrect ? 3 : 1);
+    const xpAmount = calculateXPReward(undefined, reviewRating);
+    const randomMessage = reviewRating >= 3
+      ? positiveMessages[Math.floor(Math.random() * positiveMessages.length)]
+      : negativeMessages[Math.floor(Math.random() * negativeMessages.length)];
+
+    setStudyFeedbackEvent({
+      id: `${cardId || currentSession?.currentCardId || 'card'}-${reviewRating}-${Date.now()}-${xpAmount}`,
+      message: randomMessage,
+      xpAmount,
+      durationMs: FEEDBACK_MESSAGE_DURATION_MS,
+    });
 
     if (reviewRating >= 3) {
       // Positive feedback - play sound and show encouraging message
       playPositiveSound();
-      const randomMessage = positiveMessages[Math.floor(Math.random() * positiveMessages.length)];
-      setStudyFeedback(randomMessage);
-
-      // Clear feedback after a short delay
-      setTimeout(() => setStudyFeedback(null), FEEDBACK_MESSAGE_DURATION_MS);
-    } else {
-      // Negative feedback - only show encouraging message (no sound)
-      const randomMessage = negativeMessages[Math.floor(Math.random() * negativeMessages.length)];
-      setStudyFeedback(randomMessage);
-
-      // Clear feedback after a short delay
-      setTimeout(() => setStudyFeedback(null), FEEDBACK_MESSAGE_DURATION_MS);
     }
-
+    
     // Delay submitting result to allow feedback to be visible first
     setTimeout(() => {
       submitStudyResult(cardId || currentSession?.currentCardId || '', reviewRating);
@@ -156,6 +157,7 @@ const HomeContent: React.FC = () => {
 
   // Study Panel Modal handlers
   const handleCloseStudyPanel = () => {
+    setStudyFeedbackEvent(null);
     closeStudyPanel();
   };
 
@@ -246,8 +248,10 @@ const HomeContent: React.FC = () => {
           currentTopicId={currentTopicId}
           isCardFlipped={isCurrentCardFlipped}
           totalCards={currentSession?.totalCards ?? totalCards}
-          feedbackMessage={studyFeedback}
-          feedbackMessageDurationMs={FEEDBACK_MESSAGE_DURATION_MS}
+          feedbackEvent={studyFeedbackEvent}
+          onFeedbackDone={(feedbackEventId?: string) => {
+            setStudyFeedbackEvent((currentEvent) => (currentEvent?.id === feedbackEventId ? null : currentEvent));
+          }}
           levelUpMessage={levelUpMessage}
           onClose={handleCloseStudyPanel}
           onFlip={flipCurrentCard}

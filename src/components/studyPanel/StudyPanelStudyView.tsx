@@ -6,6 +6,7 @@ import { Card } from '../../types/core';
 import { SM2Data } from '../../features/progression/sm2';
 import { StudyPanelFeedbackMessage } from './StudyPanelFeedbackMessage';
 import { Button } from '@/components/ui/button';
+import { StudyPanelFeedbackEvent } from './types';
 
 type OptionState =
   | 'default'
@@ -76,8 +77,7 @@ interface StudyPanelStudyViewProps {
   isAnswerSubmitted: boolean;
   isCorrect: boolean;
   isCardFlipped: boolean;
-  feedbackMessage?: string | null;
-  feedbackMessageDurationMs?: number;
+  feedbackEvent?: StudyPanelFeedbackEvent | null;
   sm2State: SM2Data | null;
   activeCard: Card | null;
   onSelectAnswer: (answer: string) => void;
@@ -87,9 +87,7 @@ interface StudyPanelStudyViewProps {
   onRate: (rating: Rating) => void;
   getRatingLabel: (rating: Rating) => string;
   getRatingColor: (rating: Rating) => string;
-  xpGainAmount?: number | null;
-  xpGainVersion?: number | string | null;
-  onXpGainDone?: () => void;
+  onFeedbackDone?: (feedbackEventId?: string) => void;
 }
 
 export function StudyPanelStudyView({
@@ -102,8 +100,6 @@ export function StudyPanelStudyView({
   isAnswerSubmitted,
   isCorrect,
   isCardFlipped,
-  feedbackMessage,
-  feedbackMessageDurationMs = 1500,
   sm2State,
   activeCard,
   onSelectAnswer,
@@ -113,9 +109,8 @@ export function StudyPanelStudyView({
   onRate,
   getRatingLabel,
   getRatingColor,
-  xpGainAmount,
-  xpGainVersion,
-  onXpGainDone,
+  onFeedbackDone,
+  feedbackEvent,
 }: StudyPanelStudyViewProps) {
   const formatTestId = isFlashcard
     ? 'study-card-format-flashcard'
@@ -229,11 +224,9 @@ export function StudyPanelStudyView({
 
       {/* Feedback + XP Gain Message */}
       <StudyPanelFeedbackMessage
-        key={xpGainVersion}
-        feedbackMessage={feedbackMessage}
-        xpGainAmount={xpGainAmount}
-        onDone={onXpGainDone}
-        durationMs={feedbackMessageDurationMs}
+        key={feedbackEvent?.id}
+        feedbackEvent={feedbackEvent}
+        onDone={onFeedbackDone}
       />
 
       {/* Actions */}
