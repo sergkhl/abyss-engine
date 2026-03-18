@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ActiveCrystal } from '../types';
 import {
+  getLabelOcclusionFactor,
   CRYSTAL_LABEL_OFFSET_Y,
   getLabelOpacity,
   getVisibleLabelCandidates,
@@ -37,5 +38,82 @@ describe('crystal label visibility helpers', () => {
     expect(candidates.map((item) => item.topicId)).toEqual(['closest', 'mid']);
     expect(candidates.every((item) => item.distance < 18)).toBe(true);
   });
-});
 
+  it('ignores self mesh when evaluating occlusion', () => {
+    const cameraPosition = new THREE.Vector3(0, 1.25, 0);
+    const targetPosition = new THREE.Vector3(0, 1.25, 5);
+    const selfMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(0.5, 8, 8),
+      new THREE.MeshStandardNodeMaterial(),
+    );
+    selfMesh.position.copy(targetPosition);
+    selfMesh.updateMatrixWorld(true);
+
+    const raycaster = new THREE.Raycaster();
+    const occlusionFactor = getLabelOcclusionFactor(
+      cameraPosition,
+      targetPosition,
+      raycaster,
+      [selfMesh],
+      selfMesh,
+    );
+
+    expect(occlusionFactor).toBe(1);
+  });
+
+  it('hides label when both label targets are occluded', () => {
+    const cameraPosition = new THREE.Vector3(0, 1.25, 0);
+    const targetPosition = new THREE.Vector3(0, 1.25, 5);
+    const selfMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(0.35, 8, 8),
+      new THREE.MeshStandardNodeMaterial(),
+    );
+    const blockerMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(2, 2, 2),
+      new THREE.MeshStandardNodeMaterial(),
+    );
+    selfMesh.position.copy(targetPosition);
+    blockerMesh.position.set(0, 1.25, 2.5);
+    selfMesh.updateMatrixWorld(true);
+    blockerMesh.updateMatrixWorld(true);
+
+    const raycaster = new THREE.Raycaster();
+    const occlusionFactor = getLabelOcclusionFactor(
+      cameraPosition,
+      targetPosition,
+      raycaster,
+      [selfMesh, blockerMesh],
+      selfMesh,
+    );
+
+    expect(occlusionFactor).toBe(0);
+  });
+
+  it('partially hides label when one label target is occluded', () => {
+    const cameraPosition = new THREE.Vector3(0, 1.25, 0);
+    const targetPosition = new THREE.Vector3(0, 1.25, 5);
+    const selfMesh = new THREE.Mesh(
+      new THREE.SphereGeometry(0.35, 8, 8),
+      new THREE.MeshStandardNodeMaterial(),
+    );
+    const blockerMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(0.8, 0.7, 0.8),
+      new THREE.MeshStandardNodeMaterial(),
+    );
+    selfMesh.position.copy(targetPosition);
+    blockerMesh.position.set(0, 1, 2.5);
+    selfMesh.updateMatrixWorld(true);
+    blockerMesh.updateMatrixWorld(true);
+
+    const raycaster = new THREE.Raycaster();
+    const occlusionFactor = getLabelOcclusionFactor(
+      cameraPosition,
+      targetPosition,
+      raycaster,
+      [selfMesh, blockerMesh],
+      selfMesh,
+    );
+
+    expect(occlusionFactor).toBe(0.5);
+  });
+});

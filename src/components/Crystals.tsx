@@ -14,6 +14,7 @@ import { playLevelUpSound } from '../utils/sound';
 import { useSceneInvalidator } from '../hooks/useSceneInvalidator';
 import {
   getLabelOpacity,
+  getLabelOcclusionFactor,
   getVisibleLabelCandidates,
   LabelVisibilityState,
   MAX_LABEL_DISTANCE,
@@ -45,6 +46,7 @@ interface SingleCrystalProps {
   onSelect: (crystal: ActiveCrystal) => void;
   isStudyPanelOpen: boolean;
   labelVisibility: LabelVisibilityState;
+  onCrystalMeshRef: (topicId: string, mesh: THREE.Mesh | null) => void;
 }
 
 const SingleCrystal: React.FC<SingleCrystalProps> = ({
@@ -54,6 +56,7 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
   onSelect,
   isStudyPanelOpen,
   labelVisibility,
+  onCrystalMeshRef,
 }) => {
   const [x, z] = crystal.gridPosition;
   const groupRef = useRef<THREE.Group>(null);
@@ -352,7 +355,8 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
     if (labelRef.current) {
       const isLabelVisible = labelVisibility.visibleIds.has(crystal.topicId);
       const distance = isLabelVisible ? labelVisibility.distances.get(crystal.topicId) ?? Infinity : Infinity;
-      const opacity = topicMeta?.topicName ? getLabelOpacity(distance) : 0;
+      const occlusionFactor = labelVisibility.occlusion.get(crystal.topicId) ?? 1;
+      const opacity = topicMeta?.topicName ? getLabelOpacity(distance) * occlusionFactor : 0;
       labelRef.current.style.opacity = `${opacity}`;
       labelRef.current.style.display = opacity === 0 ? 'none' : 'block';
     }
@@ -361,6 +365,7 @@ const SingleCrystal: React.FC<SingleCrystalProps> = ({
   return (
     <group ref={groupRef} position={[x, 0.3, z]} scale={[0, 0, 0]}>
       <mesh
+        ref={(mesh: THREE.Mesh | null) => onCrystalMeshRef(crystal.topicId, mesh)}
         geometry={crystalGeometry}
         material={outerMaterial}
         onPointerUp={handleCrystalPointerUp}
@@ -454,8 +459,19 @@ export const Crystals: React.FC<CrystalsProps> = ({
   const labelVisibility = useRef<LabelVisibilityState>({
     visibleIds: new Set(),
     distances: new Map(),
+    occlusion: new Map(),
   });
+  const crystalMeshRefs = useRef(new Map<string, THREE.Mesh>());
+  const raycasterRef = useRef(new THREE.Raycaster());
   const { isPaused } = useSceneInvalidator();
+
+  const setCrystalMesh = (topicId: string, mesh: THREE.Mesh | null) => {
+    if (mesh) {
+      crystalMeshRefs.current.set(topicId, mesh);
+      return;
+    }
+    crystalMeshRefs.current.delete(topicId);
+  };
 
   useFrame(({ camera }) => {
     if (isPaused) {
@@ -472,10 +488,22 @@ export const Crystals: React.FC<CrystalsProps> = ({
     const { visibleIds, distances } = labelVisibility.current;
     visibleIds.clear();
     distances.clear();
+    labelVisibility.current.occlusion.clear();
+
+    const occluders = Array.from(crystalMeshRefs.current.values());
 
     candidates.forEach((candidate) => {
       visibleIds.add(candidate.topicId);
       distances.set(candidate.topicId, candidate.distance);
+      const occluder = crystalMeshRefs.current.get(candidate.topicId) ?? null;
+      const occlusionFactor = getLabelOcclusionFactor(
+        camera.position,
+        candidate.worldPosition,
+        raycasterRef.current,
+        occluders,
+        occluder,
+      );
+      labelVisibility.current.occlusion.set(candidate.topicId, occlusionFactor);
     });
   });
 
@@ -502,6 +530,7 @@ export const Crystals: React.FC<CrystalsProps> = ({
           topicMeta={resolvedMetadata[crystal.topicId]}
           isStudyPanelOpen={!!isStudyPanelOpen}
           labelVisibility={labelVisibility.current}
+            onCrystalMeshRef={setCrystalMesh}
         />
       ))}
     </group>
