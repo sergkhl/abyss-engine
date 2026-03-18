@@ -2,7 +2,7 @@
 
 import React, { Suspense, useRef, useMemo, useEffect, useState } from 'react'
 import { Canvas } from '@react-three/fiber/webgpu'
-import { PerspectiveCamera, Html, OrbitControls, Environment } from '@react-three/drei/webgpu'
+import { PerspectiveCamera, OrbitControls, Environment } from '@react-three/drei/webgpu'
 import { useQueries } from '@tanstack/react-query'
 import * as THREE from 'three/webgpu'
 import { Grid, GRID_SIZE } from './Grid'
@@ -256,7 +256,6 @@ export const Scene: React.FC<SceneProps> = ({
   // Track selected crystal's 3D position for positioning the topic selection bar
   // Computed in a dedicated hook to keep scene structure focused
   const {
-    selectedCrystalPosition,
     spotlightPosition,
     spotlightTarget,
     spotlightOpacity,
@@ -366,25 +365,6 @@ export const Scene: React.FC<SceneProps> = ({
 
         {/* <GlowPostProcessing bloomExcludeLayer={BLOOM_EXCLUDE_LAYER} /> */}
 
-        {/* Topic Selection Bar - rendered as HTML overlay following selected crystal */}
-        {selectedCrystalPosition && (
-          <Html
-            position={[selectedCrystalPosition[0], selectedCrystalPosition[1] - 1.2, selectedCrystalPosition[2]]}
-            center
-            style={{
-              pointerEvents: 'auto',
-            }}
-          >
-            <TopicSelectionBar
-              isEmbedded
-              onStartTopicStudySession={startTopicStudySessionFromCards}
-              selectedMetadata={selectedTopicMetadata}
-              selectedCards={selectedTopicCards}
-              selectedXp={selectedTopicXp}
-            />
-          </Html>
-        )}
-
         {/* Invisible floor plane to detect clicks outside crystals */}
         <mesh
           position={[0, -0.01, 0]}
@@ -400,6 +380,12 @@ export const Scene: React.FC<SceneProps> = ({
           <meshBasicNodeMaterial visible={false} />
         </mesh>
       </Canvas>
+      <TopicSelectionBar
+        onStartTopicStudySession={startTopicStudySessionFromCards}
+        selectedMetadata={selectedTopicMetadata}
+        selectedCards={selectedTopicCards}
+        selectedXp={selectedTopicXp}
+      />
       {showStats && (
         <div
           style={{

@@ -8,8 +8,6 @@ import type { Card } from '../types/core';
 import { Button } from '@/components/ui/button';
 
 interface TopicSelectionBarProps {
-  /** Whether this bar is embedded in the 3D scene (vs standalone) */
-  isEmbedded?: boolean;
   onStartTopicStudySession?: (topicId: string, cards: Card[]) => void;
   selectedMetadata?: TopicMetadata;
   selectedCards?: Card[];
@@ -19,11 +17,10 @@ interface TopicSelectionBarProps {
 /**
  * TopicSelectionBar Component
  *
- * A small persistent bar at the top of the 3D view that shows the selected topic
+ * A small persistent bar at the bottom of the 3D view that shows the selected topic
  * when a crystal is selected. Displays subject name, topic name, and level.
  */
 export default function TopicSelectionBar({
-  isEmbedded = false,
   onStartTopicStudySession,
   selectedMetadata,
   selectedCards = [],
@@ -61,11 +58,16 @@ export default function TopicSelectionBar({
     selectTopic(null);
   };
 
-  const containerClass = isEmbedded ? '' : 'fixed top-4 left-1/2 -translate-x-1/2 z-50';
+  const containerClass = 'fixed z-50 flex justify-center px-3';
+  const containerStyle: React.CSSProperties = {
+    left: '0.5rem',
+    right: '0.5rem',
+    bottom: 'calc(0.75rem + env(safe-area-inset-bottom))',
+  };
 
   return (
-    <div className={containerClass}>
-    <div className="flex items-center gap-2 px-2 py-2 bg-card/80 backdrop-blur-sm rounded-lg border border-border shadow-lg">
+    <div className={containerClass} style={containerStyle}>
+      <div className="inline-flex items-center gap-2 px-2 py-2 w-full sm:w-auto bg-card/80 backdrop-blur-sm rounded-lg border border-border shadow-lg">
         <div className="flex flex-col items-start">
           <span className="text-xs text-foreground/50 uppercase tracking-wider">Selected</span>
           <div className="flex items-center gap-2 text-foreground">

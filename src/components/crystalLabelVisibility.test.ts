@@ -1,4 +1,4 @@
-import * as THREE from 'three/webgpu';
+import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 
 import { ActiveCrystal } from '../types';
@@ -44,7 +44,7 @@ describe('crystal label visibility helpers', () => {
     const targetPosition = new THREE.Vector3(0, 1.25, 5);
     const selfMesh = new THREE.Mesh(
       new THREE.SphereGeometry(0.5, 8, 8),
-      new THREE.MeshStandardNodeMaterial(),
+      new THREE.MeshBasicMaterial(),
     );
     selfMesh.position.copy(targetPosition);
     selfMesh.updateMatrixWorld(true);
@@ -66,11 +66,11 @@ describe('crystal label visibility helpers', () => {
     const targetPosition = new THREE.Vector3(0, 1.25, 5);
     const selfMesh = new THREE.Mesh(
       new THREE.SphereGeometry(0.35, 8, 8),
-      new THREE.MeshStandardNodeMaterial(),
+      new THREE.MeshBasicMaterial(),
     );
     const blockerMesh = new THREE.Mesh(
       new THREE.BoxGeometry(2, 2, 2),
-      new THREE.MeshStandardNodeMaterial(),
+      new THREE.MeshBasicMaterial(),
     );
     selfMesh.position.copy(targetPosition);
     blockerMesh.position.set(0, 1.25, 2.5);
@@ -94,11 +94,11 @@ describe('crystal label visibility helpers', () => {
     const targetPosition = new THREE.Vector3(0, 1.25, 5);
     const selfMesh = new THREE.Mesh(
       new THREE.SphereGeometry(0.35, 8, 8),
-      new THREE.MeshStandardNodeMaterial(),
+      new THREE.MeshBasicMaterial(),
     );
     const blockerMesh = new THREE.Mesh(
       new THREE.BoxGeometry(0.8, 0.7, 0.8),
-      new THREE.MeshStandardNodeMaterial(),
+      new THREE.MeshBasicMaterial(),
     );
     selfMesh.position.copy(targetPosition);
     blockerMesh.position.set(0, 1, 2.5);

@@ -145,10 +145,10 @@ export function StudyPanelModal({
         className="max-h-[95vh] flex flex-col"
       >
       <DialogHeader>
-        <DialogTitle data-testid="study-session-title">
+        <DialogTitle className="sr-only" data-testid="study-session-title">
           📚 Study Session
         </DialogTitle>
-        <DialogDescription>
+        <DialogDescription className="sr-only">
           Review cards, answer prompts, and track your study session progress.
         </DialogDescription>
           <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as StudyPanelTab)}>
