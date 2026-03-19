@@ -2,13 +2,18 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 import {
+  MAX_UNDO_DEPTH,
   calculateLevelFromXP,
   calculateXPReward,
   calculateTopicTier,
   filterCardsByDifficulty,
+  captureUndoSnapshot,
+  restoreUndoSnapshot,
+  trimUndoSnapshotStack,
   getTopicUnlockStatus,
   getTopicsByTier,
 } from './progressionUtils';
+import type { ProgressionEventPayload, ProgressionEventType } from './events';
 import { defaultSM2, sm2, SM2Data } from './sm2';
 import { Card, SubjectGraph } from '../../types/core';
 import {
@@ -248,6 +253,13 @@ export const useProgressionStore = create<ProgressionStore>()(
         return getRemainingAttunementCooldownMs(get().attunementSessions, atMs);
       },
 
+      emitEvent: <T extends ProgressionEventType>(type: T, payload: ProgressionEventPayload<T>) => {
+        if (typeof window === 'undefined') {
+          return;
+        }
+        window.dispatchEvent(new CustomEvent(`abyss-progression-${type}`, { detail: payload }));
+      },
+
       clearActiveBuffs: () => set({ activeBuffs: [] }),
       clearPendingAttunement: () => set({ pendingAttunement: null }),
 
@@ -295,6 +307,8 @@ export const useProgressionStore = create<ProgressionStore>()(
             activeBuffIds,
             attempts: [],
             cardDifficultyById,
+            undoStack: [],
+            redoStack: [],
           },
           isCurrentCardFlipped: false,
           pendingAttunement: null,
@@ -314,6 +328,12 @@ export const useProgressionStore = create<ProgressionStore>()(
         if (!crystal) {
           return;
         }
+
+        const undoSnapshot = captureUndoSnapshot(state);
+        const nextUndoStack = trimUndoSnapshotStack([
+          ...(session.undoStack || []),
+          undoSnapshot,
+        ]);
 
         const previousSM2 = state.sm2Data[cardId] || defaultSM2;
         const updatedSM2 = sm2.calculateNextReview(previousSM2, rating);
@@ -342,16 +362,13 @@ export const useProgressionStore = create<ProgressionStore>()(
           ? buffsAfterUsage
           : BuffEngine.get().consumeForEvent(buffsAfterUsage, 'session_ended');
         const isSessionComplete = nextQueue.length === 0;
+        const sessionMetrics = isSessionComplete
+          ? buildSessionMetrics(sessionId, session.topicId, nextAttempts, session.startedAt ?? Date.now())
+          : null;
         let attunementSessions = state.attunementSessions;
         if (sessionId) {
           const existingRecord = state.attunementSessions.find((record) => record.sessionId === sessionId);
           if (isSessionComplete) {
-            const metrics = buildSessionMetrics(
-              sessionId,
-              session.topicId,
-              nextAttempts,
-              session.startedAt ?? Date.now(),
-            );
             if (existingRecord) {
               attunementSessions = state.attunementSessions.map((record) => {
                 if (record.sessionId !== sessionId) {
@@ -360,10 +377,10 @@ export const useProgressionStore = create<ProgressionStore>()(
                 return {
                   ...record,
                   completedAt: Date.now(),
-                  totalAttempts: metrics.cardsCompleted,
-                  correctRate: metrics.correctRate,
-                  avgRating: metrics.avgRating,
-                  sessionDurationMs: metrics.sessionDurationMs,
+                  totalAttempts: sessionMetrics?.cardsCompleted ?? record.totalAttempts ?? 0,
+                  correctRate: sessionMetrics?.correctRate ?? record.correctRate ?? 0,
+                  avgRating: sessionMetrics?.avgRating ?? record.avgRating ?? 0,
+                  sessionDurationMs: sessionMetrics?.sessionDurationMs ?? record.sessionDurationMs ?? 0,
                   readinessBucket: record.readinessBucket || 'low',
                 };
               });
@@ -379,10 +396,10 @@ export const useProgressionStore = create<ProgressionStore>()(
                   readinessBucket: 'low',
                   checklist: {},
                   buffs: dedupeBuffsById(state.activeBuffs),
-                  totalAttempts: metrics.cardsCompleted,
-                  correctRate: metrics.correctRate,
-                  avgRating: metrics.avgRating,
-                  sessionDurationMs: metrics.sessionDurationMs,
+                  totalAttempts: sessionMetrics?.cardsCompleted ?? 0,
+                  correctRate: sessionMetrics?.correctRate ?? 0,
+                  avgRating: sessionMetrics?.avgRating ?? 0,
+                  sessionDurationMs: sessionMetrics?.sessionDurationMs ?? 0,
                 },
               ];
             }
@@ -410,12 +427,91 @@ export const useProgressionStore = create<ProgressionStore>()(
             queueCardIds: nextQueue,
             currentCardId: nextCard,
             totalCards: Math.max(session.totalCards - 1, 0),
+            undoStack: nextUndoStack,
+            redoStack: [],
             ...(isSessionComplete ? { startedAt: session.startedAt ?? Date.now() } : {}),
           },
           activeBuffs: nextBuffs,
           isCurrentCardFlipped: false,
         }));
         persistAttunementSessions(attunementSessions);
+        get().emitEvent('xp-gained', {
+          amount: buffedReward,
+          rating,
+          cardId,
+          topicId: session.topicId,
+        });
+        if (isSessionComplete && sessionMetrics) {
+          get().emitEvent('session-complete', {
+            topicId: session.topicId,
+            correctRate: sessionMetrics.correctRate,
+            totalAttempts: sessionMetrics.cardsCompleted,
+          });
+        }
+      },
+
+      undoLastStudyResult: () => {
+        const state = get();
+        const session = state.currentSession;
+        if (!session || (session.undoStack ?? []).length === 0) {
+          return;
+        }
+
+        const snapshot = (session.undoStack || [])[session.undoStack.length - 1];
+        const nextUndoStack = (session.undoStack || []).slice(0, -1);
+        const redoSnapshot = captureUndoSnapshot(state);
+        const nextRedoStack = trimUndoSnapshotStack([
+          ...(session.redoStack || []),
+          redoSnapshot,
+        ]);
+        const restored = restoreUndoSnapshot(state, snapshot);
+
+        set({
+          ...restored,
+          currentSession: {
+            ...restored.currentSession,
+            undoStack: nextUndoStack,
+            redoStack: nextRedoStack,
+          },
+        });
+        get().emitEvent('study-panel-history', {
+          action: 'undo',
+          topicId: restored.currentSession?.topicId,
+          undoCount: nextUndoStack.length,
+          redoCount: nextRedoStack.length,
+        });
+      },
+
+      redoLastStudyResult: () => {
+        const state = get();
+        const session = state.currentSession;
+        if (!session || (session.redoStack || []).length === 0) {
+          return;
+        }
+
+        const snapshot = (session.redoStack || [])[session.redoStack.length - 1];
+        const nextRedoStack = (session.redoStack || []).slice(0, -1);
+        const undoSnapshot = captureUndoSnapshot(state);
+        const nextUndoStack = trimUndoSnapshotStack([
+          ...(session.undoStack || []),
+          undoSnapshot,
+        ]);
+        const restored = restoreUndoSnapshot(state, snapshot);
+
+        set({
+          ...restored,
+          currentSession: {
+            ...restored.currentSession,
+            undoStack: nextUndoStack,
+            redoStack: nextRedoStack,
+          },
+        });
+        get().emitEvent('study-panel-history', {
+          action: 'redo',
+          topicId: restored.currentSession?.topicId,
+          undoCount: nextUndoStack.length,
+          redoCount: nextRedoStack.length,
+        });
       },
 
       flipCurrentCard: () => {

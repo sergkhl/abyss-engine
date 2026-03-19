@@ -11,7 +11,8 @@ import { TARGET_AUDIENCE_OPTIONS, useStudySettingsStore } from '../store/studySe
 import { StudyPanelStateViews } from './studyPanel/StudyPanelStateViews';
 import { StudyPanelStudyView } from './studyPanel/StudyPanelStudyView';
 import { useStudyPanelModel } from '../hooks/useStudyPanelModel';
-import { StudyPanelFeedbackEvent, StudyPanelTab } from './studyPanel/types';
+import { useStudyKeyboardShortcuts } from '../hooks/useStudyKeyboardShortcuts';
+import { StudyPanelTab } from './studyPanel/types';
 
 interface StudyPanelModalProps {
   isOpen: boolean;
@@ -19,12 +20,12 @@ interface StudyPanelModalProps {
   currentTopicId: string | null;
   isCardFlipped: boolean;
   totalCards: number;
-  feedbackEvent?: StudyPanelFeedbackEvent | null;
-  onFeedbackDone?: (feedbackEventId?: string) => void;
   levelUpMessage?: string | null;
   onClose: () => void;
   onFlip: () => void;
   onSubmitResult: (cardId: string, isCorrect?: boolean, rating?: Rating) => void;
+  onUndo: () => void;
+  onRedo: () => void;
 }
 
 export function StudyPanelModal({
@@ -33,12 +34,12 @@ export function StudyPanelModal({
   currentTopicId,
   isCardFlipped,
   totalCards,
-  feedbackEvent,
-  onFeedbackDone,
   levelUpMessage,
   onClose,
   onFlip,
   onSubmitResult,
+  onUndo,
+  onRedo,
 }: StudyPanelModalProps) {
   const [activeTab, setActiveTab] = useState<StudyPanelTab>('study');
   const targetAudience = useStudySettingsStore((state) => state.targetAudience);
@@ -50,6 +51,7 @@ export function StudyPanelModal({
     currentTopicId,
     totalCards,
   });
+  useStudyKeyboardShortcuts(onUndo, onRedo, model.canUndo, model.canRedo);
 
   const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
@@ -206,10 +208,8 @@ export function StudyPanelModal({
               isAnswerSubmitted={isAnswerSubmitted}
               isCorrect={isCorrect}
               isCardFlipped={isCardFlipped}
-              feedbackEvent={feedbackEvent}
               sm2State={model.sm2State}
               activeCard={model.activeCard}
-              onFeedbackDone={onFeedbackDone}
               onSelectAnswer={handleAnswerSelect}
               onChoiceSubmit={handleChoiceSubmit}
               onChoiceContinue={handleChoiceContinue}
@@ -217,6 +217,12 @@ export function StudyPanelModal({
               onRate={handleRating}
               getRatingLabel={getRatingLabel}
               getRatingColor={getRatingColor}
+              onUndo={onUndo}
+              onRedo={onRedo}
+              canUndo={model.canUndo}
+              canRedo={model.canRedo}
+              undoCount={model.undoCount}
+              redoCount={model.redoCount}
             />
           )}
       </div>

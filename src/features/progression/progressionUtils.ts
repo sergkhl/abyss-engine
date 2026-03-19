@@ -1,5 +1,16 @@
 import { ActiveCrystal, GraphNode, SubjectGraph } from '../../types/core';
 import { Rating } from '../../types';
+import { BuffEngine } from './buffs/buffEngine';
+import {
+  AttunementSessionRecord,
+  ProgressionState,
+  StudySessionCore,
+  StudyUndoSnapshot,
+} from '../../types/progression';
+
+type RestorableProgressionState = Omit<ProgressionState, 'currentSession'> & {
+  currentSession: StudySessionCore;
+};
 
 /**
  * Game logic utilities used by the progression feature.
@@ -48,6 +59,62 @@ export interface TieredTopic {
 export interface SubjectLike {
   id: string;
   name: string;
+}
+
+export const MAX_UNDO_DEPTH = 50;
+
+function cloneDeep<T>(value: T): T {
+  if (typeof structuredClone === 'function') {
+    return structuredClone(value);
+  }
+  return JSON.parse(JSON.stringify(value));
+}
+
+export function captureUndoSnapshot(state: ProgressionState): StudyUndoSnapshot {
+  if (!state.currentSession) {
+    throw new Error('Cannot capture undo snapshot without an active session.');
+  }
+
+  const fullSession = cloneDeep(state.currentSession);
+  const { undoStack: _undoStack, redoStack: _redoStack, ...coreSession } = fullSession;
+
+  return {
+    timestamp: Date.now(),
+    sm2Data: cloneDeep(state.sm2Data),
+    activeCrystals: cloneDeep(state.activeCrystals),
+    activeBuffs: cloneDeep(state.activeBuffs),
+    unlockPoints: state.unlockPoints,
+    currentSession: coreSession,
+    attunementSessions: cloneDeep(state.attunementSessions),
+  };
+}
+
+export function restoreUndoSnapshot(state: ProgressionState, snapshot: StudyUndoSnapshot): RestorableProgressionState {
+  if (!snapshot.currentSession) {
+    throw new Error('Invalid snapshot: currentSession is required for restore.');
+  }
+
+  const restoredActiveBuffs = BuffEngine.get().pruneExpired(
+    snapshot.activeBuffs.map((buff) => BuffEngine.get().hydrateBuff(buff)),
+  );
+
+  return {
+    ...state,
+    sm2Data: snapshot.sm2Data,
+    activeCrystals: snapshot.activeCrystals,
+    activeBuffs: restoredActiveBuffs,
+    unlockPoints: snapshot.unlockPoints,
+    currentSession: snapshot.currentSession,
+    attunementSessions: snapshot.attunementSessions,
+    isCurrentCardFlipped: false,
+  };
+}
+
+export function trimUndoSnapshotStack<T>(
+  stack: T[],
+  maxDepth: number = MAX_UNDO_DEPTH,
+): T[] {
+  return stack.slice(Math.max(0, stack.length - maxDepth));
 }
 
 export function calculateLevelFromXP(xp: number): number {
@@ -282,4 +349,3 @@ export function getTopicsByTier(
   const sortedTiers = Array.from(tierMap.keys()).sort((a, b) => a - b);
   return sortedTiers.map((tier) => ({ tier, topics: tierMap.get(tier) || [] }));
 }
-

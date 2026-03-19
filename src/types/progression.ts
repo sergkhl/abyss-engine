@@ -1,5 +1,6 @@
 import type { ActiveCrystal, Card } from './core';
 import type { SubjectGraph } from './core';
+import type { ProgressionEventPayload, ProgressionEventType } from '../features/progression/events';
 
 export type BuffModifierType = 'growth_speed' | 'xp_multiplier' | 'clarity_boost' | 'mana_boost';
 export type BuffCondition = 'session_end' | 'next_10_cards' | 'next_5_cards' | 'manual';
@@ -93,6 +94,25 @@ export interface StudySession {
     isCorrect: boolean;
   }>;
   cardDifficultyById?: Record<string, number>;
+  undoStack: StudyUndoSnapshot[];
+  redoStack: StudyUndoSnapshot[];
+}
+
+export interface StudySessionCore extends Omit<StudySession, 'undoStack' | 'redoStack'> {}
+
+export interface StudyUndoSnapshot {
+  timestamp: number;
+  sm2Data: Record<string, {
+    interval: number;
+    easeFactor: number;
+    repetitions: number;
+    nextReview: number;
+  }>;
+  activeCrystals: ActiveCrystal[];
+  activeBuffs: Buff[];
+  unlockPoints: number;
+  currentSession: StudySessionCore;
+  attunementSessions: AttunementSessionRecord[];
 }
 
 export interface ProgressionState {
@@ -124,7 +144,10 @@ export interface ProgressionActions {
   clearActiveBuffs: () => void;
   clearPendingAttunement: () => void;
   submitStudyResult: (cardId: string, rating: Rating) => void;
+  undoLastStudyResult: () => void;
+  redoLastStudyResult: () => void;
   flipCurrentCard: () => void;
+  emitEvent: <T extends ProgressionEventType>(type: T, payload: ProgressionEventPayload<T>) => void;
   unlockTopic: (topicId: string, allGraphs: SubjectGraph[]) => [number, number] | null;
   getTopicUnlockStatus: (topicId: string, allGraphs: SubjectGraph[]) => {
     canUnlock: boolean;

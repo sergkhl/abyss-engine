@@ -4,9 +4,8 @@ import { RenderableCard } from '../../features/studyPanel/cardPresenter';
 import { Rating } from '../../types';
 import { Card } from '../../types/core';
 import { SM2Data } from '../../features/progression/sm2';
-import { StudyPanelFeedbackMessage } from './StudyPanelFeedbackMessage';
 import { Button } from '@/components/ui/button';
-import { StudyPanelFeedbackEvent } from './types';
+import { Redo2, Undo2 } from 'lucide-react';
 
 type OptionState =
   | 'default'
@@ -77,7 +76,6 @@ interface StudyPanelStudyViewProps {
   isAnswerSubmitted: boolean;
   isCorrect: boolean;
   isCardFlipped: boolean;
-  feedbackEvent?: StudyPanelFeedbackEvent | null;
   sm2State: SM2Data | null;
   activeCard: Card | null;
   onSelectAnswer: (answer: string) => void;
@@ -87,7 +85,12 @@ interface StudyPanelStudyViewProps {
   onRate: (rating: Rating) => void;
   getRatingLabel: (rating: Rating) => string;
   getRatingColor: (rating: Rating) => string;
-  onFeedbackDone?: (feedbackEventId?: string) => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  undoCount: number;
+  redoCount: number;
 }
 
 export function StudyPanelStudyView({
@@ -109,8 +112,12 @@ export function StudyPanelStudyView({
   onRate,
   getRatingLabel,
   getRatingColor,
-  onFeedbackDone,
-  feedbackEvent,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
+  undoCount,
+  redoCount,
 }: StudyPanelStudyViewProps) {
   const formatTestId = isFlashcard
     ? 'study-card-format-flashcard'
@@ -124,7 +131,7 @@ export function StudyPanelStudyView({
     <div className="w-full relative" data-testid="study-panel-card-root">
       <div className="bg-card rounded-[15px] p-5 min-h-[150px] flex flex-col justify-center">
         {/* Format Type Badge */}
-        <div className="mb-3 flex items-center gap-2">
+        <div className="mb-3 flex items-center justify-between gap-2">
           <span
             className="text-primary text-xs uppercase tracking-wider"
             data-testid={formatTestId}
@@ -133,6 +140,32 @@ export function StudyPanelStudyView({
             {!isFlashcard && isSingleChoice && '⭕ Single Choice'}
             {!isFlashcard && isMultiChoice && '☑️ Multiple Choice'}
           </span>
+          <div className="flex items-center gap-1" data-testid="study-card-history-actions">
+            <Button
+              onClick={onUndo}
+              disabled={!canUndo}
+              variant="outline"
+              size="icon-xs"
+              aria-label={`Undo (${undoCount})`}
+              title={`Undo (${undoCount})`}
+              data-testid="study-card-undo"
+            >
+              <Undo2 className="h-3.5 w-3.5" />
+              <span className="sr-only">{`Undo (${undoCount})`}</span>
+            </Button>
+            <Button
+              onClick={onRedo}
+              disabled={!canRedo}
+              variant="outline"
+              size="icon-xs"
+              aria-label={`Redo (${redoCount})`}
+              title={`Redo (${redoCount})`}
+              data-testid="study-card-redo"
+            >
+              <Redo2 className="h-3.5 w-3.5" />
+              <span className="sr-only">{`Redo (${redoCount})`}</span>
+            </Button>
+          </div>
         </div>
 
         {/* Question */}
@@ -222,15 +255,9 @@ export function StudyPanelStudyView({
         </div>
       </div>
 
-      {/* Feedback + XP Gain Message */}
-      <StudyPanelFeedbackMessage
-        key={feedbackEvent?.id}
-        feedbackEvent={feedbackEvent}
-        onDone={onFeedbackDone}
-      />
-
       {/* Actions */}
       <div className="mt-4 text-center sticky bottom-0 z-10 bg-card pt-3">
+
         {/* Flashcard Actions */}
         {isFlashcard && !isCardFlipped && (
           <Button

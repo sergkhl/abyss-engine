@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Card, ActiveCrystal } from '../../types';
 import { SubjectGraph } from '../../types/core';
-import { ATTUNEMENT_SUBMISSION_COOLDOWN_MS, AttunementPayload, useProgressionStore } from '.';
+import { ATTUNEMENT_SUBMISSION_COOLDOWN_MS, AttunementPayload, MAX_UNDO_DEPTH, useProgressionStore } from '.';
 
 function createCard(id: string): Card {
   return {
@@ -81,6 +81,10 @@ function ritualPayload(topicId: string): AttunementPayload {
       confidenceRating: 5,
     },
   };
+}
+
+function createCards(count: number): Card[] {
+  return Array.from({ length: count }, (_, index) => createCard(`a-${index + 1}`));
 }
 
 describe('progressionStore card-only canonical API', () => {
@@ -245,5 +249,216 @@ describe('progressionStore card-only canonical API', () => {
     const result = useProgressionStore.getState().submitAttunement(ritualPayload('topic-a'));
     expect(result).not.toBeNull();
     expect(result?.buffs.length).toBeGreaterThan(0);
+  });
+
+  it('supports multiple undo/redo steps in a single study session', () => {
+    const cards = [createCard('a-1'), createCard('a-2'), createCard('a-3')];
+    useProgressionStore.setState({
+      unlockedTopicIds: ['topic-a'],
+      activeCrystals: [crystal('topic-a')],
+      unlockPoints: 3,
+    });
+
+    useProgressionStore.getState().startTopicStudySession('topic-a', cards);
+    useProgressionStore.getState().submitStudyResult('a-1', 4);
+    useProgressionStore.getState().submitStudyResult('a-2', 3);
+
+    let session = useProgressionStore.getState().currentSession;
+    expect(session?.currentCardId).toBe('a-3');
+    expect(session?.undoStack).toHaveLength(2);
+    expect(session?.redoStack).toHaveLength(0);
+
+    useProgressionStore.getState().undoLastStudyResult();
+    session = useProgressionStore.getState().currentSession;
+    expect(session?.currentCardId).toBe('a-2');
+    expect(session?.undoStack).toHaveLength(1);
+    expect(session?.redoStack).toHaveLength(1);
+
+    useProgressionStore.getState().undoLastStudyResult();
+    session = useProgressionStore.getState().currentSession;
+    expect(session?.currentCardId).toBe('a-1');
+    expect(session?.undoStack).toHaveLength(0);
+    expect(session?.redoStack).toHaveLength(2);
+
+    useProgressionStore.getState().redoLastStudyResult();
+    session = useProgressionStore.getState().currentSession;
+    expect(session?.currentCardId).toBe('a-2');
+    expect(session?.undoStack).toHaveLength(1);
+    expect(session?.redoStack).toHaveLength(1);
+
+    useProgressionStore.getState().redoLastStudyResult();
+    session = useProgressionStore.getState().currentSession;
+    expect(session?.currentCardId).toBe('a-3');
+    expect(session?.undoStack).toHaveLength(2);
+    expect(session?.redoStack).toHaveLength(0);
+  });
+
+  it('persists and restores undo/redo stacks from localStorage payload', () => {
+    localStorage.clear();
+
+    const cards = [createCard('a-1'), createCard('a-2')];
+    useProgressionStore.setState({
+      unlockedTopicIds: ['topic-a'],
+      activeCrystals: [crystal('topic-a')],
+      unlockPoints: 3,
+    });
+    useProgressionStore.getState().startTopicStudySession('topic-a', cards);
+    useProgressionStore.getState().submitStudyResult('a-1', 4);
+
+    const persisted = window.localStorage.getItem('abyss-progression');
+    expect(persisted).not.toBeNull();
+    const storedState = persisted ? JSON.parse(persisted) : null;
+    expect(storedState?.state?.currentSession?.undoStack).toHaveLength(1);
+
+    useProgressionStore.setState({ currentSession: null });
+    useProgressionStore.setState(storedState.state);
+
+    const restoredSession = useProgressionStore.getState().currentSession;
+    expect(restoredSession?.undoStack).toHaveLength(1);
+    expect(restoredSession?.redoStack).toHaveLength(0);
+
+    useProgressionStore.getState().undoLastStudyResult();
+    const afterUndoSession = useProgressionStore.getState().currentSession;
+    expect(afterUndoSession?.undoStack).toHaveLength(0);
+    expect(afterUndoSession?.redoStack).toHaveLength(1);
+    expect(afterUndoSession?.currentCardId).toBe('a-1');
+  });
+
+  it('supports deep undo history and persists bounded snapshot stacks', () => {
+    const cards = createCards(MAX_UNDO_DEPTH + 5);
+    useProgressionStore.setState({
+      unlockedTopicIds: ['topic-a'],
+      activeCrystals: [crystal('topic-a')],
+      unlockPoints: 3,
+    });
+
+    localStorage.clear();
+    useProgressionStore.getState().startTopicStudySession('topic-a', cards);
+
+    cards.forEach((card) => {
+      useProgressionStore.getState().submitStudyResult(card.id, 4);
+    });
+
+    const session = useProgressionStore.getState().currentSession;
+    expect(session?.undoStack).toHaveLength(MAX_UNDO_DEPTH);
+    expect(session?.redoStack).toHaveLength(0);
+
+    const persisted = window.localStorage.getItem('abyss-progression');
+    expect(persisted).not.toBeNull();
+    const storedState = persisted ? JSON.parse(persisted) : null;
+    expect(storedState?.state?.currentSession?.undoStack).toHaveLength(MAX_UNDO_DEPTH);
+
+    useProgressionStore.setState(storedState.state);
+    const restoredSession = useProgressionStore.getState().currentSession;
+    expect(restoredSession?.undoStack).toHaveLength(MAX_UNDO_DEPTH);
+    expect(restoredSession?.redoStack).toHaveLength(0);
+
+    useProgressionStore.getState().undoLastStudyResult();
+    expect(useProgressionStore.getState().currentSession?.undoStack).toHaveLength(MAX_UNDO_DEPTH - 1);
+    expect(useProgressionStore.getState().currentSession?.redoStack).toHaveLength(1);
+    expect(useProgressionStore.getState().currentSession?.currentCardId).toBe(cards[cards.length - 1].id);
+  });
+
+  it('emits xp-gained and session-complete events from submission', () => {
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+    const cards = [createCard('a-1')];
+    useProgressionStore.setState({
+      unlockedTopicIds: ['topic-a'],
+      activeCrystals: [crystal('topic-a')],
+      unlockPoints: 3,
+    });
+
+    useProgressionStore.getState().startTopicStudySession('topic-a', cards);
+    useProgressionStore.getState().submitStudyResult('a-1', 4);
+
+    const eventCalls = dispatchSpy.mock.calls;
+    const xpEvent = eventCalls.find(
+      ([event]) => event instanceof CustomEvent && event.type === 'abyss-progression-xp-gained',
+    );
+    const sessionCompleteEvent = eventCalls.find(
+      ([event]) => event instanceof CustomEvent && event.type === 'abyss-progression-session-complete',
+    );
+
+    expect(xpEvent).toBeDefined();
+    expect(sessionCompleteEvent).toBeDefined();
+    expect(xpEvent?.[0]).toBeInstanceOf(CustomEvent);
+
+    const xpPayload = (xpEvent?.[0] as CustomEvent).detail as { amount: number; rating: number; cardId: string; topicId: string };
+    expect(xpPayload).toMatchObject({
+      amount: expect.any(Number),
+      rating: 4,
+      cardId: 'a-1',
+      topicId: 'topic-a',
+    });
+    expect(xpPayload.amount).toBeGreaterThan(0);
+
+    const sessionPayload = (sessionCompleteEvent?.[0] as CustomEvent).detail as { topicId: string; totalAttempts: number; correctRate: number };
+    expect(sessionPayload).toMatchObject({
+      topicId: 'topic-a',
+      totalAttempts: 1,
+    });
+
+    dispatchSpy.mockRestore();
+  });
+
+  it('emits history events for undo and redo', () => {
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+    const cards = [createCard('a-1'), createCard('a-2')];
+    useProgressionStore.setState({
+      unlockedTopicIds: ['topic-a'],
+      activeCrystals: [crystal('topic-a')],
+      unlockPoints: 3,
+    });
+
+    useProgressionStore.getState().startTopicStudySession('topic-a', cards);
+    useProgressionStore.getState().submitStudyResult('a-1', 4);
+    dispatchSpy.mockClear();
+
+    useProgressionStore.getState().undoLastStudyResult();
+    const undoEvents = dispatchSpy.mock.calls.filter(
+      ([event]) => event instanceof CustomEvent && event.type === 'abyss-progression-study-panel-history',
+    );
+    expect(undoEvents).toHaveLength(1);
+    expect((undoEvents[0]?.[0] as CustomEvent).detail).toMatchObject({
+      action: 'undo',
+      undoCount: 0,
+      redoCount: 1,
+    });
+
+    useProgressionStore.getState().redoLastStudyResult();
+    const redoEvents = dispatchSpy.mock.calls.filter(
+      ([event]) => event instanceof CustomEvent && event.type === 'abyss-progression-study-panel-history',
+    );
+    expect(redoEvents).toHaveLength(2);
+    expect((redoEvents[1]?.[0] as CustomEvent).detail).toMatchObject({
+      action: 'redo',
+      undoCount: 1,
+      redoCount: 0,
+    });
+
+    dispatchSpy.mockRestore();
+  });
+
+  it('does not emit history events when undo or redo are unavailable', () => {
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+    const cards = [createCard('a-1')];
+    useProgressionStore.setState({
+      unlockedTopicIds: ['topic-a'],
+      activeCrystals: [crystal('topic-a')],
+      unlockPoints: 3,
+    });
+
+    useProgressionStore.getState().startTopicStudySession('topic-a', cards);
+    dispatchSpy.mockClear();
+
+    useProgressionStore.getState().undoLastStudyResult();
+    useProgressionStore.getState().redoLastStudyResult();
+    expect(dispatchSpy).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'abyss-progression-study-panel-history',
+      }),
+    );
+
+    dispatchSpy.mockRestore();
   });
 });

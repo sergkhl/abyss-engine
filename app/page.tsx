@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef, Suspense } from 'react';
+import React, { useCallback, useEffect, useRef, useState, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { useProgressionStore as useStudyStore } from '@/features/progression';
@@ -8,7 +8,6 @@ import { useUIStore } from '@/store/uiStore';
 import { Rating } from '@/types';
 import DebugControls from '@/components/debug/DebugControls';
 
-import { playPositiveSound } from '@/utils/sound';
 import { initAbyssDev } from '@/utils/abyssDev';
 import { Card } from '@/types/core';
 import { AttunementPayload, AttunementResult } from '@/types/progression';
@@ -19,8 +18,6 @@ import { AttunementRitualModal } from '@/components/AttunementRitualModal';
 import DiscoveryModal from '@/components/DiscoveryModal';
 import StudyPanelModal from '@/components/StudyPanelModal';
 import SubjectNavigation from '@/components/SubjectNavigation';
-import { StudyPanelFeedbackEvent } from '@/components/studyPanel/types';
-import { calculateXPReward } from '@/features/progression';
 
 // Dynamic import for Scene to avoid SSR issues with Three.js
 const Scene = dynamic(() => import('@/components/Scene'), {
@@ -71,6 +68,8 @@ const HomeContent: React.FC = () => {
   const initialize = useStudyStore(s => s.initialize);
   const flipCurrentCard = useStudyStore(s => s.flipCurrentCard);
   const submitStudyResult = useStudyStore(s => s.submitStudyResult);
+  const undoLastStudyResult = useStudyStore(s => s.undoLastStudyResult);
+  const redoLastStudyResult = useStudyStore(s => s.redoLastStudyResult);
   const submitAttunement = useStudyStore(s => s.submitAttunement);
   const startTopicStudySession = useStudyStore(s => s.startTopicStudySession);
   const clearPendingAttunement = useStudyStore(s => s.clearPendingAttunement);
@@ -86,8 +85,6 @@ const HomeContent: React.FC = () => {
   const openRitualModal = useUIStore(s => s.openRitualModal);
   const closeRitualModal = useUIStore(s => s.closeRitualModal);
 
-  // Study panel feedback state
-  const [studyFeedbackEvent, setStudyFeedbackEvent] = useState<StudyPanelFeedbackEvent | null>(null);
   const ritualCooldownRemainingMs = getRemainingAttunementCooldownMs(Date.now());
 
   const currentTopicId = currentSession?.topicId || null;
@@ -106,48 +103,10 @@ const HomeContent: React.FC = () => {
     }
   }, [initialize]);
 
-  // Feedback messages for positive ratings (rating >= 3)
-  const FEEDBACK_MESSAGE_DURATION_MS = 1500;
-  const positiveMessages = [
-    '✨ Excellent!',
-    '🌟 Perfect!',
-    '💪 Great job!',
-    '🎯 Well done!',
-    '⭐ Fantastic!',
-  ];
-
-  // Feedback messages for negative ratings (rating < 3) - encouraging
-  const negativeMessages = [
-    '💪 You will do better next time!',
-    '📚 Keep practicing!',
-    '🌱 Progress takes time!',
-    '🔄 You\'re learning!',
-    '💫 Keep going!',
-  ];
-
   const handleRate = (cardId: string, isCorrect?: boolean, selfRating?: Rating) => {
     const reviewRating = selfRating ?? (isCorrect === undefined ? 3 : isCorrect ? 3 : 1);
-    const xpAmount = calculateXPReward(undefined, reviewRating);
-    const randomMessage = reviewRating >= 3
-      ? positiveMessages[Math.floor(Math.random() * positiveMessages.length)]
-      : negativeMessages[Math.floor(Math.random() * negativeMessages.length)];
 
-    setStudyFeedbackEvent({
-      id: `${cardId || currentSession?.currentCardId || 'card'}-${reviewRating}-${Date.now()}-${xpAmount}`,
-      message: randomMessage,
-      xpAmount,
-      durationMs: FEEDBACK_MESSAGE_DURATION_MS,
-    });
-
-    if (reviewRating >= 3) {
-      // Positive feedback - play sound and show encouraging message
-      playPositiveSound();
-    }
-    
-    // Delay submitting result to allow feedback to be visible first
-    setTimeout(() => {
-      submitStudyResult(cardId || currentSession?.currentCardId || '', reviewRating);
-    }, 500);
+    submitStudyResult(cardId || currentSession?.currentCardId || '', reviewRating);
   };
 
   // Discovery Modal handlers
@@ -157,9 +116,24 @@ const HomeContent: React.FC = () => {
 
   // Study Panel Modal handlers
   const handleCloseStudyPanel = () => {
-    setStudyFeedbackEvent(null);
     closeStudyPanel();
   };
+
+  const handleUndo = useCallback(() => {
+    const session = useStudyStore.getState().currentSession;
+    const canUndo = (session?.undoStack?.length ?? 0) > 0;
+    if (!canUndo) { return; }
+
+    undoLastStudyResult();
+  }, [undoLastStudyResult]);
+
+  const handleRedo = useCallback(() => {
+    const session = useStudyStore.getState().currentSession;
+    const canRedo = (session?.redoStack?.length ?? 0) > 0;
+    if (!canRedo) { return; }
+
+    redoLastStudyResult();
+  }, [redoLastStudyResult]);
 
   const handleOpenRitualModal = () => {
     openRitualModal();
@@ -248,14 +222,12 @@ const HomeContent: React.FC = () => {
           currentTopicId={currentTopicId}
           isCardFlipped={isCurrentCardFlipped}
           totalCards={currentSession?.totalCards ?? totalCards}
-          feedbackEvent={studyFeedbackEvent}
-          onFeedbackDone={(feedbackEventId?: string) => {
-            setStudyFeedbackEvent((currentEvent) => (currentEvent?.id === feedbackEventId ? null : currentEvent));
-          }}
           levelUpMessage={levelUpMessage}
           onClose={handleCloseStudyPanel}
           onFlip={flipCurrentCard}
           onSubmitResult={handleRate}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
         />
 
       {isDebugMode && (

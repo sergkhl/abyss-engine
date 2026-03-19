@@ -57,7 +57,7 @@
           "As the integral of the function over its domain."
         ],
         "correctAnswer": "As a vector containing the first-order partial derivatives with respect to each variable.",
-        "explanation": "The gradient $\\nabla f$ is a vector composed of partial derivatives: $[\\frac{\\partial f}{\\partial x}}, \\frac{\\partial f}{\\partial y}}, \\frac{\\partial f}{\\partial z}]^T$."
+        "explanation": "The gradient $\\nabla f$ is a vector composed of partial derivatives: $[\\frac{\\partial f}{\\partial x}, \\frac{\\partial f}{\\partial y}, \\frac{\\partial f}{\\partial z}]^T$."
       }
     },
     {

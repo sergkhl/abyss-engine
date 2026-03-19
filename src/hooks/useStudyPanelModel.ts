@@ -50,6 +50,10 @@ export interface StudyPanelModel {
   unlockedTopicIds: string[];
   activeSessionId: string | null;
   activeCardType: RenderableType | null;
+  canUndo: boolean;
+  canRedo: boolean;
+  undoCount: number;
+  redoCount: number;
 }
 
 export function useStudyPanelModel({
@@ -153,6 +157,10 @@ export function useStudyPanelModel({
   const isMultiChoice = renderedCard?.type === 'multi_choice';
   const isChoiceQuestion = isSingleChoice || isMultiChoice;
   const hasTheory = Boolean(resolvedTopicTheory);
+  const undoCount = currentSession?.undoStack?.length ?? 0;
+  const redoCount = currentSession?.redoStack?.length ?? 0;
+  const canUndo = undoCount > 0;
+  const canRedo = redoCount > 0;
 
   return {
     resolvedTopicId,
@@ -182,5 +190,9 @@ export function useStudyPanelModel({
     unlockedTopicIds,
     activeSessionId: currentSession?.topicId ?? null,
     activeCardType: renderedCard?.type ?? null,
+    canUndo,
+    canRedo,
+    undoCount,
+    redoCount,
   };
 }
