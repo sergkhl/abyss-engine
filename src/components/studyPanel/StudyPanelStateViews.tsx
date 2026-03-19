@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-import { ChartNetwork, FileTerminal, TextSelect } from 'lucide-react';
+import { ChartNetwork, FileTerminal, TextSelect, Volume2, VolumeX } from 'lucide-react';
 
 import MathMarkdownRenderer from '../MathMarkdownRenderer';
 import {
@@ -8,7 +8,7 @@ import {
   NativeSelectOption,
 } from '../ui/native-select';
 import { StudyPanelTab } from './types';
-import { buildDiagramSystemPrompt, extractExamplesSection } from '../../features/studyPanel';
+import { buildDiagramSystemPrompt, extractExamplesSection, stripTheoryMarkdownForSpeech } from '../../features/studyPanel';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -62,6 +62,83 @@ export function StudyPanelStateViews({
   const [isDiagramPromptDialogOpen, setIsDiagramPromptDialogOpen] = useState(false);
   const [diagramPromptText, setDiagramPromptText] = useState('');
   const [diagramPromptError, setDiagramPromptError] = useState('');
+  const [isTheorySpeaking, setIsTheorySpeaking] = useState(false);
+  const theoryUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const resolvedTheoryRef = useRef<string | null>(null);
+
+  const stopTheorySpeech = useCallback(() => {
+    if (typeof window === 'undefined' || typeof window.speechSynthesis === 'undefined') {
+      theoryUtteranceRef.current = null;
+      setIsTheorySpeaking(false);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    theoryUtteranceRef.current = null;
+    setIsTheorySpeaking(false);
+  }, []);
+
+  const handleTheorySpeechToggle = useCallback(() => {
+    if (!resolvedTopicTheory?.trim()) {
+      return;
+    }
+
+    if (theoryUtteranceRef.current) {
+      stopTheorySpeech();
+      return;
+    }
+
+    if (
+      typeof window === 'undefined'
+      || typeof window.speechSynthesis === 'undefined'
+      || typeof window.SpeechSynthesisUtterance === 'undefined'
+    ) {
+      return;
+    }
+
+    const cleanSpeechText = stripTheoryMarkdownForSpeech(resolvedTopicTheory);
+    if (!cleanSpeechText) {
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(cleanSpeechText);
+    utterance.onend = () => {
+      if (theoryUtteranceRef.current === utterance) {
+        theoryUtteranceRef.current = null;
+      }
+      setIsTheorySpeaking(false);
+    };
+    utterance.onerror = () => {
+      if (theoryUtteranceRef.current === utterance) {
+        theoryUtteranceRef.current = null;
+      }
+      setIsTheorySpeaking(false);
+    };
+
+    theoryUtteranceRef.current = utterance;
+    setIsTheorySpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  }, [resolvedTopicTheory, stopTheorySpeech]);
+
+  useEffect(() => {
+    if (activeTab !== 'theory') {
+      stopTheorySpeech();
+    }
+  }, [activeTab, stopTheorySpeech]);
+
+  useEffect(() => {
+    if (resolvedTheoryRef.current !== null && resolvedTheoryRef.current !== resolvedTopicTheory) {
+      stopTheorySpeech();
+    }
+    resolvedTheoryRef.current = resolvedTopicTheory;
+  }, [resolvedTopicTheory, stopTheorySpeech]);
+
+  useEffect(() => {
+    return () => {
+      stopTheorySpeech();
+    };
+  }, [stopTheorySpeech]);
 
   const resetDiagramPromptDialogState = () => {
     setIsDiagramPromptDialogOpen(false);
@@ -169,8 +246,25 @@ export function StudyPanelStateViews({
       {hasTheory && activeTab === 'theory' && resolvedTopicTheory && (
         <div className="w-full">
           <div className="bg-card rounded-[15px] p-5" data-testid="study-panel-theory">
-            <div className="mb-3">
+            <div className="mb-3 flex items-center justify-between gap-2">
               <Badge variant="outline">💡 Theory</Badge>
+              <Button
+                onClick={handleTheorySpeechToggle}
+                type="button"
+                variant="outline"
+                size="icon-xs"
+                disabled={isTheorySpeaking ? false : !resolvedTopicTheory.trim() || typeof window === 'undefined'
+                  || typeof window.speechSynthesis === 'undefined'
+                  || typeof window.SpeechSynthesisUtterance === 'undefined'}
+                data-testid="study-panel-theory-tts"
+                aria-label={isTheorySpeaking ? 'Stop reading theory aloud' : 'Read theory aloud'}
+                title={isTheorySpeaking ? 'Stop reading theory aloud' : 'Read theory aloud'}
+              >
+                {isTheorySpeaking ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+                <span className="sr-only">
+                  {isTheorySpeaking ? 'Stop reading theory aloud' : 'Read theory aloud'}
+                </span>
+              </Button>
             </div>
             <MathMarkdownRenderer
               source={resolvedTopicTheory}
