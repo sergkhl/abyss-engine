@@ -49,14 +49,13 @@ test.describe('Boot Test', () => {
     expect(hasDimensions).toBe(true);
 
     // 6. Wait for the stats container
-    const statsContainer = page.locator('.absolute.top-5.left-5');
+    const statsContainer = page.locator('[data-testid="stats-overlay"], .absolute.top-5.left-5, .absolute.top-4.left-4');
     await expect(statsContainer).toBeVisible();
 
     // 7. Check for stat labels
-    await expect(statsContainer).toContainText('Total');
-    await expect(statsContainer).toContainText('Due');
-    await expect(statsContainer).toContainText('Topics');
-    await expect(statsContainer).toContainText('Active Buffs');
+    await expect(statsContainer).toContainText(/Cards/i);
+    await expect(statsContainer.locator('[data-testid="stats-overlay-cards"]')).toContainText(/\d+\/\d+/);
+    await expect(statsContainer).toContainText(/Buffs|Active Buffs/i);
 
     // 8. Check the main container
     const mainContainer = page.locator('.w-screen.h-screen').first();

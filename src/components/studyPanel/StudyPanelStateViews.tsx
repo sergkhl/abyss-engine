@@ -18,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../ui/dialog';
+import { Badge } from '@/components/ui/badge';
 
 interface StudyPanelStateViewsProps {
   levelUpMessage?: string | null;
@@ -117,7 +118,10 @@ export function StudyPanelStateViews({
       {/* Level Up Banner */}
       {levelUpMessage && (
         <div className="mb-4 p-4 bg-gradient-to-r from-accent to-secondary rounded-xl text-center animate-pulse">
-          <div className="text-xl font-bold text-foreground">🎉 {levelUpMessage}</div>
+          <div className="mb-2 flex justify-center">
+            <Badge variant="secondary">🎉 Level Up</Badge>
+          </div>
+          <div className="text-xl font-bold text-foreground">{levelUpMessage}</div>
           <div className="text-accent-foreground text-sm mt-1">Keep up the great work!</div>
         </div>
       )}
@@ -165,7 +169,9 @@ export function StudyPanelStateViews({
       {hasTheory && activeTab === 'theory' && resolvedTopicTheory && (
         <div className="w-full">
           <div className="bg-card rounded-[15px] p-5" data-testid="study-panel-theory">
-            <div className="text-primary text-xs uppercase tracking-wider mb-3">💡 Theory</div>
+            <div className="mb-3">
+              <Badge variant="outline">💡 Theory</Badge>
+            </div>
             <MathMarkdownRenderer
               source={resolvedTopicTheory}
               className="text-foreground leading-relaxed markdown-body markdown-body--theory"
@@ -269,7 +275,9 @@ export function StudyPanelStateViews({
       {activeTab === 'settings' && (
         <div className="w-full">
           <div className="bg-card rounded-[15px] p-5" data-testid="study-panel-settings">
-            <div className="text-primary text-xs uppercase tracking-wider mb-3">🎚️ Study Settings</div>
+            <div className="mb-3">
+              <Badge variant="outline">🎚️ Study Settings</Badge>
+            </div>
             <div className="space-y-1">
               <label className="text-sm text-muted-foreground">Target Audience</label>
               <NativeSelect

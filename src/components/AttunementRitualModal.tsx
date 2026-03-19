@@ -22,6 +22,7 @@ import { useProgressionStore } from '../features/progression';
 import { Button } from '@/components/ui/button';
 import { Switch } from './ui/switch';
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
+import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -226,11 +227,15 @@ export function AttunementRitualModal({
               <FieldDescription className="text-xs">Section unlocks</FieldDescription>
               <ul className="mb-3 flex flex-wrap gap-2 text-muted-foreground text-sm">
                 {sectionBuffs.biological.map((buff) => (
-                  <li key={buff.buffId} className="inline-flex items-center gap-2 rounded border border-border px-2 py-1">
-                    <span className="text-lg" aria-hidden="true">
-                      {getBuffIcon(buff.modifierType)}
-                    </span>
-                    <span>{getBuffSummary(buff)}</span>
+                  <li key={buff.buffId}>
+                    <Badge variant="secondary" className="text-xs">
+                      <span className="inline-flex items-center gap-2">
+                        <span aria-hidden="true" className="text-lg">
+                          {getBuffIcon(buff.modifierType)}
+                        </span>
+                        <span>{getBuffSummary(buff)}</span>
+                      </span>
+                    </Badge>
                   </li>
                 ))}
               </ul>
@@ -303,11 +308,15 @@ export function AttunementRitualModal({
               <FieldDescription className="text-xs">Section unlocks</FieldDescription>
               <ul className="mb-3 flex flex-wrap gap-2 text-muted-foreground text-sm">
                 {sectionBuffs.cognitive.map((buff) => (
-                  <li key={buff.buffId} className="inline-flex items-center gap-2 rounded border border-border px-2 py-1">
-                    <span className="text-lg" aria-hidden="true">
-                      {getBuffIcon(buff.modifierType)}
-                    </span>
-                    <span>{getBuffSummary(buff)}</span>
+                  <li key={buff.buffId}>
+                    <Badge variant="secondary" className="text-xs">
+                      <span className="inline-flex items-center gap-2">
+                        <span aria-hidden="true" className="text-lg">
+                          {getBuffIcon(buff.modifierType)}
+                        </span>
+                        <span>{getBuffSummary(buff)}</span>
+                      </span>
+                    </Badge>
                   </li>
                 ))}
               </ul>
@@ -344,11 +353,15 @@ export function AttunementRitualModal({
               <FieldDescription className="text-xs">Section unlocks</FieldDescription>
               <ul className="mb-3 flex flex-wrap gap-2 text-muted-foreground text-sm">
                 {sectionBuffs.quest.map((buff) => (
-                  <li key={buff.buffId} className="inline-flex items-center gap-2 rounded border border-border px-2 py-1">
-                    <span className="text-lg" aria-hidden="true">
-                      {getBuffIcon(buff.modifierType)}
-                    </span>
-                    <span>{getBuffSummary(buff)}</span>
+                  <li key={buff.buffId}>
+                    <Badge variant="secondary" className="text-xs">
+                      <span className="inline-flex items-center gap-2">
+                        <span aria-hidden="true" className="text-lg">
+                          {getBuffIcon(buff.modifierType)}
+                        </span>
+                        <span>{getBuffSummary(buff)}</span>
+                      </span>
+                    </Badge>
                   </li>
                 ))}
               </ul>

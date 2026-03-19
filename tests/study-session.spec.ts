@@ -183,9 +183,11 @@ test.describe('Study Session', () => {
     }
 
     // Get initial due count
-    const statsContainer = page.locator('.absolute.top-5.left-5');
-    const initialDueText = await statsContainer.locator('text=Due').locator('..').textContent();
-    const initialDue = initialDueText ? parseInt(initialDueText.replace(/\D/g, '')) : 0;
+    const statsContainer = page.locator('[data-testid="stats-overlay"], .absolute.top-5.left-5, .absolute.top-4.left-4');
+    await expect(statsContainer).toBeVisible({ timeout: 5000 });
+    const statsCardsText = await statsContainer.locator('[data-testid="stats-overlay-cards"]').textContent();
+    const dueMatch = statsCardsText ? statsCardsText.match(/(\d+)\s*\/\s*(\d+)/) : null;
+    const initialDue = dueMatch ? parseInt(dueMatch[1], 10) : 0;
 
     // If there are due cards, try to study one
     if (initialDue > 0) {

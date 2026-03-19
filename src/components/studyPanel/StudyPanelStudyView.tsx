@@ -5,6 +5,7 @@ import { Rating } from '../../types';
 import { Card } from '../../types/core';
 import { SM2Data } from '../../features/progression/sm2';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Redo2, Undo2 } from 'lucide-react';
 
 type OptionState =
@@ -126,20 +127,24 @@ export function StudyPanelStudyView({
       : isMultiChoice
         ? 'study-card-format-multi-choice'
         : 'study-card-format-unknown';
+  const formatBadgeVariant = isFlashcard ? 'secondary' : isSingleChoice ? 'outline' : 'default';
+  const formatLabel = isFlashcard
+    ? '📝 Flashcard'
+    : isSingleChoice
+      ? '⭕ Single Choice'
+      : '☑️ Multiple Choice';
 
   return (
     <div className="w-full relative" data-testid="study-panel-card-root">
       <div className="bg-card rounded-[15px] p-5 min-h-[150px] flex flex-col justify-center">
         {/* Format Type Badge */}
         <div className="mb-3 flex items-center justify-between gap-2">
-          <span
-            className="text-primary text-xs uppercase tracking-wider"
+          <Badge
+            variant={formatBadgeVariant}
             data-testid={formatTestId}
           >
-            {isFlashcard && '📝 Flashcard'}
-            {!isFlashcard && isSingleChoice && '⭕ Single Choice'}
-            {!isFlashcard && isMultiChoice && '☑️ Multiple Choice'}
-          </span>
+            {formatLabel}
+          </Badge>
           <div className="flex items-center gap-1" data-testid="study-card-history-actions">
             <Button
               onClick={onUndo}
@@ -170,10 +175,10 @@ export function StudyPanelStudyView({
 
         {/* Question */}
         <div
-          className="text-primary text-xs uppercase tracking-wider mb-2"
+          className="mb-2"
           data-testid="study-card-question-label"
         >
-          Question
+          <Badge variant="outline">Question</Badge>
         </div>
         <div data-testid="study-card-question">
           <MathMarkdownRenderer
@@ -185,7 +190,9 @@ export function StudyPanelStudyView({
         {/* Flashcard Answer */}
         {isFlashcard && isCardFlipped && renderedCard.answer && (
           <div className="mt-4 pt-4 border-t border-border" data-testid="study-card-answer-section">
-            <div className="text-accent-foreground text-xs uppercase tracking-wider mb-2">Answer</div>
+            <div className="mb-2">
+              <Badge variant="outline">Answer</Badge>
+            </div>
             <MathMarkdownRenderer
               source={renderedCard.answer}
               className="text-foreground text-lg markdown-body markdown-body--block"
@@ -238,7 +245,9 @@ export function StudyPanelStudyView({
         {/* Context - shown after answering */}
         {((isFlashcard && isCardFlipped) || (isChoiceQuestion && isAnswerSubmitted)) && renderedCard.context && (
           <div className="mt-4 pt-4 border-t border-border">
-            <div className="text-primary text-xs uppercase tracking-wider mb-2">💡 Explanation</div>
+            <div className="mb-2">
+              <Badge variant="outline">💡 Explanation</Badge>
+            </div>
             <MathMarkdownRenderer
               source={renderedCard.context}
               className="text-foreground text-sm italic markdown-body markdown-body--block"
@@ -247,11 +256,25 @@ export function StudyPanelStudyView({
         )}
 
         {/* Card Metadata */}
-        <div className="flex gap-4 text-xs text-muted-foreground border-t border-border pt-3 mt-4">
-          <span>ID: {renderedCard.id.slice(0, 8)}</span>
-          {activeCard && <span>Difficulty: {activeCard.difficulty}</span>}
-          {sm2State && <span>Interval: {sm2State.interval} days</span>}
-          {sm2State && <span>Reps: {sm2State.repetitions}</span>}
+        <div className="flex gap-2 flex-wrap text-xs text-muted-foreground border-t border-border pt-3 mt-4">
+          <Badge variant="secondary" className="text-[10px] px-2 py-0.5">
+            ID {renderedCard.id.slice(0, 8)}
+          </Badge>
+          {activeCard && (
+            <Badge variant="outline" className="text-[10px] px-2 py-0.5">
+              Difficulty {activeCard.difficulty}
+            </Badge>
+          )}
+          {sm2State && (
+            <>
+              <Badge variant="outline" className="text-[10px] px-2 py-0.5">
+                Interval {sm2State.interval} days
+              </Badge>
+              <Badge variant="outline" className="text-[10px] px-2 py-0.5">
+                Reps {sm2State.repetitions}
+              </Badge>
+            </>
+          )}
         </div>
       </div>
 

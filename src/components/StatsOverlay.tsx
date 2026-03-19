@@ -7,6 +7,7 @@ import {
   groupBuffsByType,
   groupBuffsByTypeWithSources,
 } from '../features/progression';
+import { Badge } from '@/components/ui/badge';
 
 export interface StatsOverlayProps {
   /** Total number of cards in the deck */
@@ -35,20 +36,28 @@ export function StatsOverlay({
   const buffIcons = groupedBuffs.map((buff) => {
     const icon = getBuffIcon(buff.modifierType);
     const summary = getBuffSummary(buff);
+    const isSelected = selectedBuffType === buff.modifierType;
+
     return (
-      <button
-        type="button"
+      <Badge
+        asChild
         key={buff.modifierType}
-        className={`inline-flex items-center gap-1 rounded border border-border/30 bg-background/50 px-2 py-1 text-xs text-foreground/80 hover:bg-background/80 transition-colors ${selectedBuffType === buff.modifierType ? 'ring-1 ring-foreground/30' : ''}`}
-        onClick={() => {
-          setSelectedBuffType((current) => (current === buff.modifierType ? null : buff.modifierType));
-        }}
-        aria-label={`View ${summary} sources`}
-        title={summary}
+        variant={isSelected ? 'default' : 'outline'}
+        className={`px-2 py-1 text-xs transition-colors ${isSelected ? 'ring-1 ring-foreground/30' : ''}`}
       >
-        <span className="text-sm leading-none" aria-hidden="true">{icon}</span>
-        <span>{buff.totalMagnitude.toFixed(1)}x</span>
-      </button>
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedBuffType((current) => (current === buff.modifierType ? null : buff.modifierType));
+          }}
+          aria-label={`View ${summary} sources`}
+          title={summary}
+          className="inline-flex items-center gap-1 text-xs text-current"
+        >
+          <span className="text-sm leading-none" aria-hidden="true">{icon}</span>
+          <span>{buff.magnitude.toFixed(1)}x</span>
+        </button>
+      </Badge>
     );
   });
 
@@ -71,16 +80,20 @@ export function StatsOverlay({
   ) : null;
 
   return (
-    <div className="absolute top-4 left-4 z-10 flex gap-2">
-      <div className="bg-card/90 px-4 py-2 rounded-md text-center border border-border/50">
-        <span className="block text-muted-foreground text-[10px] uppercase tracking-[0.2em] mb-0.5">Cards</span>
+    <div className="absolute top-4 left-4 z-10 flex gap-2" data-testid="stats-overlay">
+      <div className="bg-card/90 px-4 py-2 rounded-md text-center border border-border/50" data-testid="stats-overlay-cards">
+        <Badge variant="outline" className="h-5 px-2 text-[10px] mb-0.5">
+          Cards
+        </Badge>
         <span className="block text-lg font-semibold leading-none text-primary">
           {dueCards}/{totalCards}
         </span>
       </div>
 
-      <div className="bg-card/90 px-3 py-2 rounded-md text-left min-w-[80px] border border-border/40">
-        <span className="block text-muted-foreground text-[10px] uppercase tracking-[0.2em] mb-1">Buffs</span>
+      <div className="bg-card/90 px-3 py-2 rounded-md text-left min-w-[80px] border border-border/40" data-testid="stats-overlay-buffs">
+        <Badge variant="outline" className="h-5 px-2 text-[10px] mb-1">
+          Buffs
+        </Badge>
         {activeBuffs.length === 0 ? (
           <span className="text-xs text-muted-foreground">None</span>
         ) : (

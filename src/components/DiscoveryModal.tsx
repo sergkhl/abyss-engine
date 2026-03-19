@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { ParticlesAnimation, RITUAL_PARTICLE_ANIMATION } from './ui/particles-animation';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 // ============================================================================
 // Types
@@ -94,21 +95,21 @@ const DetailsPopup: React.FC<DetailsPopupProps> = ({
 
         {/* Status / Requirements */}
         {topic.isLocked && (
-          <div className="mb-4">
+          <div className="mb-4 space-y-2">
             {unlockStatus.hasPrerequisites ? (
               <div className="bg-accent/10 border border-accent rounded-lg p-3">
-                <div className="text-accent-foreground text-sm font-semibold mb-1">
+                <Badge variant="secondary" className="mb-2">
                   ✅ Prerequisites Met
-                </div>
+                </Badge>
                 <div className="text-muted-foreground text-sm">
                   Cost: 1 Unlock Point
                 </div>
               </div>
             ) : (
                 <div className="bg-destructive/10 border border-destructive rounded-lg p-3">
-                <div className="text-destructive text-sm font-semibold mb-2">
+                <Badge variant="destructive" className="mb-2">
                   🔒 Requires Prerequisites
-                </div>
+                </Badge>
                 {unlockStatus.missingPrerequisites.map((prereq, idx) => (
                   <div key={idx} className="text-destructive text-sm">
                     • {prereq.topicName} Level {prereq.requiredLevel} (Current: Level {prereq.currentLevel})

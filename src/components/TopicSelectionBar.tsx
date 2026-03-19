@@ -6,6 +6,7 @@ import { calculateLevelFromXP, useProgressionStore as useStudyStore } from '../f
 import type { TopicMetadata } from '../features/content';
 import type { Card } from '../types/core';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface TopicSelectionBarProps {
   onStartTopicStudySession?: (topicId: string, cards: Card[]) => void;
@@ -79,13 +80,17 @@ export default function TopicSelectionBar({
     <div className={containerClass} style={containerStyle}>
       <div className="inline-flex items-center gap-2 px-2 py-2 w-full sm:w-auto bg-card/80 backdrop-blur-sm rounded-lg border border-border shadow-lg">
         <div className="flex flex-col items-start">
-          <span className="text-xs text-foreground/50 uppercase tracking-wider">Selected</span>
+          <Badge variant="outline" className="h-5 px-2 text-[10px] font-semibold">
+            Selected
+          </Badge>
           <div className="flex items-center gap-2 text-foreground">
             <span className="font-semibold min-w-[100px]">{topicName}</span>
             <span className="text-foreground/40">•</span>
             <span className="text-sm text-muted-foreground min-w-[50px]">Level {level} ({xp} XP)</span>
           </div>
-          <span className="text-xs text-muted-foreground">Due {selectedDueCards}/{selectedTotalCards}</span>
+          <Badge variant="secondary" className="mt-1.5 text-[10px]">
+            Due {selectedDueCards}/{selectedTotalCards}
+          </Badge>
         </div>
 
         <div className="w-px h-8 bg-foreground/20" />

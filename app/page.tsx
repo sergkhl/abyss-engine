@@ -14,6 +14,7 @@ import { Card } from '@/types/core';
 import { AttunementPayload, AttunementResult } from '@/types/progression';
 import { useTopicMetadata } from '@/features/content';
 import { deckRepository } from '@/infrastructure/di';
+import { Badge } from '@/components/ui/badge';
 
 // Components
 import StatsOverlay from '@/components/StatsOverlay';
@@ -233,9 +234,9 @@ const HomeContent: React.FC = () => {
             🌊 Abyss Engine
           </h1>
           {unlockPoints > 0 && (
-            <p className="text-accent-foreground text-sm m-0 font-semibold">
+            <Badge variant="secondary" className="text-xs">
               🔓 {unlockPoints} Unlock Point{unlockPoints !== 1 ? 's' : ''} available
-            </p>
+            </Badge>
           )}
         </div>
 
