@@ -114,8 +114,40 @@ export function trimUndoSnapshotStack<T>(
   return stack.slice(Math.max(0, stack.length - maxDepth));
 }
 
+/** XP required per crystal level tier (levels 0–5). */
+export const CRYSTAL_XP_PER_LEVEL = 100;
+
+/** Inclusive max crystal level; XP beyond this tier still counts as this level. */
+export const MAX_CRYSTAL_LEVEL = 5;
+
 export function calculateLevelFromXP(xp: number): number {
-  return Math.min(5, Math.floor(Math.max(0, xp) / 100));
+  return Math.min(
+    MAX_CRYSTAL_LEVEL,
+    Math.floor(Math.max(0, xp) / CRYSTAL_XP_PER_LEVEL),
+  );
+}
+
+export interface CrystalLevelProgressToNext {
+  level: number;
+  /** 0–100 for `Progress` UI; 100 when `isMax`. */
+  progressPercent: number;
+  isMax: boolean;
+  /** Total XP after clamping negatives to 0 (same basis as level math). */
+  totalXp: number;
+}
+
+/**
+ * Progress within the current level band toward the next level (or max).
+ */
+export function getCrystalLevelProgressToNext(xp: number): CrystalLevelProgressToNext {
+  const safeXp = Math.max(0, xp);
+  const level = calculateLevelFromXP(safeXp);
+  if (level >= MAX_CRYSTAL_LEVEL) {
+    return { level, progressPercent: 100, isMax: true, totalXp: safeXp };
+  }
+  const xpIntoLevel = safeXp - level * CRYSTAL_XP_PER_LEVEL;
+  const progressPercent = (xpIntoLevel / CRYSTAL_XP_PER_LEVEL) * 100;
+  return { level, progressPercent, isMax: false, totalXp: safeXp };
 }
 
 function findGraphNode(topicId: string, allGraphs: SubjectGraph[]): GraphNode | undefined {

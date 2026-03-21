@@ -48,26 +48,21 @@ test.describe('Boot Test', () => {
     });
     expect(hasDimensions).toBe(true);
 
-    // 6. Wait for the stats container
-    const statsContainer = page.locator('[data-testid="stats-overlay"], .absolute.top-5.left-5, .absolute.top-4.left-4');
-    await expect(statsContainer).toBeVisible();
+    // 6. HUD: command palette and floor select
+    await expect(page.getByTestId('command-palette-trigger')).toBeVisible();
+    await expect(page.getByLabel('Select floor')).toBeVisible();
 
-    // 7. Check for stat labels
-    await expect(statsContainer).toContainText(/Cards/i);
-    await expect(statsContainer.locator('[data-testid="stats-overlay-cards"]')).toContainText(/\d+\/\d+/);
-    await expect(statsContainer).toContainText(/Buffs|Active Buffs/i);
-
-    // 8. Check the main container
+    // 7. Check the main container
     const mainContainer = page.locator('.w-screen.h-screen').first();
     await expect(mainContainer).toBeVisible();
 
-    // 9. Verify viewport dimensions
+    // 8. Verify viewport dimensions
     const viewport = page.viewportSize();
     expect(viewport).toBeDefined();
     expect(viewport!.width).toBeGreaterThanOrEqual(800);
     expect(viewport!.height).toBeGreaterThanOrEqual(600);
 
-    // 10. Check for critical console errors
+    // 9. Check for critical console errors
     // Wait a bit for any async errors
     await page.waitForTimeout(1000);
 

@@ -21,7 +21,6 @@ interface StudyPanelModalProps {
   currentTopicId: string | null;
   isCardFlipped: boolean;
   totalCards: number;
-  levelUpMessage?: string | null;
   onClose: () => void;
   onFlip: () => void;
   onSubmitResult: (cardId: string, isCorrect?: boolean, rating?: Rating) => void;
@@ -35,7 +34,6 @@ export function StudyPanelModal({
   currentTopicId,
   isCardFlipped,
   totalCards,
-  levelUpMessage,
   onClose,
   onFlip,
   onSubmitResult,
@@ -196,7 +194,6 @@ export function StudyPanelModal({
       </DialogHeader>
         <div data-testid="study-panel-modal-content" className="-mx-4 px-4 no-scrollbar overflow-y-auto">
           <StudyPanelStateViews
-            levelUpMessage={levelUpMessage}
             activeTab={activeTab}
             hasTheory={model.hasTheory}
             isEmptyDeck={model.isEmptyDeck}

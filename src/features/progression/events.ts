@@ -29,6 +29,13 @@ export interface ProgressionEventMap {
     sessionDurationMs?: number;
     totalAttempts: number;
   };
+  'crystal-level-up': {
+    topicId: string;
+    sessionId: string;
+    previousLevel: number;
+    nextLevel: number;
+    levelsGained: number;
+  };
 }
 
 export type ProgressionEventType = keyof ProgressionEventMap;

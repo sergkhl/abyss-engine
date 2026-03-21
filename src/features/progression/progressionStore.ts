@@ -104,7 +104,6 @@ export const useProgressionStore = create<ProgressionStore>()(
       unlockPoints: INITIAL_UNLOCK_POINTS,
       currentSubjectId: null,
       currentSession: null,
-      levelUpMessage: null,
       isCurrentCardFlipped: false,
       activeBuffs: [],
       pendingRitual: null,
@@ -114,8 +113,7 @@ export const useProgressionStore = create<ProgressionStore>()(
         const hydratedActiveBuffs = currentState.activeBuffs.map((buff) => BuffEngine.get().hydrateBuff(buff));
         const activeBuffsAfterSessionEnd = BuffEngine.get().consumeForEvent(hydratedActiveBuffs, 'session_ended');
         const activeBuffs = BuffEngine.get().pruneExpired(activeBuffsAfterSessionEnd);
-        set((state) => ({
-          levelUpMessage: state.levelUpMessage || null,
+        set(() => ({
           activeBuffs: dedupeBuffsById(activeBuffs),
         }));
       },
@@ -175,6 +173,28 @@ export const useProgressionStore = create<ProgressionStore>()(
 
       clearActiveBuffs: () => set({ activeBuffs: [] }),
       clearPendingRitual: () => set({ pendingRitual: null }),
+
+      grantBuffFromCatalog: (defId, source, magnitudeOverride) => {
+        const buff = BuffEngine.get().grantBuff(defId, source, magnitudeOverride);
+        set((state) => ({
+          activeBuffs: normalizeActiveBuffs(state, [buff]),
+        }));
+      },
+
+      toggleBuffFromCatalog: (defId, source, magnitudeOverride) => {
+        set((state) => {
+          const matches = (b: Buff) => b.buffId === defId && (b.source ?? 'legacy') === source;
+          if (state.activeBuffs.some(matches)) {
+            return {
+              activeBuffs: state.activeBuffs.filter((b) => !matches(b)),
+            };
+          }
+          const buff = BuffEngine.get().grantBuff(defId, source, magnitudeOverride);
+          return {
+            activeBuffs: normalizeActiveBuffs(state, [buff]),
+          };
+        });
+      },
 
       startTopicStudySession: (topicId, cards) => {
         const state = get();
@@ -360,6 +380,15 @@ export const useProgressionStore = create<ProgressionStore>()(
           buffMultiplier,
           reward,
         });
+        if (unlockedLevels > 0) {
+          get().emitEvent('crystal-level-up', {
+            topicId: session.topicId,
+            sessionId,
+            previousLevel,
+            nextLevel,
+            levelsGained: unlockedLevels,
+          });
+        }
         if (isSessionComplete && sessionMetrics) {
           get().emitEvent('session-complete', {
             topicId: session.topicId,
@@ -502,7 +531,7 @@ export const useProgressionStore = create<ProgressionStore>()(
           return 0;
         }
 
-        const nextXp = crystal.xp + xpAmount;
+        const nextXp = Math.max(0, crystal.xp + xpAmount);
         set((state) => ({
           activeCrystals: state.activeCrystals.map((item) =>
             item.topicId === topicId

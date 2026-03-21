@@ -79,4 +79,18 @@ describe('DiscoveryModal', () => {
     expect(openRitualButton?.textContent?.trim()).toBe('🧪');
     root.unmount();
   });
+
+  it('shows due and total cards inline with locked topic summary', () => {
+    const { root } = renderDiscoveryModal({
+      isOpen: true,
+      unlockPoints: 1,
+      dueCards: 3,
+      totalCards: 12,
+      onClose: vi.fn(),
+    });
+
+    expect(document.body.textContent).toMatch(/3\/12 cards due/);
+    expect(document.body.textContent).toMatch(/locked topic/);
+    root.unmount();
+  });
 });

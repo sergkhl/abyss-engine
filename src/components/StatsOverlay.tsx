@@ -1,130 +1,116 @@
 import React from 'react';
-import { History } from 'lucide-react';
 import { Buff } from '../types/progression';
 import {
+  getBuffDefinition,
   getBuffDisplayName,
   getBuffIcon,
-  getBuffSummary,
-  groupBuffsByType,
   groupBuffsByTypeWithSources,
+  type GroupedBuffSummary,
 } from '../features/progression';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import {
+  Popover,
+  PopoverContent,
+  PopoverDescription,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 export interface StatsOverlayProps {
-  /** Total number of cards in the deck */
-  totalCards: number;
-  /** Number of cards due for review */
-  dueCards: number;
   activeBuffs?: Buff[];
-  onOpenStudyTimeline?: () => void;
+}
+
+function resolveBuffDescription(buff: Buff): string {
+  const fromBuff = buff.description?.trim();
+  if (fromBuff) {
+    return fromBuff;
+  }
+  const fromCatalog = getBuffDefinition(buff.buffId)?.description?.trim();
+  if (fromCatalog) {
+    return fromCatalog;
+  }
+  return `${getBuffDisplayName(buff)} modifier active.`;
+}
+
+function BuffTypePopover({ group }: { group: GroupedBuffSummary }) {
+  const icon = getBuffIcon(group.modifierType);
+  const displayName = getBuffDisplayName(group.modifierType);
+  const summaryLabel = `${group.totalMagnitude.toFixed(2)}× ${displayName}`;
+
+  const descriptionBlock =
+    group.buffs.length === 1 ? (
+      <PopoverDescription>{resolveBuffDescription(group.buffs[0]!)}</PopoverDescription>
+    ) : (
+      <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+        <p className="text-xs leading-snug">Multiple effects of this type are stacking.</p>
+        <ul className="flex flex-col gap-1.5 text-xs leading-snug">
+          {group.buffs.map((buff, index) => {
+            const name = buff.name ?? getBuffDefinition(buff.buffId)?.name ?? displayName;
+            const snippet = resolveBuffDescription(buff);
+            return (
+              <li key={`${buff.buffId}-${buff.source ?? 'unknown'}-${index}`}>
+                <span className="font-medium text-foreground">
+                  {name} ({buff.magnitude.toFixed(2)}×)
+                </span>
+                <span className="mt-0.5 block">{snippet}</span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    );
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon-lg"
+          aria-label={`${summaryLabel} — open details`}
+          title={summaryLabel}
+        >
+          <span aria-hidden="true">{icon}</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" side="left" sideOffset={8} className="w-72">
+        <PopoverHeader>
+          <PopoverTitle>{summaryLabel}</PopoverTitle>
+        </PopoverHeader>
+        {descriptionBlock}
+        <div className="border-t border-border/40 pt-2">
+          <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            Sources
+          </p>
+          <ul className="flex flex-col gap-1 text-xs text-foreground/90">
+            {group.buffs.map((buff, index) => (
+              <li key={`${buff.buffId}-src-${buff.source ?? 'unknown'}-${index}`} className="leading-snug">
+                {buff.magnitude.toFixed(2)}× from {buff.source ?? 'Unknown origin'}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 /**
- * StatsOverlay Component
- * Displays study statistics in an overlay on the main page.
- * Shows: Due/Total cards, buffs
+ * Buff stack for the main HUD (popover details per modifier type).
  */
-export function StatsOverlay({
-  totalCards,
-  dueCards,
-  activeBuffs = [],
-  onOpenStudyTimeline,
-}: StatsOverlayProps) {
-  const [selectedBuffType, setSelectedBuffType] = React.useState<Buff['modifierType'] | null>(null);
+export function StatsOverlay({ activeBuffs = [] }: StatsOverlayProps) {
+  if (activeBuffs.length === 0) {
+    return null;
+  }
 
-  const groupedBuffs = groupBuffsByType(activeBuffs).slice(0, 3);
-  const groupedBuffsWithSources = groupBuffsByTypeWithSources(activeBuffs);
-  const selectedGroup = groupedBuffsWithSources.find((group) => group.modifierType === selectedBuffType);
-
-  const buffIcons = groupedBuffs.map((buff) => {
-    const icon = getBuffIcon(buff.modifierType);
-    const summary = getBuffSummary(buff);
-    const isSelected = selectedBuffType === buff.modifierType;
-
-    return (
-      <Badge
-        asChild
-        key={buff.modifierType}
-        variant={isSelected ? 'default' : 'outline'}
-        className={`px-1.5 py-0.5 text-[10px] transition-colors ${isSelected ? 'ring-1 ring-foreground/25' : ''}`}
-      >
-        <button
-          type="button"
-          onClick={() => {
-            setSelectedBuffType((current) => (current === buff.modifierType ? null : buff.modifierType));
-          }}
-          aria-label={`View ${summary} sources`}
-          title={summary}
-          className="inline-flex items-center gap-0.5 text-[10px] text-current"
-        >
-          <span className="text-xs leading-none" aria-hidden="true">{icon}</span>
-          <span>{buff.magnitude.toFixed(1)}x</span>
-        </button>
-      </Badge>
-    );
-  });
-
-  const selectedDetails = selectedGroup ? (
-        <div className="mt-1.5 border-t border-border/40 pt-1 text-[10px] text-foreground/90">
-        <p className="mb-0.5 font-medium text-[9px] uppercase tracking-wider text-foreground/55">
-        {`${selectedGroup.totalMagnitude.toFixed(2)}x ${getBuffDisplayName(selectedGroup.modifierType)}`}
-      </p>
-      <ul className="mt-0.5 flex flex-col gap-0.5">
-        {selectedGroup.buffs.map((buff, index) => (
-          <li key={`${buff.buffId}-${buff.source ?? 'unknown'}-${index}`} className="leading-3.5">
-            <span className="inline-flex items-center gap-1.5">
-              <span aria-hidden="true">{getBuffIcon(selectedGroup.modifierType)}</span>
-              <span>{buff.magnitude.toFixed(2)}x from {buff.source ?? 'Unknown origin'}</span>
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  ) : null;
+  const groupedWithSources = groupBuffsByTypeWithSources(activeBuffs);
 
   return (
-    <div className="absolute left-3 top-3 z-10 flex gap-1.5" data-testid="stats-overlay">
-      <div className="rounded-md border border-border/50 bg-card/90 px-2.5 py-1.5 text-center" data-testid="stats-overlay-cards">
-        <Badge variant="outline" className="mb-0.5 h-4 px-1.5 text-[9px]">
-          Cards
-        </Badge>
-        <span className="block text-base font-semibold leading-none text-primary">
-          {dueCards}/{totalCards}
-        </span>
-      </div>
-
-      <div className="min-w-[72px] rounded-md border border-border/40 bg-card/90 px-2 py-1.5 text-left" data-testid="stats-overlay-buffs">
-        <Badge variant="outline" className="mb-0.5 h-4 px-1.5 text-[9px]">
-          Buffs
-        </Badge>
-        {activeBuffs.length === 0 ? (
-          <span className="text-[10px] text-muted-foreground">None</span>
-        ) : (
-          <div className="flex flex-col gap-1">
-            <div className="flex flex-wrap items-center gap-1">{buffIcons}</div>
-            {selectedBuffType ? (
-              selectedDetails
-            ) : (
-              <span className="mt-0.5 text-[10px] text-muted-foreground">Tap buff for sources</span>
-            )}
-          </div>
-        )}
-      </div>
-
-      {onOpenStudyTimeline && (
-        <Button
-          size="icon-sm"
-          variant="outline"
-          type="button"
-          onClick={onOpenStudyTimeline}
-          title="Open study timeline"
-          aria-label="Open study timeline"
-          data-testid="stats-overlay-timeline"
-        >
-          <History className="h-3.5 w-3.5" />
-        </Button>
-      )}
+    <div className="flex flex-col gap-1 items-end" data-testid="stats-overlay-buffs">
+      {groupedWithSources.map((group) => (
+        <BuffTypePopover key={group.modifierType} group={group} />
+      ))}
     </div>
   );
 }

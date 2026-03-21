@@ -38,6 +38,17 @@ export const BUFF_CATALOG: Record<string, BuffDefinition> = {
     name: 'Ritual Growth',
     description: 'Quest-complete ritual increases growth trajectory.',
   },
+  dev_xp_multiplier_5x: {
+    id: 'dev_xp_multiplier_5x',
+    modifierType: 'xp_multiplier',
+    baseMagnitude: 5,
+    condition: 'manual',
+    categories: ['quest'],
+    stacking: 'multiplicative',
+    icon: '⚡',
+    name: 'Dev XP Surge',
+    description: 'Debug: 5× XP from crystal reviews.',
+  },
 } as const;
 
 export function getCategoryBuffs(section: BuffCategory): BuffDefinition[] {

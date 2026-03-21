@@ -182,12 +182,18 @@ test.describe('Study Session', () => {
       await page.waitForTimeout(1000);
     }
 
-    // Get initial due count
-    const statsContainer = page.locator('[data-testid="stats-overlay"], .absolute.top-5.left-5, .absolute.top-4.left-4');
-    await expect(statsContainer).toBeVisible({ timeout: 5000 });
-    const statsCardsText = await statsContainer.locator('[data-testid="stats-overlay-cards"]').textContent();
+    // Get initial due count from Discovery (deck line in Wisdom Altar)
+    await page.getByTestId('command-palette-trigger').click();
+    await page.getByText('Open Wisdom Altar (Discovery)').click();
+    const discoveryDialog = page.getByRole('dialog').filter({ hasText: 'Wisdom Altar' });
+    await expect(discoveryDialog).toBeVisible({ timeout: 5000 });
+    const deckSummary = discoveryDialog.locator('p.text-muted-foreground').first();
+    await expect(deckSummary).toContainText(/\d+\/\d+ cards due/);
+    const statsCardsText = await deckSummary.textContent();
     const dueMatch = statsCardsText ? statsCardsText.match(/(\d+)\s*\/\s*(\d+)/) : null;
     const initialDue = dueMatch ? parseInt(dueMatch[1], 10) : 0;
+    await page.keyboard.press('Escape');
+    await expect(discoveryDialog).not.toBeVisible({ timeout: 3000 });
 
     // If there are due cards, try to study one
     if (initialDue > 0) {

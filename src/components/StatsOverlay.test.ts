@@ -22,10 +22,14 @@ afterEach(() => {
 });
 
 describe('StatsOverlay', () => {
-  it('shows compact buff hint when buffs exist', () => {
+  it('renders nothing when there are no buffs', () => {
+    const { root } = renderStatsOverlay({ activeBuffs: [] });
+    expect(document.body.querySelector('[data-testid="stats-overlay-buffs"]')).toBeNull();
+    root.unmount();
+  });
+
+  it('renders buff stack with popover trigger when buffs exist', () => {
     const { root } = renderStatsOverlay({
-      totalCards: 5,
-      dueCards: 1,
       activeBuffs: [
         {
           buffId: 'b1',
@@ -37,24 +41,11 @@ describe('StatsOverlay', () => {
       ],
     });
 
-    expect(document.body.textContent).toContain('Tap buff for sources');
-    root.unmount();
-  });
+    const buffsRegion = document.body.querySelector('[data-testid="stats-overlay-buffs"]');
+    expect(buffsRegion).not.toBeNull();
 
-  it('invokes timeline action from the cards/buffs stack', () => {
-    const onOpenStudyTimeline = vi.fn();
-    const { root } = renderStatsOverlay({
-      totalCards: 10,
-      dueCards: 4,
-      onOpenStudyTimeline,
-    });
-
-    const timelineButton = document.body.querySelector('[aria-label="Open study timeline"]') as
-      | HTMLButtonElement
-      | null;
-    expect(timelineButton).not.toBeNull();
-    timelineButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    expect(onOpenStudyTimeline).toHaveBeenCalledTimes(1);
+    const popoverTrigger = buffsRegion?.querySelector('[aria-label*="open details"]');
+    expect(popoverTrigger).not.toBeNull();
     root.unmount();
   });
 });

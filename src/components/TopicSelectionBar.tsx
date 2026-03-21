@@ -5,7 +5,10 @@ import { useUIStore } from '../store/uiStore';
 import { calculateLevelFromXP, useProgressionStore as useStudyStore } from '../features/progression';
 import type { TopicMetadata } from '../features/content';
 import type { Card } from '../types/core';
+import { Layers } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
+import { LevelProgressCompact } from './LevelProgressCompact';
 
 interface TopicSelectionBarProps {
   onStartTopicStudySession?: (topicId: string, cards: Card[]) => void;
@@ -79,13 +82,18 @@ export default function TopicSelectionBar({
     <div className={containerClass} style={containerStyle}>
       <div className="inline-flex w-full max-w-lg items-center gap-2 rounded-lg border border-border bg-card/80 px-2 py-1.5 shadow-sm backdrop-blur-sm sm:w-auto">
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <div className="flex justify-between items-baseline gap-x-2 gap-y-0.5">
             <span className="truncate text-xs font-semibold text-foreground">{topicName}</span>
-            <span className="shrink-0 text-[10px] text-muted-foreground">
-              Lv{level} · {selectedDueCards}/{selectedTotalCards}
+            <span
+              className="inline-flex shrink-0 items-center gap-0.5 text-[10px] tabular-nums text-muted-foreground"
+              title={`${selectedDueCards} cards due`}
+            >
+              {selectedDueCards}
+              <Layers className="size-3 shrink-0" strokeWidth={2} aria-hidden />
+              <span className="sr-only">cards due</span>
             </span>
           </div>
-          <p className="truncate text-[10px] text-muted-foreground">{subjectName}</p>
+          <LevelProgressCompact xp={selectedXp} className="mt-0.5 max-w-full" />
         </div>
 
         <div className="h-6 w-px shrink-0 bg-border/60" />

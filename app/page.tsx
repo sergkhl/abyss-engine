@@ -14,7 +14,8 @@ import { initAbyssDev } from '@/utils/abyssDev';
 import { AttunementRitualPayload } from '@/types/progression';
 import { useTopicMetadata } from '@/features/content';
 import { deckRepository } from '@/infrastructure/di';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Search } from 'lucide-react';
 
 // Components
 import StatsOverlay from '@/components/StatsOverlay';
@@ -22,6 +23,7 @@ import { AttunementRitualModal } from '@/components/AttunementRitualModal';
 import DiscoveryModal from '@/components/DiscoveryModal';
 import StudyPanelModal from '@/components/StudyPanelModal';
 import StudyTimelineModal from '@/components/StudyTimelineModal';
+import { AbyssCommandPalette } from '@/components/AbyssCommandPalette';
 import SubjectNavigation from '@/components/SubjectNavigation';
 import PomodoroTimerOverlay from '@/components/PomodoroTimer3D';
 
@@ -45,6 +47,7 @@ const HomeContent: React.FC = () => {
   const isDebugMode = searchParams.get('debug') === '1';
   const [showStats, setShowStats] = useState(true);
   const [isCameraAngleUnlocked, setIsCameraAngleUnlocked] = useState(isDebugMode);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   // Track initialization to prevent infinite loops
   const initializedRef = useRef(false);
@@ -52,12 +55,11 @@ const HomeContent: React.FC = () => {
   // Initialize client-side flag
   const [isClient, setIsClient] = useState(false);
 
-  // Get data for StatsOverlay - stable selectors
+  // Deck counts for Discovery modal and study panel
   const currentSession = useStudyStore((state) => state.currentSession);
   const activeCrystals = useStudyStore(s => s.activeCrystals);
   const currentSubjectId = useStudyStore(s => s.currentSubjectId);
   const sm2Data = useStudyStore(s => s.sm2Data);
-  const levelUpMessage = useStudyStore(s => s.levelUpMessage);
   const unlockPoints = useStudyStore(s => s.unlockPoints);
   const activeBuffs = useStudyStore((state) => state.activeBuffs);
   const getRemainingRitualCooldownMs = useStudyStore((state) => state.getRemainingRitualCooldownMs);
@@ -127,10 +129,10 @@ const HomeContent: React.FC = () => {
   const isRitualModalOpen = useUIStore(s => s.isRitualModalOpen);
   const isStudyTimelineOpen = useUIStore((state) => state.isStudyTimelineOpen);
   const closeDiscoveryModal = useUIStore(s => s.closeDiscoveryModal);
+  const openDiscoveryModal = useUIStore(s => s.openDiscoveryModal);
   const closeStudyPanel = useUIStore(s => s.closeStudyPanel);
   const openRitualModal = useUIStore(s => s.openRitualModal);
   const closeRitualModal = useUIStore(s => s.closeRitualModal);
-  const openStudyTimeline = useUIStore((state) => state.openStudyTimeline);
   const closeStudyTimeline = useUIStore((state) => state.closeStudyTimeline);
   const selectTopic = useUIStore((state) => state.selectTopic);
   const openStudyPanel = useUIStore((state) => state.openStudyPanel);
@@ -198,10 +200,6 @@ const HomeContent: React.FC = () => {
     closeRitualModal();
   };
 
-  const handleOpenStudyTimeline = () => {
-    openStudyTimeline();
-  };
-
   const handleCloseStudyTimeline = () => {
     closeStudyTimeline();
   };
@@ -230,75 +228,112 @@ const HomeContent: React.FC = () => {
 
   return (
     <div className="w-screen h-screen relative overflow-hidden">
-      {/* Subject Navigation - 2D Dropdown for Multi-Floor selection */}
       <SubjectNavigation />
 
-      {/* Full Screen 3D Scene */}
       <div className="absolute inset-0">
         <Scene
           showStats={isDebugMode && showStats}
           isCameraAngleUnlocked={isCameraAngleUnlocked}
         />
       </div>
-      <PomodoroTimerOverlay />
 
-        {/* Stats Overlay */}
-        <StatsOverlay
-          totalCards={totalCards}
-          dueCards={dueCards}
-          activeBuffs={activeBuffs}
-          onOpenStudyTimeline={handleOpenStudyTimeline}
-        />
+      <div
+        className="fixed z-20 max-w-[min(100%,11rem)] text-left"
+        style={{
+          top: 'calc(0.75rem + env(safe-area-inset-top))',
+          left: 'calc(0.75rem + env(safe-area-inset-left))',
+        }}
+      >
+        <h1 className="m-0 text-sm font-semibold tracking-tight text-foreground">
+          Abyss Engine
+        </h1>
+        {unlockPoints > 0 && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-1"
+            onClick={() => openDiscoveryModal()}
+            aria-label="Open Wisdom Altar (unlocks)"
+          >
+            {unlockPoints} unlock{unlockPoints !== 1 ? 's' : ''}
+          </Button>
+        )}
+      </div>
 
-        <AttunementRitualModal
-          isOpen={isRitualModalOpen}
-          cooldownRemainingMs={ritualCooldownRemainingMs}
-          onClose={handleCloseAttunement}
-          onSubmit={handleAttunementSubmit}
-        />
+      <div
+        className="fixed z-20 flex flex-col items-end gap-1.5"
+        style={{
+          top: 'calc(0.75rem + env(safe-area-inset-top))',
+          right: 'calc(0.75rem + env(safe-area-inset-right))',
+        }}
+      >
+        <StatsOverlay activeBuffs={activeBuffs} />
+      </div>
 
-        {/* Title */}
-        <div className="absolute right-3 top-3 z-10 max-w-[min(100%,11rem)] text-right">
-          <h1 className="m-0 text-sm font-semibold tracking-tight text-foreground">
-            Abyss Engine
-          </h1>
-          {unlockPoints > 0 && (
-            <Badge variant="secondary" className="mt-1 h-5 px-1.5 text-[10px] font-normal">
-              {unlockPoints} unlock{unlockPoints !== 1 ? 's' : ''}
-            </Badge>
-          )}
-        </div>
+      <div
+        className="fixed z-20 flex flex-row items-end justify-end gap-2"
+        style={{
+          bottom: 'calc(0.75rem + env(safe-area-inset-bottom))',
+          right: 'calc(0.75rem + env(safe-area-inset-right))',
+        }}
+      >
+        <PomodoroTimerOverlay />
+        <Button
+          size="icon-sm"
+          variant="outline"
+          type="button"
+          onClick={() => setIsCommandPaletteOpen(true)}
+          title="Command palette (Ctrl+K or ⌘K)"
+          aria-label="Open command palette"
+          data-testid="command-palette-trigger"
+        >
+          <Search className="h-3.5 w-3.5" />
+        </Button>
+      </div>
 
-        {/* Discovery Modal - Tiered Skill Tree */}
-        <DiscoveryModal
-          isOpen={isDiscoveryModalOpen}
-          unlockPoints={unlockPoints}
-          onOpenRitual={handleOpenRitualModal}
-          ritualCooldownRemainingMs={ritualCooldownRemainingMs}
-          onClose={handleCloseDiscoveryModal}
-        />
+      <AbyssCommandPalette
+        open={isCommandPaletteOpen}
+        onOpenChange={setIsCommandPaletteOpen}
+        isDebugMode={isDebugMode}
+      />
 
-        {/* Study Panel Modal */}
-        <StudyPanelModal
-          isOpen={isStudyPanelOpen}
-          currentCardId={currentSession?.currentCardId || null}
-          currentTopicId={currentTopicId}
-          isCardFlipped={isCurrentCardFlipped}
-          totalCards={currentSession?.totalCards ?? totalCards}
-          levelUpMessage={levelUpMessage}
-          onClose={handleCloseStudyPanel}
-          onFlip={flipCurrentCard}
-          onSubmitResult={handleRate}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
-        />
+      <AttunementRitualModal
+        isOpen={isRitualModalOpen}
+        cooldownRemainingMs={ritualCooldownRemainingMs}
+        onClose={handleCloseAttunement}
+        onSubmit={handleAttunementSubmit}
+      />
 
-        <StudyTimelineModal
-          isOpen={isStudyTimelineOpen}
-          onClose={handleCloseStudyTimeline}
-          topicMetadata={allTopicMetadata}
-          onOpenEntryStudy={handleTimelineOpenStudy}
-        />
+      <DiscoveryModal
+        isOpen={isDiscoveryModalOpen}
+        unlockPoints={unlockPoints}
+        dueCards={dueCards}
+        totalCards={totalCards}
+        onOpenRitual={handleOpenRitualModal}
+        ritualCooldownRemainingMs={ritualCooldownRemainingMs}
+        onClose={handleCloseDiscoveryModal}
+      />
+
+      <StudyPanelModal
+        isOpen={isStudyPanelOpen}
+        currentCardId={currentSession?.currentCardId || null}
+        currentTopicId={currentTopicId}
+        isCardFlipped={isCurrentCardFlipped}
+        totalCards={currentSession?.totalCards ?? totalCards}
+        onClose={handleCloseStudyPanel}
+        onFlip={flipCurrentCard}
+        onSubmitResult={handleRate}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+      />
+
+      <StudyTimelineModal
+        isOpen={isStudyTimelineOpen}
+        onClose={handleCloseStudyTimeline}
+        topicMetadata={allTopicMetadata}
+        onOpenEntryStudy={handleTimelineOpenStudy}
+      />
 
       {isDebugMode && (
         <DebugControls

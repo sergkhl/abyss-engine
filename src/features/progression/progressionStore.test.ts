@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Card, ActiveCrystal } from '../../types';
 import { SubjectGraph } from '../../types/core';
 import { ATTUNEMENT_SUBMISSION_COOLDOWN_MS, MAX_UNDO_DEPTH, useProgressionStore } from '.';
+import { BuffEngine } from './buffs/buffEngine';
 import { AttunementRitualPayload } from '../../types/progression';
 import { telemetry } from '../telemetry';
 
@@ -61,7 +62,6 @@ function resetStore() {
     pendingRitual: null,
     currentSubjectId: null,
     currentSession: null,
-    levelUpMessage: null,
     unlockPoints: 0,
   });
   telemetry.getStore.setState({ events: [] });
@@ -200,6 +200,42 @@ describe('progressionStore card-only canonical API', () => {
     const cards = [createCard('due-1'), createCard('due-2')];
     const dueCount = useProgressionStore.getState().getDueCardsCount(cards);
     expect(dueCount).toBe(2);
+  });
+
+  it('grantBuffFromCatalog merges dev XP buff with existing buffs', () => {
+    const existing = BuffEngine.get().grantBuff('clarity_focus', 'test_source', 1.2);
+    useProgressionStore.setState({ activeBuffs: [existing] });
+
+    useProgressionStore.getState().grantBuffFromCatalog('dev_xp_multiplier_5x', 'command_palette');
+
+    const buffs = useProgressionStore.getState().activeBuffs;
+    expect(buffs.some((b) => b.buffId === 'clarity_focus')).toBe(true);
+    const devBuff = buffs.find((b) => b.buffId === 'dev_xp_multiplier_5x');
+    expect(devBuff).toMatchObject({
+      modifierType: 'xp_multiplier',
+      magnitude: 5,
+      condition: 'manual',
+    });
+  });
+
+  it('toggleBuffFromCatalog grants then removes the same catalog buff', () => {
+    useProgressionStore.getState().toggleBuffFromCatalog('dev_xp_multiplier_5x', 'command_palette');
+    expect(useProgressionStore.getState().activeBuffs.some((b) => b.buffId === 'dev_xp_multiplier_5x')).toBe(true);
+
+    useProgressionStore.getState().toggleBuffFromCatalog('dev_xp_multiplier_5x', 'command_palette');
+    expect(useProgressionStore.getState().activeBuffs.some((b) => b.buffId === 'dev_xp_multiplier_5x')).toBe(false);
+  });
+
+  it('addXP clamps crystal XP at zero when subtracting', () => {
+    useProgressionStore.setState({
+      unlockedTopicIds: ['topic-a'],
+      activeCrystals: [crystal('topic-a', 50)],
+      unlockPoints: 3,
+    });
+
+    const nextXp = useProgressionStore.getState().addXP('topic-a', -80);
+    expect(nextXp).toBe(0);
+    expect(useProgressionStore.getState().activeCrystals[0]?.xp).toBe(0);
   });
 
   it('stores attunement submission and starts session with derived buffs', () => {
@@ -406,6 +442,38 @@ describe('progressionStore card-only canonical API', () => {
     expect(sessionPayload).toMatchObject({
       topicId: 'topic-a',
       totalAttempts: 1,
+    });
+
+    dispatchSpy.mockRestore();
+  });
+
+  it('emits crystal-level-up when XP crosses a level boundary', () => {
+    const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+    const cards = [createCard('a-1')];
+    useProgressionStore.setState({
+      unlockedTopicIds: ['topic-a'],
+      activeCrystals: [crystal('topic-a', 99)],
+      unlockPoints: 3,
+    });
+
+    useProgressionStore.getState().startTopicStudySession('topic-a', cards);
+    useProgressionStore.getState().submitStudyResult('a-1', 4);
+
+    const levelUpEvent = dispatchSpy.mock.calls.find(
+      ([event]) => event instanceof CustomEvent && event.type === 'abyss-progression-crystal-level-up',
+    );
+    expect(levelUpEvent).toBeDefined();
+    const detail = (levelUpEvent?.[0] as CustomEvent).detail as {
+      topicId: string;
+      previousLevel: number;
+      nextLevel: number;
+      levelsGained: number;
+    };
+    expect(detail).toMatchObject({
+      topicId: 'topic-a',
+      previousLevel: 0,
+      nextLevel: 1,
+      levelsGained: 1,
     });
 
     dispatchSpy.mockRestore();

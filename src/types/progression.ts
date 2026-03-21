@@ -116,7 +116,6 @@ export interface ProgressionState {
   unlockPoints: number;
   currentSubjectId: string | null;
   currentSession: StudySession | null;
-  levelUpMessage: string | null;
   isCurrentCardFlipped: boolean;
   activeBuffs: Buff[];
   pendingRitual: PendingRitualState | null;
@@ -171,6 +170,9 @@ export interface ProgressionActions {
   }[];
   getDueCardsCount: (cards?: Array<{ id: string }>) => number;
   getTotalCardsCount: (cards?: Array<{ id: string }>) => number;
+  grantBuffFromCatalog: (defId: string, source: string, magnitudeOverride?: number) => void;
+  /** If a buff with this defId and source exists, removes it; otherwise grants it from the catalog. */
+  toggleBuffFromCatalog: (defId: string, source: string, magnitudeOverride?: number) => void;
   addXP: (topicId: string, xp: number) => number;
   updateSM2: (cardId: string, sm2State: {
     interval: number;

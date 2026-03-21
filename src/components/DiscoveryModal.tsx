@@ -45,6 +45,9 @@ interface UnlockStatus {
 interface DiscoveryModalProps {
   isOpen: boolean;
   unlockPoints: number;
+  /** Deck due/total for active subject scope; shown inline with locked-topic summary. */
+  dueCards?: number;
+  totalCards?: number;
   getTopicUnlockStatus?: (topicId: string, allGraphs?: unknown[]) => UnlockStatus;
   onOpenRitual?: () => void;
   ritualCooldownRemainingMs?: number;
@@ -156,6 +159,8 @@ const DetailsPopup: React.FC<DetailsPopupProps> = ({
 export function DiscoveryModal({
   isOpen,
   unlockPoints,
+  dueCards,
+  totalCards,
   getTopicUnlockStatus,
   onOpenRitual,
   ritualCooldownRemainingMs = 0,
@@ -226,6 +231,12 @@ export function DiscoveryModal({
           </DialogDescription>
           <p className="text-muted-foreground mt-1 text-xs">
             {lockedTopicsCount} locked topic{lockedTopicsCount !== 1 ? 's' : ''}
+            {typeof dueCards === 'number' && typeof totalCards === 'number' ? (
+              <>
+                {' '}
+                · {dueCards}/{totalCards} cards due
+              </>
+            ) : null}
           </p>
           <div className="text-center mb-6">
             <div className="inline-flex flex-wrap items-center justify-center gap-3">

@@ -48,42 +48,36 @@ export const PomodoroTimerOverlay: React.FC = () => {
 
   return (
     <div
-      className="fixed z-20 flex items-center gap-1 rounded-lg border border-border/60 bg-card/80 px-2 py-1 text-[10px] font-medium text-foreground shadow-sm backdrop-blur-sm"
-      style={{
-        bottom: 'calc(0.75rem + env(safe-area-inset-bottom))',
-        left: 'calc(0.75rem + env(safe-area-inset-left))',
-      }}
+      className="h-7 flex items-center gap-1 rounded-lg border border-border bg-card/10 px-2 py-1"
       aria-live="polite"
     >
-      <span className="font-mono tabular-nums text-foreground">{timerText}</span>
-      <span className="mx-0.5 h-4 w-px bg-border/60" aria-hidden="true" />
       <Button
         type="button"
         size="icon-xs"
-        variant="outline"
-        onClick={() => {
-          if (isRunning) {
-            pause();
-          } else {
-            resume();
-          }
-        }}
-        className="ml-0.5 h-6 w-6"
-        aria-label={isRunning ? 'Pause timer' : 'Resume timer'}
-      >
-        {isRunning ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-      </Button>
-      <Button
-        type="button"
-        size="icon-xs"
-        variant="outline"
+        variant="ghost"
         onClick={reset}
-        className="h-6 w-6"
         aria-label="Reset timer"
       >
-        <RotateCcw className="h-3.5 w-3.5" />
+        <RotateCcw />
       </Button>
-      <span className="sr-only" aria-live="polite">Timer continues in background</span>
+      <Button
+        type="button"
+        size="icon-xs"
+        variant="ghost"
+        onClick={() => {
+          if (isRunning) {
+            pause()
+          } else {
+            resume()
+          }
+        }}
+        aria-label={isRunning ? 'Pause timer' : 'Resume timer'}
+      >
+        {isRunning ? <Pause /> : <Play />}
+      </Button>
+      <span className="mr-0.5 h-4 w-px bg-border/60" aria-hidden="true" />
+      <span className="font-mono tabular-nums text-xs">{timerText}</span>
+
     </div>
   );
 };

@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import { ActiveCrystal } from '../../types';
 import { BuffEngine } from './buffs/buffEngine';
-import { captureUndoSnapshot, restoreUndoSnapshot, trimUndoSnapshotStack } from './progressionUtils';
+import {
+  captureUndoSnapshot,
+  getCrystalLevelProgressToNext,
+  restoreUndoSnapshot,
+  trimUndoSnapshotStack,
+} from './progressionUtils';
 
 function createActiveCrystal(topicId: string, xp = 0): ActiveCrystal {
   return {
@@ -52,7 +57,6 @@ function createProgressState() {
     unlockPoints: 3,
     currentSubjectId: 'subject-a',
     currentSession: studySession,
-    levelUpMessage: null,
     isCurrentCardFlipped: true,
     activeBuffs: [activeBuff],
     pendingRitual: null,
@@ -106,5 +110,28 @@ describe('progressionUtils', () => {
     const stack = [1, 2, 3, 4, 5];
     expect(trimUndoSnapshotStack(stack, 3)).toEqual([3, 4, 5]);
     expect(trimUndoSnapshotStack(stack, 1)).toEqual([5]);
+  });
+
+  describe('getCrystalLevelProgressToNext', () => {
+    it.each([
+      { xp: -10, level: 0, progressPercent: 0, isMax: false, totalXp: 0 },
+      { xp: 0, level: 0, progressPercent: 0, isMax: false, totalXp: 0 },
+      { xp: 50, level: 0, progressPercent: 50, isMax: false, totalXp: 50 },
+      { xp: 99, level: 0, progressPercent: 99, isMax: false, totalXp: 99 },
+      { xp: 100, level: 1, progressPercent: 0, isMax: false, totalXp: 100 },
+      { xp: 150, level: 1, progressPercent: 50, isMax: false, totalXp: 150 },
+      { xp: 199, level: 1, progressPercent: 99, isMax: false, totalXp: 199 },
+      { xp: 400, level: 4, progressPercent: 0, isMax: false, totalXp: 400 },
+      { xp: 499, level: 4, progressPercent: 99, isMax: false, totalXp: 499 },
+      { xp: 500, level: 5, progressPercent: 100, isMax: true, totalXp: 500 },
+      { xp: 999, level: 5, progressPercent: 100, isMax: true, totalXp: 999 },
+    ] as const)('xp=$xp → level $level, $progressPercent%, isMax=$isMax', ({ xp, level, progressPercent, isMax, totalXp }) => {
+      expect(getCrystalLevelProgressToNext(xp)).toEqual({
+        level,
+        progressPercent,
+        isMax,
+        totalXp,
+      });
+    });
   });
 });

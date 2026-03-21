@@ -17,9 +17,21 @@ const HISTORY_MESSAGE: Record<'undo' | 'redo', string> = {
   redo: 'Redo complete.',
 };
 
+function formatCrystalLevelUpToast(payload: ProgressionEventPayload<'crystal-level-up'>): string {
+  if (payload.levelsGained === 1) {
+    return `Crystal reached level ${payload.nextLevel}!`;
+  }
+  return `Crystal leveled up ${payload.levelsGained} times! Now level ${payload.nextLevel}.`;
+}
+
 export function ProgressionFeedbackProvider() {
   useEffect(() => {
-    const eventTypes: ProgressionEventType[] = ['study-panel-history', 'xp-gained', 'session-complete'];
+    const eventTypes: ProgressionEventType[] = [
+      'study-panel-history',
+      'xp-gained',
+      'session-complete',
+      'crystal-level-up',
+    ];
 
     const handleProgressionEvent = (event: Event) => {
       const payload = (event as CustomEvent).detail as ProgressionEventMap[keyof ProgressionEventMap];
@@ -51,6 +63,11 @@ export function ProgressionFeedbackProvider() {
             `Session complete: ${sessionPayload.totalAttempts} attempt${sessionPayload.totalAttempts === 1 ? '' : 's'}.`,
             { duration: 2000 },
           );
+          break;
+        }
+        case 'crystal-level-up': {
+          const levelPayload = payload as ProgressionEventPayload<'crystal-level-up'>;
+          toast.success(formatCrystalLevelUpToast(levelPayload), { duration: 2200 });
           break;
         }
       }
