@@ -1,5 +1,12 @@
 import type { Card, Subject, SubjectGraph, TopicDetails } from './core';
 
+export type {
+  ChatCompletionStreamInput,
+  ChatMessage,
+  ChatMessageRole,
+  IChatCompletionsRepository,
+} from './llm';
+
 export interface Manifest {
   subjects: Subject[];
 }

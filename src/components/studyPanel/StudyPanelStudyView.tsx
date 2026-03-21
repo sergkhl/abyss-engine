@@ -1,12 +1,36 @@
-import React from 'react';
+'use client';
+
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import MathMarkdownRenderer from '../MathMarkdownRenderer';
 import { RenderableCard } from '../../features/studyPanel/cardPresenter';
+import type { StudyFormulaExplainContext } from '../../features/studyPanel/formulaExplainLlmMessages';
 import { Rating } from '../../types';
 import { Card } from '../../types/core';
 import { SM2Data } from '../../features/progression/sm2';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Redo2, Undo2 } from 'lucide-react';
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Redo2, Sparkles, Undo2 } from 'lucide-react';
+import { StudyKatexInteractive } from './StudyKatexInteractive';
+
+export type StudyPanelLlmExplainProps = {
+  isPending: boolean;
+  errorMessage: string | null;
+  assistantText: string | null;
+  requestExplain: () => void;
+};
+
+export type StudyPanelFormulaExplainProps = {
+  isPending: boolean;
+  errorMessage: string | null;
+  assistantText: string | null;
+  requestExplain: (latex: string, context: StudyFormulaExplainContext) => void;
+};
 
 type OptionState =
   | 'default'
@@ -92,6 +116,8 @@ interface StudyPanelStudyViewProps {
   canRedo: boolean;
   undoCount: number;
   redoCount: number;
+  llmExplain: StudyPanelLlmExplainProps;
+  llmFormulaExplain: StudyPanelFormulaExplainProps;
 }
 
 export function StudyPanelStudyView({
@@ -119,7 +145,85 @@ export function StudyPanelStudyView({
   canRedo,
   undoCount,
   redoCount,
+  llmExplain,
+  llmFormulaExplain,
 }: StudyPanelStudyViewProps) {
+  const [explainOpen, setExplainOpen] = useState(false);
+  const [formulaPopoverOpen, setFormulaPopoverOpen] = useState(false);
+  const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+  const [activeFormulaLatex, setActiveFormulaLatex] = useState<string | null>(null);
+  const formulaAnchorElRef = useRef<HTMLElement | null>(null);
+
+  const syncFormulaAnchorRect = useCallback(() => {
+    const el = formulaAnchorElRef.current;
+    if (el) {
+      setAnchorRect(el.getBoundingClientRect());
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!formulaPopoverOpen) return;
+    syncFormulaAnchorRect();
+    window.addEventListener('scroll', syncFormulaAnchorRect, true);
+    window.addEventListener('resize', syncFormulaAnchorRect);
+    return () => {
+      window.removeEventListener('scroll', syncFormulaAnchorRect, true);
+      window.removeEventListener('resize', syncFormulaAnchorRect);
+    };
+  }, [formulaPopoverOpen, syncFormulaAnchorRect]);
+
+  useEffect(() => {
+    if (!formulaPopoverOpen) return;
+    const el = formulaAnchorElRef.current;
+    if (!el) return;
+    const activeClass = 'study-katex-formula-anchor-active';
+    el.classList.add(activeClass);
+    return () => {
+      el.classList.remove(activeClass);
+    };
+  }, [formulaPopoverOpen, activeFormulaLatex]);
+
+  const closeFormulaPopover = useCallback(() => {
+    formulaAnchorElRef.current = null;
+    setAnchorRect(null);
+    setActiveFormulaLatex(null);
+    setFormulaPopoverOpen(false);
+  }, []);
+
+  const requestFormulaExplain = llmFormulaExplain.requestExplain;
+  const openFormulaExplain = useCallback(
+    (latex: string, context: StudyFormulaExplainContext, anchorElement: HTMLElement) => {
+      setExplainOpen(false);
+      formulaAnchorElRef.current = anchorElement;
+      setAnchorRect(anchorElement.getBoundingClientRect());
+      setActiveFormulaLatex(latex);
+      setFormulaPopoverOpen(true);
+      requestFormulaExplain(latex, context);
+    },
+    [requestFormulaExplain],
+  );
+
+  const handleFormulaPopoverOpenChange = (open: boolean) => {
+    setFormulaPopoverOpen(open);
+    if (!open) {
+      formulaAnchorElRef.current = null;
+      setAnchorRect(null);
+      setActiveFormulaLatex(null);
+    }
+  };
+
+  const handleExplainOpenChange = (open: boolean) => {
+    setExplainOpen(open);
+    if (open) {
+      closeFormulaPopover();
+      const shouldRequest =
+        !llmExplain.isPending && (llmExplain.assistantText === null || llmExplain.errorMessage !== null);
+      if (shouldRequest) {
+        llmExplain.requestExplain();
+      }
+    }
+  };
+
   const formatTestId = isFlashcard
     ? 'study-card-format-flashcard'
     : isSingleChoice
@@ -146,6 +250,48 @@ export function StudyPanelStudyView({
             {formatLabel}
           </Badge>
           <div className="flex items-center gap-1" data-testid="study-card-history-actions">
+            <Popover open={explainOpen} onOpenChange={handleExplainOpenChange}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-xs"
+                  aria-label="Explain question with AI"
+                  title="Explain question with AI"
+                  data-testid="study-card-llm-explain-trigger"
+                >
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                  <span className="sr-only">Explain question with AI</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                align="start"
+                className="w-[min(100vw-2rem,22rem)] max-h-80 overflow-y-auto p-3 text-sm"
+                data-testid="study-card-llm-explain-content"
+              >
+                {llmExplain.errorMessage && !llmExplain.isPending && (
+                  <p className="text-destructive" data-testid="study-card-llm-explain-error">
+                    {llmExplain.errorMessage}
+                  </p>
+                )}
+                {llmExplain.isPending && !(llmExplain.assistantText && llmExplain.assistantText.length > 0) && (
+                  <p className="text-muted-foreground" data-testid="study-card-llm-explain-loading">
+                    Thinking…
+                  </p>
+                )}
+                {llmExplain.assistantText && llmExplain.assistantText.length > 0 && (
+                  <div className="min-h-[1em]">
+                    <MathMarkdownRenderer
+                      source={llmExplain.assistantText}
+                      className="text-foreground markdown-body markdown-body--block text-sm"
+                    />
+                    {llmExplain.isPending && (
+                      <span className="ml-0.5 inline-block h-3 w-0.5 animate-pulse bg-foreground/50 align-middle" aria-hidden />
+                    )}
+                  </div>
+                )}
+              </PopoverContent>
+            </Popover>
             <Button
               onClick={onUndo}
               disabled={!canUndo}
@@ -173,18 +319,16 @@ export function StudyPanelStudyView({
           </div>
         </div>
 
-        {/* Question */}
-        <div
-          className="mb-2"
-          data-testid="study-card-question-label"
-        >
-          <Badge variant="outline">Question</Badge>
-        </div>
-        <div data-testid="study-card-question">
-          <MathMarkdownRenderer
-            source={renderedCard.question}
-            className="text-foreground text-lg markdown-body markdown-body--block"
-          />
+        <div className="mb-2" data-testid="study-card-question">
+          <StudyKatexInteractive
+            className="study-katex-interactive"
+            onFormulaPress={(latex, el) => openFormulaExplain(latex, 'question', el)}
+          >
+            <MathMarkdownRenderer
+              source={renderedCard.question}
+              className="text-foreground text-lg markdown-body markdown-body--block"
+            />
+          </StudyKatexInteractive>
         </div>
 
         {/* Flashcard Answer */}
@@ -193,10 +337,15 @@ export function StudyPanelStudyView({
             <div className="mb-2">
               <Badge variant="outline">Answer</Badge>
             </div>
-            <MathMarkdownRenderer
-              source={renderedCard.answer}
-              className="text-foreground text-lg markdown-body markdown-body--block"
-            />
+            <StudyKatexInteractive
+              className="study-katex-interactive"
+              onFormulaPress={(latex, el) => openFormulaExplain(latex, 'answer', el)}
+            >
+              <MathMarkdownRenderer
+                source={renderedCard.answer}
+                className="text-foreground text-lg markdown-body markdown-body--block"
+              />
+            </StudyKatexInteractive>
           </div>
         )}
 
@@ -232,7 +381,7 @@ export function StudyPanelStudyView({
                     )}
                     <MathMarkdownRenderer
                       source={option}
-                      className="text-muted-foreground markdown-body markdown-body--inline break-words"
+                      className="text-muted-foreground markdown-body markdown-body--inline min-w-0 flex-1 break-words"
                     />
                   </span>
                   <span className="sr-only">{isAnswerSubmitted && optionMarker ? optionMarker : ''}</span>
@@ -277,6 +426,58 @@ export function StudyPanelStudyView({
           )}
         </div>
       </div>
+
+      <Popover open={formulaPopoverOpen} onOpenChange={handleFormulaPopoverOpenChange}>
+        {formulaPopoverOpen && anchorRect ? (
+          <PopoverAnchor asChild>
+            <div
+              style={{
+                position: 'fixed',
+                top: anchorRect.top,
+                left: anchorRect.left,
+                width: Math.max(anchorRect.width, 1),
+                height: Math.max(anchorRect.height, 1),
+                pointerEvents: 'none',
+                visibility: 'hidden',
+              }}
+              aria-hidden
+            />
+          </PopoverAnchor>
+        ) : null}
+        <PopoverContent
+          side="top"
+          sideOffset={8}
+          align="start"
+          className="w-[min(100vw-2rem,22rem)] max-h-80 overflow-y-auto p-3 text-sm"
+          data-testid="study-card-formula-llm-content"
+        >
+          {llmFormulaExplain.errorMessage && !llmFormulaExplain.isPending && (
+            <p className="text-destructive" data-testid="study-card-formula-llm-error">
+              {llmFormulaExplain.errorMessage}
+            </p>
+          )}
+          {llmFormulaExplain.isPending
+            && !(llmFormulaExplain.assistantText && llmFormulaExplain.assistantText.length > 0) && (
+            <p className="text-muted-foreground" data-testid="study-card-formula-llm-loading">
+              Thinking…
+            </p>
+          )}
+          {llmFormulaExplain.assistantText && llmFormulaExplain.assistantText.length > 0 && (
+            <div className="min-h-[1em]">
+              <MathMarkdownRenderer
+                source={llmFormulaExplain.assistantText}
+                className="text-foreground markdown-body markdown-body--block text-sm"
+              />
+              {llmFormulaExplain.isPending && (
+                <span
+                  className="ml-0.5 inline-block h-3 w-0.5 animate-pulse bg-foreground/50 align-middle"
+                  aria-hidden
+                />
+              )}
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
 
       {/* Actions */}
       <div className="mt-4 text-center sticky bottom-0 z-10 bg-card pt-3">

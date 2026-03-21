@@ -38,23 +38,36 @@ const baseProps: StudyPanelStudyViewProps = {
   canRedo: false,
   undoCount: 0,
   redoCount: 0,
+  llmExplain: {
+    isPending: false,
+    errorMessage: null,
+    assistantText: null,
+    requestExplain: vi.fn(),
+  },
+  llmFormulaExplain: {
+    isPending: false,
+    errorMessage: null,
+    assistantText: null,
+    requestExplain: vi.fn(),
+  },
 };
 
 function renderStudyPanelView(override: Partial<StudyPanelStudyViewProps> = {}) {
   const container = document.createElement('div');
   const root = createRoot(container);
+  let lastProps: StudyPanelStudyViewProps = { ...baseProps, ...override };
   const render = (props: StudyPanelStudyViewProps) => {
+    lastProps = props;
     flushSync(() => {
       root.render(createElement(StudyPanelStudyView, props));
     });
   };
-  const mergedProps = { ...baseProps, ...override };
-  render(mergedProps);
+  render(lastProps);
 
   return {
     container,
     root,
-    rerender: (nextOverride: Partial<StudyPanelStudyViewProps>) => render({ ...mergedProps, ...nextOverride }),
+    rerender: (nextOverride: Partial<StudyPanelStudyViewProps>) => render({ ...lastProps, ...nextOverride }),
     unmount: () => root.unmount(),
   };
 }
@@ -64,6 +77,81 @@ afterEach(() => {
 });
 
 describe('StudyPanelStudyView', () => {
+  it('renders Explain control for LLM popover', () => {
+    const { container, unmount } = renderStudyPanelView();
+    const trigger = container.querySelector('[data-testid="study-card-llm-explain-trigger"]');
+    expect(trigger).not.toBeNull();
+    expect(trigger?.getAttribute('aria-label')).toContain('Explain');
+    unmount();
+  });
+
+  it('requests formula LLM explanation when a KaTeX span is clicked', () => {
+    const requestExplain = vi.fn();
+    const { container, unmount } = renderStudyPanelView({
+      renderedCard: {
+        ...baseProps.renderedCard,
+        question: 'What is $x^2$?',
+      },
+      llmFormulaExplain: {
+        isPending: false,
+        errorMessage: null,
+        assistantText: null,
+        requestExplain,
+      },
+    });
+    document.body.append(container);
+    const katex = container.querySelector('.katex') as HTMLElement | null;
+    expect(katex).not.toBeNull();
+    katex?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(requestExplain).toHaveBeenCalledTimes(1);
+    expect(requestExplain).toHaveBeenCalledWith(expect.stringMatching(/x/), 'question');
+    unmount();
+  });
+
+  it('requests LLM explanation when Explain popover opens', () => {
+    const requestExplain = vi.fn();
+    const { container, unmount } = renderStudyPanelView({
+      llmExplain: {
+        isPending: false,
+        errorMessage: null,
+        assistantText: null,
+        requestExplain,
+      },
+    });
+    document.body.append(container);
+    const trigger = container.querySelector('[data-testid="study-card-llm-explain-trigger"]') as HTMLButtonElement;
+    trigger?.click();
+    expect(requestExplain).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  it('shows loading text in explain popover while pending', () => {
+    const requestExplain = vi.fn();
+    const { container, rerender, unmount } = renderStudyPanelView({
+      llmExplain: {
+        isPending: false,
+        errorMessage: null,
+        assistantText: null,
+        requestExplain,
+      },
+    });
+    document.body.append(container);
+    container.querySelector('[data-testid="study-card-llm-explain-trigger"]')?.dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
+    rerender({
+      llmExplain: {
+        isPending: true,
+        errorMessage: null,
+        assistantText: null,
+        requestExplain,
+      },
+    });
+    const loading = document.body.querySelector('[data-testid="study-card-llm-explain-loading"]');
+    expect(loading).not.toBeNull();
+    unmount();
+  });
+
   it('renders undo and redo controls with current stack counts', () => {
     const onUndo = vi.fn();
     const onRedo = vi.fn();
@@ -157,7 +245,7 @@ describe('StudyPanelStudyView', () => {
     const selectedOption = container.querySelector('[data-testid="study-card-choice-option-1"]') as HTMLButtonElement;
     expect(selectedOption?.textContent).not.toContain('✓');
     expect(selectedOption?.textContent).not.toContain('✗');
-    expect(selectedOption?.className).toContain('bg-primary/20');
+    expect(selectedOption?.getAttribute('aria-label')).toContain('not submitted');
 
     unmount();
   });

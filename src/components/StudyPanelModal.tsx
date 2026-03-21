@@ -13,6 +13,8 @@ import { StudyPanelStateViews } from './studyPanel/StudyPanelStateViews';
 import { StudyPanelStudyView } from './studyPanel/StudyPanelStudyView';
 import { useStudyPanelModel } from '../hooks/useStudyPanelModel';
 import { useStudyKeyboardShortcuts } from '../hooks/useStudyKeyboardShortcuts';
+import { useStudyFormulaLlmExplain } from '../hooks/useStudyFormulaLlmExplain';
+import { useStudyQuestionLlmExplain } from '../hooks/useStudyQuestionLlmExplain';
 import { StudyPanelTab } from './studyPanel/types';
 
 interface StudyPanelModalProps {
@@ -49,6 +51,16 @@ export function StudyPanelModal({
     currentCardId,
     currentTopicId,
     totalCards,
+  });
+  const llmExplain = useStudyQuestionLlmExplain({
+    topicLabel: model.resolvedTopic,
+    questionText: model.currentQuestion,
+    cardId: model.activeCard?.id ?? null,
+  });
+  const llmFormulaExplain = useStudyFormulaLlmExplain({
+    topicLabel: model.resolvedTopic,
+    cardQuestionText: model.currentQuestion,
+    cardId: model.activeCard?.id ?? null,
   });
   useStudyKeyboardShortcuts(onUndo, onRedo, model.canUndo, model.canRedo);
 
@@ -238,6 +250,8 @@ export function StudyPanelModal({
               canRedo={model.canRedo}
               undoCount={model.undoCount}
               redoCount={model.redoCount}
+              llmExplain={llmExplain}
+              llmFormulaExplain={llmFormulaExplain}
             />
           )}
       </div>

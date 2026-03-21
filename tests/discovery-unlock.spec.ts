@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import {
   waitForPageHydrated,
-  getCanvas,
+  waitForCanvasClickBox,
 } from './utils/test-helpers';
 
 /**
@@ -27,12 +27,11 @@ test.describe('Discovery/Unlock Journey', () => {
     }
 
     // Click altar to open discovery modal
-    const canvas = await getCanvas(page);
-    const canvasBox = await canvas!.boundingBox();
+    const { box: canvasBox } = await waitForCanvasClickBox(page);
 
     await page.mouse.click(
-      canvasBox!.x + canvasBox!.width / 2,
-      canvasBox!.y + canvasBox!.height / 2
+      canvasBox.x + canvasBox.width / 2,
+      canvasBox.y + canvasBox.height / 2
     );
 
     await page.waitForTimeout(1500);
@@ -69,12 +68,11 @@ test.describe('Discovery/Unlock Journey', () => {
     }
 
     // Click altar
-    const canvas = await getCanvas(page);
-    const canvasBox = await canvas!.boundingBox();
+    const { canvas, box: canvasBox } = await waitForCanvasClickBox(page);
 
     await page.mouse.click(
-      canvasBox!.x + canvasBox!.width / 2,
-      canvasBox!.y + canvasBox!.height / 2
+      canvasBox.x + canvasBox.width / 2,
+      canvasBox.y + canvasBox.height / 2
     );
 
     await page.waitForTimeout(1500);

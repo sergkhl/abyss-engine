@@ -52,7 +52,7 @@ Core systems: SM-2 progression, ritual-based attunement, buff engine, procedural
 - **Data-Driven Execution**: No magic strings. No manual state mapping.
 - **No Legacy Burden**: Deprecated behavior must be refactored or removed. Do not preserve dead code.
 - **WebGPU Strictness**: Any pull request or code generation that introduces a legacy WebGL material, `WebGLRenderer`, `state.gl`, `THREE.Clock`, or non-TSL shader string into the codebase will be rejected.
-- **Mobile-First**: All UI must be adapted to mobile devices.
+- **Mobile-first UI**: Design for small screens and touch as the baseline. Tappable targets must meet comfortable touch sizing and spacing. Do not rely on hover, :hover-only styling, or cursor affordances (cursor-pointer, group-hover:*, tooltips that only appear on hover) to communicate interactivity; use always-visible labels, icons, borders, or other persistent cues. Pointer hover may refine appearance only if the default (non-hover) state is already clearly interactive.
 - **UI Composition**: Build 2D UI only from existing `src/components/ui/*` primitives. Do not add or modify files in this directory unless explicitly instructed to do so with mention of the filename in request.
 
 ## Agent Workflow & Decision Framework

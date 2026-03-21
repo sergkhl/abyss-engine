@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import {
   waitForPageHydrated,
-  getCanvas,
+  waitForCanvasClickBox,
   clearLocalStorage,
   startConsoleErrorCapture,
   expectWebGPUAvailable,
@@ -187,8 +187,9 @@ test.describe('Study Session', () => {
     await page.getByText('Open Wisdom Altar (Discovery)').click();
     const discoveryDialog = page.getByRole('dialog').filter({ hasText: 'Wisdom Altar' });
     await expect(discoveryDialog).toBeVisible({ timeout: 5000 });
-    const deckSummary = discoveryDialog.locator('p.text-muted-foreground').first();
-    await expect(deckSummary).toContainText(/\d+\/\d+ cards due/);
+    // Deck stats live in a separate <p> from DialogDescription ("Unlock topic crystals…")
+    const deckSummary = discoveryDialog.getByText(/\d+\/\d+ cards due/);
+    await expect(deckSummary).toBeVisible({ timeout: 5000 });
     const statsCardsText = await deckSummary.textContent();
     const dueMatch = statsCardsText ? statsCardsText.match(/(\d+)\s*\/\s*(\d+)/) : null;
     const initialDue = dueMatch ? parseInt(dueMatch[1], 10) : 0;
@@ -197,18 +198,17 @@ test.describe('Study Session', () => {
 
     // If there are due cards, try to study one
     if (initialDue > 0) {
-      const canvas = await getCanvas(page);
-      const canvasBox = await canvas!.boundingBox();
+      const { box: canvasBox } = await waitForCanvasClickBox(page);
 
       // Click to select and start study
       await page.mouse.click(
-        canvasBox!.x + canvasBox!.width * 0.6,
-        canvasBox!.y + canvasBox!.height * 0.5
+        canvasBox.x + canvasBox.width * 0.6,
+        canvasBox.y + canvasBox.height * 0.5
       );
       await page.waitForTimeout(500);
       await page.mouse.click(
-        canvasBox!.x + canvasBox!.width * 0.6,
-        canvasBox!.y + canvasBox!.height * 0.5
+        canvasBox.x + canvasBox.width * 0.6,
+        canvasBox.y + canvasBox.height * 0.5
       );
       await page.waitForTimeout(1000);
 
@@ -265,7 +265,7 @@ test.describe('Challenge Format Types', () => {
     await assertProgressionEventIncrease(page, priorEvents);
 
     // Verify we can still see the current card's content (feedback visible)
-    await expect(page.getByTestId('study-card-question-label')).toBeVisible({ timeout: 3000 });
+    await expect(page.getByTestId('study-card-question')).toBeVisible({ timeout: 3000 });
   });
 
   /**

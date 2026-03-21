@@ -19,7 +19,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'src/**/*.spec.ts'],
     exclude: ['**/node_modules/**', '**/e2e/**'],
     coverage: {
       provider: 'v8',
@@ -30,6 +30,7 @@ export default defineConfig({
         '**/*.config.ts',
         'src/**/*.stories.tsx',
         'src/**/*.test.ts',
+        'src/**/*.test.tsx',
         'src/**/*.spec.ts',
       ],
     },

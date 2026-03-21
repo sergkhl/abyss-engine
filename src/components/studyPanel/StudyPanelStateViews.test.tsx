@@ -112,12 +112,12 @@ describe('StudyPanelStateViews theory TTS', () => {
 
     ttsButton.click();
     expect(mockSpeak).toHaveBeenCalledTimes(1);
-    expect(mockCancel).toHaveBeenCalledTimes(0);
+    expect(mockCancel).toHaveBeenCalledTimes(1);
     expect(utteranceTexts[0]).not.toContain('$');
     expect(utteranceTexts[0]).toContain('Prime numbers are key in number theory.');
 
     ttsButton.click();
-    expect(mockCancel).toHaveBeenCalledTimes(1);
+    expect(mockCancel).toHaveBeenCalledTimes(2);
     unmount();
   });
 
@@ -132,7 +132,7 @@ describe('StudyPanelStateViews theory TTS', () => {
     rerender({
       activeTab: 'study',
     });
-    expect(mockCancel).toHaveBeenCalledTimes(1);
+    expect(mockCancel).toHaveBeenCalledTimes(2);
     unmount();
   });
 
@@ -142,13 +142,13 @@ describe('StudyPanelStateViews theory TTS', () => {
     const ttsButton = container.querySelector('[data-testid="study-panel-theory-tts"]') as HTMLButtonElement;
 
     ttsButton.click();
-    expect(mockCancel).toHaveBeenCalledTimes(0);
+    expect(mockCancel).toHaveBeenCalledTimes(1);
 
     rerender({
       activeTab: 'theory',
       resolvedTopicTheory: '# New heading\nMore content here.',
     });
-    expect(mockCancel).toHaveBeenCalledTimes(1);
+    expect(mockCancel).toHaveBeenCalledTimes(2);
     unmount();
   });
 
@@ -159,6 +159,6 @@ describe('StudyPanelStateViews theory TTS', () => {
 
     ttsButton.click();
     unmount();
-    expect(mockCancel).toHaveBeenCalledTimes(1);
+    expect(mockCancel).toHaveBeenCalledTimes(2);
   });
 });

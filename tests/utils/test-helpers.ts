@@ -39,6 +39,31 @@ export async function getCanvas(page: Page, timeoutMs = 8000): Promise<Locator |
 }
 
 /**
+ * Wait until the main canvas is visible and has a non-zero layout box (for `page.mouse` clicks).
+ */
+export async function waitForCanvasClickBox(
+  page: Page,
+  timeoutMs = 15000,
+): Promise<{
+  canvas: Locator;
+  box: { x: number; y: number; width: number; height: number };
+}> {
+  const canvas = await getCanvas(page, timeoutMs);
+  expect(canvas).not.toBeNull();
+  await expect(canvas!).toBeVisible({ timeout: timeoutMs });
+
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const box = await canvas!.boundingBox();
+    if (box && box.width > 0 && box.height > 0) {
+      return { canvas: canvas!, box };
+    }
+    await page.waitForTimeout(100);
+  }
+  throw new Error('Canvas bounding box did not become usable in time');
+}
+
+/**
  * Clear localStorage for fresh test state.
  */
 export async function clearLocalStorage(page: Page): Promise<void> {
