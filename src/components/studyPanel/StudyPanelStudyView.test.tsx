@@ -43,12 +43,14 @@ const baseProps: StudyPanelStudyViewProps = {
     errorMessage: null,
     assistantText: null,
     requestExplain: vi.fn(),
+    cancelInflight: vi.fn(),
   },
   llmFormulaExplain: {
     isPending: false,
     errorMessage: null,
     assistantText: null,
     requestExplain: vi.fn(),
+    cancelInflight: vi.fn(),
   },
 };
 
@@ -97,6 +99,7 @@ describe('StudyPanelStudyView', () => {
         errorMessage: null,
         assistantText: null,
         requestExplain,
+        cancelInflight: vi.fn(),
       },
     });
     document.body.append(container);
@@ -116,6 +119,7 @@ describe('StudyPanelStudyView', () => {
         errorMessage: null,
         assistantText: null,
         requestExplain,
+        cancelInflight: vi.fn(),
       },
     });
     document.body.append(container);
@@ -127,12 +131,14 @@ describe('StudyPanelStudyView', () => {
 
   it('shows loading text in explain popover while pending', () => {
     const requestExplain = vi.fn();
+    const cancelInflight = vi.fn();
     const { container, rerender, unmount } = renderStudyPanelView({
       llmExplain: {
         isPending: false,
         errorMessage: null,
         assistantText: null,
         requestExplain,
+        cancelInflight,
       },
     });
     document.body.append(container);
@@ -145,6 +151,7 @@ describe('StudyPanelStudyView', () => {
         errorMessage: null,
         assistantText: null,
         requestExplain,
+        cancelInflight,
       },
     });
     const loading = document.body.querySelector('[data-testid="study-card-llm-explain-loading"]');

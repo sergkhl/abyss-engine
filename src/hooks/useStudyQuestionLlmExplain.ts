@@ -11,6 +11,17 @@ export interface UseStudyQuestionLlmExplainParams {
   cardId: string | null;
 }
 
+const sessionQuestionExplainCache = new Map<string, string>();
+
+/** Clears in-memory session cache; used from unit tests only. */
+export function clearStudyQuestionLlmExplainSessionCacheForTests(): void {
+  sessionQuestionExplainCache.clear();
+}
+
+function questionExplainCacheKey(cardId: string, topicLabel: string, questionText: string): string {
+  return `${cardId}\0${topicLabel}\0${questionText}`;
+}
+
 function isAbortError(e: unknown): boolean {
   return (
     (e instanceof DOMException && e.name === 'AbortError')
@@ -27,26 +38,69 @@ export function useStudyQuestionLlmExplain({
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const generationRef = useRef(0);
+  const isPendingRef = useRef(false);
+
+  const setPending = useCallback((next: boolean) => {
+    isPendingRef.current = next;
+    setIsPending(next);
+  }, []);
 
   const reset = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
+    generationRef.current += 1;
     setAssistantText(null);
     setError(null);
-    setIsPending(false);
-  }, []);
+    setPending(false);
+  }, [setPending]);
 
   useEffect(() => {
     reset();
   }, [cardId, reset]);
 
-  const requestExplain = useCallback(() => {
+  useEffect(
+    () => () => {
+      abortRef.current?.abort();
+    },
+    [],
+  );
+
+  const cancelInflight = useCallback(() => {
     abortRef.current?.abort();
+    abortRef.current = null;
+    if (!isPendingRef.current) {
+      return;
+    }
+    generationRef.current += 1;
+    setAssistantText(null);
+    setError(null);
+    setPending(false);
+  }, [setPending]);
+
+  const requestExplain = useCallback(() => {
+    if (!cardId) {
+      return;
+    }
+
+    abortRef.current?.abort();
+    generationRef.current += 1;
+    const myGeneration = generationRef.current;
+
+    const cacheKey = questionExplainCacheKey(cardId, topicLabel, questionText);
+    const cached = sessionQuestionExplainCache.get(cacheKey);
+    if (cached !== undefined) {
+      setError(null);
+      setAssistantText(cached);
+      setPending(false);
+      return;
+    }
+
     const ac = new AbortController();
     abortRef.current = ac;
     setError(null);
     setAssistantText('');
-    setIsPending(true);
+    setPending(true);
 
     const messages = buildMinimalStudyQuestionMessages(topicLabel, questionText);
     const model = process.env.NEXT_PUBLIC_LLM_MODEL?.trim() ?? '';
@@ -59,20 +113,32 @@ export function useStudyQuestionLlmExplain({
           messages,
           signal: ac.signal,
         })) {
+          if (generationRef.current !== myGeneration) {
+            return;
+          }
           acc += chunk;
           setAssistantText(acc);
         }
-        setIsPending(false);
+        if (generationRef.current !== myGeneration) {
+          return;
+        }
+        sessionQuestionExplainCache.set(cacheKey, acc);
+        setPending(false);
       } catch (e) {
+        if (generationRef.current !== myGeneration) {
+          return;
+        }
         if (isAbortError(e)) {
+          setAssistantText(null);
+          setPending(false);
           return;
         }
         setError(e);
-        setIsPending(false);
+        setPending(false);
         setAssistantText(null);
       }
     })();
-  }, [topicLabel, questionText]);
+  }, [cardId, topicLabel, questionText, setPending]);
 
   return {
     requestExplain,
@@ -80,5 +146,6 @@ export function useStudyQuestionLlmExplain({
     errorMessage: error instanceof Error ? error.message : error ? String(error) : null,
     assistantText,
     reset,
+    cancelInflight,
   };
 }

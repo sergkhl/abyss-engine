@@ -62,6 +62,20 @@ export function StudyPanelModal({
     cardQuestionText: model.currentQuestion,
     cardId: model.activeCard?.id ?? null,
   });
+
+  useEffect(() => {
+    if (!isOpen || activeTab !== 'study' || !model.renderedCard) {
+      llmExplain.cancelInflight();
+      llmFormulaExplain.cancelInflight();
+    }
+  }, [
+    isOpen,
+    activeTab,
+    model.renderedCard,
+    llmExplain.cancelInflight,
+    llmFormulaExplain.cancelInflight,
+  ]);
+
   useStudyKeyboardShortcuts(onUndo, onRedo, model.canUndo, model.canRedo);
 
   const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);

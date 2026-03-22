@@ -23,6 +23,7 @@ export type StudyPanelLlmExplainProps = {
   errorMessage: string | null;
   assistantText: string | null;
   requestExplain: () => void;
+  cancelInflight: () => void;
 };
 
 export type StudyPanelFormulaExplainProps = {
@@ -30,6 +31,7 @@ export type StudyPanelFormulaExplainProps = {
   errorMessage: string | null;
   assistantText: string | null;
   requestExplain: (latex: string, context: StudyFormulaExplainContext) => void;
+  cancelInflight: () => void;
 };
 
 type OptionState =
@@ -57,6 +59,9 @@ type OptionPresentation = {
   style: string;
   markerClass: string;
 };
+
+/** Matches `duration-100` on PopoverContent plus a small buffer so the anchor outlives the exit animation. */
+const FORMULA_POPOVER_ANCHOR_TEARDOWN_MS = 150;
 
 const optionPresentation: Record<OptionState, OptionPresentation> = {
   default: {
@@ -153,6 +158,31 @@ export function StudyPanelStudyView({
   const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
   const [activeFormulaLatex, setActiveFormulaLatex] = useState<string | null>(null);
   const formulaAnchorElRef = useRef<HTMLElement | null>(null);
+  const formulaAnchorTeardownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearFormulaAnchorTeardownTimer = useCallback(() => {
+    if (formulaAnchorTeardownTimerRef.current !== null) {
+      clearTimeout(formulaAnchorTeardownTimerRef.current);
+      formulaAnchorTeardownTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleFormulaAnchorTeardown = useCallback(() => {
+    clearFormulaAnchorTeardownTimer();
+    formulaAnchorTeardownTimerRef.current = setTimeout(() => {
+      formulaAnchorTeardownTimerRef.current = null;
+      formulaAnchorElRef.current = null;
+      setAnchorRect(null);
+      setActiveFormulaLatex(null);
+    }, FORMULA_POPOVER_ANCHOR_TEARDOWN_MS);
+  }, [clearFormulaAnchorTeardownTimer]);
+
+  useEffect(
+    () => () => {
+      clearFormulaAnchorTeardownTimer();
+    },
+    [clearFormulaAnchorTeardownTimer],
+  );
 
   const syncFormulaAnchorRect = useCallback(() => {
     const el = formulaAnchorElRef.current;
@@ -184,15 +214,16 @@ export function StudyPanelStudyView({
   }, [formulaPopoverOpen, activeFormulaLatex]);
 
   const closeFormulaPopover = useCallback(() => {
-    formulaAnchorElRef.current = null;
-    setAnchorRect(null);
-    setActiveFormulaLatex(null);
+    llmFormulaExplain.cancelInflight();
     setFormulaPopoverOpen(false);
-  }, []);
+    scheduleFormulaAnchorTeardown();
+  }, [llmFormulaExplain, scheduleFormulaAnchorTeardown]);
 
   const requestFormulaExplain = llmFormulaExplain.requestExplain;
   const openFormulaExplain = useCallback(
     (latex: string, context: StudyFormulaExplainContext, anchorElement: HTMLElement) => {
+      clearFormulaAnchorTeardownTimer();
+      llmExplain.cancelInflight();
       setExplainOpen(false);
       formulaAnchorElRef.current = anchorElement;
       setAnchorRect(anchorElement.getBoundingClientRect());
@@ -200,27 +231,31 @@ export function StudyPanelStudyView({
       setFormulaPopoverOpen(true);
       requestFormulaExplain(latex, context);
     },
-    [requestFormulaExplain],
+    [clearFormulaAnchorTeardownTimer, llmExplain, requestFormulaExplain],
   );
 
   const handleFormulaPopoverOpenChange = (open: boolean) => {
-    setFormulaPopoverOpen(open);
-    if (!open) {
-      formulaAnchorElRef.current = null;
-      setAnchorRect(null);
-      setActiveFormulaLatex(null);
+    if (open) {
+      clearFormulaAnchorTeardownTimer();
+      setFormulaPopoverOpen(true);
+      return;
     }
+    setFormulaPopoverOpen(false);
+    llmFormulaExplain.cancelInflight();
+    scheduleFormulaAnchorTeardown();
   };
 
   const handleExplainOpenChange = (open: boolean) => {
     setExplainOpen(open);
-    if (open) {
-      closeFormulaPopover();
-      const shouldRequest =
-        !llmExplain.isPending && (llmExplain.assistantText === null || llmExplain.errorMessage !== null);
-      if (shouldRequest) {
-        llmExplain.requestExplain();
-      }
+    if (!open) {
+      llmExplain.cancelInflight();
+      return;
+    }
+    closeFormulaPopover();
+    const shouldRequest =
+      !llmExplain.isPending && (llmExplain.assistantText === null || llmExplain.errorMessage !== null);
+    if (shouldRequest) {
+      llmExplain.requestExplain();
     }
   };
 
@@ -428,7 +463,7 @@ export function StudyPanelStudyView({
       </div>
 
       <Popover open={formulaPopoverOpen} onOpenChange={handleFormulaPopoverOpenChange}>
-        {formulaPopoverOpen && anchorRect ? (
+        {anchorRect ? (
           <PopoverAnchor asChild>
             <div
               style={{

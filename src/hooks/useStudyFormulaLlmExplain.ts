@@ -13,6 +13,23 @@ export interface UseStudyFormulaLlmExplainParams {
   cardId: string | null;
 }
 
+const sessionFormulaExplainCache = new Map<string, string>();
+
+/** Clears in-memory session cache; used from unit tests only. */
+export function clearStudyFormulaLlmExplainSessionCacheForTests(): void {
+  sessionFormulaExplainCache.clear();
+}
+
+function formulaExplainCacheKey(
+  cardId: string,
+  context: StudyFormulaExplainContext,
+  latexNormalized: string,
+  topicLabel: string,
+  cardQuestionText: string,
+): string {
+  return `${cardId}\0${context}\0${latexNormalized}\0${topicLabel}\0${cardQuestionText}`;
+}
+
 function isAbortError(e: unknown): boolean {
   return (
     (e instanceof DOMException && e.name === 'AbortError')
@@ -29,27 +46,77 @@ export function useStudyFormulaLlmExplain({
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const generationRef = useRef(0);
+  const isPendingRef = useRef(false);
+
+  const setPending = useCallback((next: boolean) => {
+    isPendingRef.current = next;
+    setIsPending(next);
+  }, []);
 
   const reset = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
+    generationRef.current += 1;
     setAssistantText(null);
     setError(null);
-    setIsPending(false);
-  }, []);
+    setPending(false);
+  }, [setPending]);
 
   useEffect(() => {
     reset();
   }, [cardId, reset]);
 
+  useEffect(
+    () => () => {
+      abortRef.current?.abort();
+    },
+    [],
+  );
+
+  const cancelInflight = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    if (!isPendingRef.current) {
+      return;
+    }
+    generationRef.current += 1;
+    setAssistantText(null);
+    setError(null);
+    setPending(false);
+  }, [setPending]);
+
   const requestExplain = useCallback(
     (latex: string, context: StudyFormulaExplainContext) => {
+      if (!cardId) {
+        return;
+      }
+
       abortRef.current?.abort();
+      generationRef.current += 1;
+      const myGeneration = generationRef.current;
+
+      const latexNormalized = latex.trim();
+      const cacheKey = formulaExplainCacheKey(
+        cardId,
+        context,
+        latexNormalized,
+        topicLabel,
+        cardQuestionText,
+      );
+      const cached = sessionFormulaExplainCache.get(cacheKey);
+      if (cached !== undefined) {
+        setError(null);
+        setAssistantText(cached);
+        setPending(false);
+        return;
+      }
+
       const ac = new AbortController();
       abortRef.current = ac;
       setError(null);
       setAssistantText('');
-      setIsPending(true);
+      setPending(true);
 
       const messages = buildFormulaExplainMessages(topicLabel, cardQuestionText, latex, context);
       const model = process.env.NEXT_PUBLIC_LLM_MODEL?.trim() ?? '';
@@ -62,21 +129,33 @@ export function useStudyFormulaLlmExplain({
             messages,
             signal: ac.signal,
           })) {
+            if (generationRef.current !== myGeneration) {
+              return;
+            }
             acc += chunk;
             setAssistantText(acc);
           }
-          setIsPending(false);
+          if (generationRef.current !== myGeneration) {
+            return;
+          }
+          sessionFormulaExplainCache.set(cacheKey, acc);
+          setPending(false);
         } catch (e) {
+          if (generationRef.current !== myGeneration) {
+            return;
+          }
           if (isAbortError(e)) {
+            setAssistantText(null);
+            setPending(false);
             return;
           }
           setError(e);
-          setIsPending(false);
+          setPending(false);
           setAssistantText(null);
         }
       })();
     },
-    [topicLabel, cardQuestionText],
+    [cardId, topicLabel, cardQuestionText, setPending],
   );
 
   return {
@@ -85,5 +164,6 @@ export function useStudyFormulaLlmExplain({
     errorMessage: error instanceof Error ? error.message : error ? String(error) : null,
     assistantText,
     reset,
+    cancelInflight,
   };
 }
