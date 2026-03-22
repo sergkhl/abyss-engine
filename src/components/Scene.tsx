@@ -2,7 +2,7 @@
 
 import React, { Suspense, useRef, useMemo, useEffect, useState } from 'react'
 import { Canvas } from '@react-three/fiber/webgpu'
-import { PerspectiveCamera, OrbitControls, Environment } from '@react-three/drei/webgpu'
+import { PerspectiveCamera, OrbitControls } from '@react-three/drei/webgpu'
 import { useQueries } from '@tanstack/react-query'
 import * as THREE from 'three/webgpu'
 import { Grid, GRID_SIZE } from './Grid'
@@ -22,6 +22,7 @@ import { deckRepository } from '../infrastructure/di'
 import { useSceneInvalidator } from '../hooks/useSceneInvalidator'
 import { useSelectedCrystalSpotlight } from '../hooks/useSelectedCrystalSpotlight'
 import '../graphics/nodeMaterialRegistration'
+import { SceneSky, SunSyncedDirectionalLight } from './SceneSky'
 
 /**
  * Scene component - Main 3D visualization for Abyss Engine
@@ -74,7 +75,7 @@ const getRenderQuality = (): RenderQuality => {
   }
 }
 
-const CAMERA_START_POSITION: [number, number, number] = [7, 7, 7]
+const CAMERA_START_POSITION: [number, number, number] = [5, 5, 5]
 const ORBIT_TARGET: [number, number, number] = [0, 0, 0]
 const CAMERA_START_DISTANCE = Math.hypot(
   CAMERA_START_POSITION[0] - ORBIT_TARGET[0],
@@ -84,11 +85,20 @@ const CAMERA_START_DISTANCE = Math.hypot(
 const CAMERA_START_POLAR_ANGLE = Math.acos(
   (CAMERA_START_POSITION[1] - ORBIT_TARGET[1]) / CAMERA_START_DISTANCE,
 )
-const CAMERA_START_FOV = 60
+const CAMERA_START_FOV = 70
 const CAMERA_MIN_DISTANCE = CAMERA_START_DISTANCE * 0.6
 const CAMERA_MAX_DISTANCE = CAMERA_START_DISTANCE * 1.05
 const CAMERA_UNLOCKED_MIN_POLAR_ANGLE = 0.08
 const CAMERA_UNLOCKED_MAX_POLAR_ANGLE = Math.PI - CAMERA_UNLOCKED_MIN_POLAR_ANGLE
+const CAMERA_FAR = 2_000_000
+const CANVAS_BACKDROP = '#1a1f33'
+const SCENE_FOG_COLOR = '#252b45'
+
+/** Sun is near horizon — floor needs fill; keep renderer exposure low so SkyMesh stays balanced. */
+const LIGHT_AMBIENT_INTENSITY = 3.62
+const LIGHT_HEMISPHERE_INTENSITY = 0.48
+const LIGHT_SUN_INTENSITY = 2.85
+const LIGHT_FILL_INTENSITY = 2.26
 
 interface OrbitCameraControlsProps {
   isCameraAngleUnlocked: boolean
@@ -175,6 +185,7 @@ export const Scene: React.FC<SceneProps> = ({
   dynamicReflections = false,
 }) => {
   const cameraRef = useRef<THREE.PerspectiveCamera>(null)
+  const sunDirectionRef = useRef(new THREE.Vector3(0, 1, 0))
   const activeCrystals = useStudyStore((state) => state.activeCrystals)
   const currentSubjectId = useStudyStore((state) => state.currentSubjectId)
   const selectedTopicId = useUIStore((state) => state.selectedTopicId)
@@ -269,11 +280,15 @@ export const Scene: React.FC<SceneProps> = ({
   const [statsText, setStatsText] = useState(showStats ? 'Initializing...' : '')
 
   return (
-    <div style={{ width: '100%', height: '100%', backgroundColor: '#0a0a1a' }}>
+    <div style={{ width: '100%', height: '100%', backgroundColor: CANVAS_BACKDROP }}>
       <Canvas
         frameloop="demand"
         dpr={renderQuality.dpr}
-        style={{ background: '#0a0a1a' }}
+        style={{ background: CANVAS_BACKDROP }}
+        onCreated={({ gl }) => {
+          gl.toneMapping = THREE.ACESFilmicToneMapping
+          gl.toneMappingExposure = 0.5
+        }}
       >
         {showStats && <SceneDebugStats onReport={setStatsText} />}
         <SceneFrameLimiter />
@@ -286,12 +301,6 @@ export const Scene: React.FC<SceneProps> = ({
           selectedTopicCardsCount={selectedTopicCards.length}
         />
 
-        <Environment
-          preset="forest"
-          background
-          backgroundIntensity={0.5}
-        />
-
         {/* Orthographic camera with isometric view */}
         <PerspectiveCamera
           ref={cameraRef}
@@ -299,25 +308,27 @@ export const Scene: React.FC<SceneProps> = ({
           position={CAMERA_START_POSITION}
           fov={CAMERA_START_FOV}
           near={0.1}
-          far={1000}
+          far={CAMERA_FAR}
           onUpdate={(c: THREE.PerspectiveCamera) => {
             c.lookAt(...ORBIT_TARGET)
           }}
         />
         <OrbitCameraControls isCameraAngleUnlocked={isCameraAngleUnlocked} />
 
-        {/* Lighting setup */}
-        <ambientLight intensity={0.6} color="#ffffff" />
-        <directionalLight
-          position={[5, 10, 5]}
-          intensity={1.2}
-          color="#ffffff"
-          castShadow
+        <SceneSky sunDirectionRef={sunDirectionRef} />
+
+        {/* Lighting setup — strong fill for low sun elevation; sky is unlit (not affected by these) */}
+        <ambientLight intensity={LIGHT_AMBIENT_INTENSITY} color="#eef1ff" />
+        <hemisphereLight
+          skyColor="#a8b8e8"
+          groundColor="#2a2438"
+          intensity={LIGHT_HEMISPHERE_INTENSITY}
         />
+        <SunSyncedDirectionalLight sunDirectionRef={sunDirectionRef} intensity={LIGHT_SUN_INTENSITY} />
         <directionalLight
           position={[-5, 5, -5]}
-          intensity={0.4}
-          color="#a0a0ff"
+          intensity={LIGHT_FILL_INTENSITY}
+          color="#c8d0f0"
         />
         <SelectedCrystalSpotlight
           spotlightPosition={spotlightPosition}
@@ -326,8 +337,8 @@ export const Scene: React.FC<SceneProps> = ({
         />
 
 
-        {/* Fog for depth */}
-        <fog attach="fog" args={['#0a0a1a', 10, 50]} />
+        {/* Fog for depth — tuned to sit under analytic sky */}
+        <fog attach="fog" args={[SCENE_FOG_COLOR, 18, 85]} />
 
         {/* Reflective floor */}
         <Suspense fallback={null}>
