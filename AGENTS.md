@@ -8,7 +8,7 @@ Authoritative reference for repository architecture and agent workflows. Codebas
 Abyss Engine is a **beautiful, immersive spaced-repetition learning platform** built as a 3D crystal garden.
 Core fantasy: *Your knowledge literally grows as glowing crystals in a mystical abyss.*
 
-Core stack: @react-three/fiber@10.0.0-alpha.x, @react-three/drei@11.0.0-alpha.x, WebGPU (Three.js Shading Language), TanStack Query, Zustand, Tailwind, motion.
+Core stack: @react-three/fiber@10.0.0-alpha.x, @react-three/drei@11.0.0-alpha.x, three@0.183.x, WebGPU (Three.js Shading Language), TanStack Query, Zustand, Tailwind, motion.
 Core systems: SM-2 progression, ritual-based attunement, buff engine, procedural node-based graphics.
 
 ## Architectural Patterns
