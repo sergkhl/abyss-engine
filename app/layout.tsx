@@ -8,7 +8,10 @@ import { Toaster } from "@/components/ui/sonner";
 import { TelemetryProvider } from '@/features/telemetry/TelemetryProvider';
 import { ProgressionFeedbackProvider } from '@/components/ProgressionFeedbackProvider';
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+const geist = Geist({
+  subsets: ['latin'],
+  variable: '--font-geist-sans',
+});
 
 export const metadata: Metadata = {
   title: 'Abyss Engine',

@@ -49,6 +49,19 @@ describe('pomodoroStore', () => {
     expect(store.getState().phaseCompleted).toBe(true);
   });
 
+  it('starts countdown immediately after reset', () => {
+    const store = createPomodoroStore({ workDurationMs: 5000, breakDurationMs: 1000 });
+    store.getState().start();
+    store.getState().pause();
+    expect(store.getState().isRunning).toBe(false);
+    store.getState().reset();
+    expect(store.getState().isRunning).toBe(true);
+    expect(store.getState().remainingMs).toBe(5000);
+    vi.setSystemTime(TEST_BASE_TIME + 2_000);
+    store.getState().tick();
+    expect(store.getState().remainingMs).toBe(3000);
+  });
+
   it('can pause and resume without rewinding remaining time', () => {
     const store = createPomodoroStore({ workDurationMs: 5000, breakDurationMs: 1000 });
     store.getState().start();

@@ -139,13 +139,14 @@ export const createPomodoroStore = (partialConfig: Partial<PomodoroConfig> = {})
     },
 
     reset: () => {
+      const nowMs = Date.now();
       set({
         phase: 'work',
-        isRunning: false,
+        isRunning: true,
         remainingMs: config.workDurationMs,
         completedCycles: 0,
         phaseCompleted: false,
-        lastTickMs: null,
+        lastTickMs: nowMs,
       });
     },
 
