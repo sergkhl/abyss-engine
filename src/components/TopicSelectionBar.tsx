@@ -1,14 +1,17 @@
-"use client";
+'use client';
 
-import React from 'react';
-import { useUIStore } from '../store/uiStore';
-import { calculateLevelFromXP, useProgressionStore as useStudyStore } from '../features/progression';
-import type { TopicMetadata } from '../features/content';
-import type { Card } from '../types/core';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Layers } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { useAllGraphs, useSubjects } from '@/features/content';
+import { useProgressionStore as useStudyStore } from '@/features/progression';
+import type { TopicMetadata } from '@/features/content';
+import type { Card } from '@/types/core';
+import { useUIStore } from '@/store/uiStore';
+
 import { LevelProgressCompact } from './LevelProgressCompact';
+import { scheduleTopicDetailsDismiss, TopicDetailsPopup } from './TopicDetailsPopup';
 
 interface TopicSelectionBarProps {
   onStartTopicStudySession?: (topicId: string, cards: Card[]) => void;
@@ -34,10 +37,53 @@ export default function TopicSelectionBar({
   const isSelectionMode = selectedTopicId !== null;
   const getDueCardsCount = useStudyStore((state) => state.getDueCardsCount);
   const sm2Data = useStudyStore((state) => state.sm2Data);
+  const getTopicsByTier = useStudyStore((state) => state.getTopicsByTier);
+  const unlockedTopicIds = useStudyStore((state) => state.unlockedTopicIds);
+  const unlockPoints = useStudyStore((state) => state.unlockPoints);
+  const getTopicUnlockStatus = useStudyStore((state) => state.getTopicUnlockStatus);
+  const unlockTopic = useStudyStore((state) => state.unlockTopic);
+
+  const allGraphs = useAllGraphs();
+  const { data: subjects = [] } = useSubjects();
+  const subjectList = useMemo(
+    () => subjects.map((subject) => ({ id: subject.id, name: subject.name })),
+    [subjects],
+  );
+
+  const topicsByTier = useMemo(
+    () => getTopicsByTier(allGraphs, unlockedTopicIds, subjectList),
+    [getTopicsByTier, unlockPoints, unlockedTopicIds, allGraphs, subjectList],
+  );
+
+  const selectedTieredTopic = useMemo(() => {
+    if (!selectedTopicId) {
+      return null;
+    }
+    for (const tier of topicsByTier) {
+      const found = tier.topics.find((t) => t.id === selectedTopicId);
+      if (found) {
+        return found;
+      }
+    }
+    return null;
+  }, [selectedTopicId, topicsByTier]);
+
+  const barUnlockStatus = useMemo(() => {
+    if (!selectedTopicId) {
+      return null;
+    }
+    return getTopicUnlockStatus(selectedTopicId, allGraphs);
+  }, [allGraphs, getTopicUnlockStatus, selectedTopicId]);
+
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
+  useEffect(() => {
+    if (!selectedTopicId) {
+      setDetailsOpen(false);
+    }
+  }, [selectedTopicId]);
 
   const topicName = selectedMetadata?.topicName || 'Selected topic';
-  const subjectName = selectedMetadata?.subjectName || 'Unknown subject';
-  const level = calculateLevelFromXP(selectedXp);
   const selectedDueCards = React.useMemo(() => {
     if (!selectedCards.length) {
       return 0;
@@ -45,7 +91,22 @@ export default function TopicSelectionBar({
     const refs = selectedCards.map((card) => ({ id: card.id }));
     return getDueCardsCount ? getDueCardsCount(refs) : refs.length;
   }, [getDueCardsCount, sm2Data, selectedCards]);
-  const selectedTotalCards = selectedCards.length;
+
+  const handleOpenDetails = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.stopPropagation();
+      setDetailsOpen(true);
+    },
+    [],
+  );
+
+  const handleUnlockFromBar = useCallback(() => {
+    if (!selectedTopicId || !selectedTieredTopic || !barUnlockStatus?.canUnlock) {
+      return;
+    }
+    unlockTopic(selectedTopicId, allGraphs);
+    scheduleTopicDetailsDismiss(() => setDetailsOpen(false));
+  }, [allGraphs, barUnlockStatus?.canUnlock, selectedTieredTopic, selectedTopicId, unlockTopic]);
 
   if (!isSelectionMode || !selectedTopicId) {
     return null;
@@ -70,8 +131,9 @@ export default function TopicSelectionBar({
     selectTopic(null);
   };
 
-  const containerClass =
-    'fixed z-50 flex justify-center px-2 sm:px-3';
+  const showUnlockButton = Boolean(selectedTieredTopic?.isLocked);
+
+  const containerClass = 'fixed z-50 flex justify-center px-2 sm:px-3';
   const containerStyle: React.CSSProperties = {
     left: '0.25rem',
     right: '0.25rem',
@@ -79,62 +141,89 @@ export default function TopicSelectionBar({
   };
 
   return (
-    <div className={containerClass} style={containerStyle}>
-      <div className="inline-flex w-full max-w-lg items-center gap-2 rounded-lg border border-border bg-card/80 px-2 py-1.5 shadow-sm backdrop-blur-sm sm:w-auto">
-        <div className="min-w-0 flex-1">
-          <div className="flex justify-between items-baseline gap-x-2 gap-y-0.5">
-            <span className="truncate text-xs font-semibold text-foreground">{topicName}</span>
-            <span
-              className="inline-flex shrink-0 items-center gap-0.5 text-[10px] tabular-nums text-muted-foreground"
-              title={`${selectedDueCards} cards due`}
-            >
-              {selectedDueCards}
-              <Layers className="size-3 shrink-0" strokeWidth={2} aria-hidden />
-              <span className="sr-only">cards due</span>
-            </span>
+    <>
+      <div className={containerClass} style={containerStyle}>
+        <div className="inline-flex w-full max-w-lg items-center gap-2 rounded-lg border border-border bg-card/80 px-2 py-1.5 shadow-sm backdrop-blur-sm sm:w-auto">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline justify-between gap-x-2 gap-y-0.5">
+              <span className="truncate text-xs font-semibold text-foreground">{topicName}</span>
+              <span
+                className="inline-flex shrink-0 items-center gap-0.5 text-[10px] tabular-nums text-muted-foreground"
+                title={`${selectedDueCards} cards due`}
+              >
+                {selectedDueCards}
+                <Layers className="size-3 shrink-0" strokeWidth={2} aria-hidden />
+                <span className="sr-only">cards due</span>
+              </span>
+            </div>
+            <LevelProgressCompact xp={selectedXp} className="mt-0.5 max-w-full" />
           </div>
-          <LevelProgressCompact xp={selectedXp} className="mt-0.5 max-w-full" />
-        </div>
 
-        <div className="h-6 w-px shrink-0 bg-border/60" />
+          <div className="h-6 w-px shrink-0 bg-border/60" />
 
-        <Button
-          type="button"
-          size="sm"
-          onClick={handleBegin}
-          onPointerDown={stopPropagation}
-          onMouseDown={stopPropagation}
-          onTouchStart={stopPropagation}
-          className="h-8 shrink-0 px-3 text-xs"
-        >
-          Begin
-        </Button>
+          {showUnlockButton ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleOpenDetails}
+              onPointerDown={stopPropagation}
+              onMouseDown={stopPropagation}
+              onTouchStart={stopPropagation}
+              className="h-8 shrink-0 px-3 text-xs"
+            >
+              Unlock
+            </Button>
+          ) : null}
 
-        <Button
-          type="button"
-          aria-label="Clear selection"
-          onClick={handleClear}
-          onPointerDown={stopPropagation}
-          onMouseDown={stopPropagation}
-          onTouchStart={stopPropagation}
-          variant="outline"
-          size="icon-sm"
-          className="size-8 shrink-0"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            viewBox="0 0 20 20"
-            fill="currentColor"
+          <Button
+            type="button"
+            size="sm"
+            onClick={handleBegin}
+            onPointerDown={stopPropagation}
+            onMouseDown={stopPropagation}
+            onTouchStart={stopPropagation}
+            className="h-8 shrink-0 px-3 text-xs"
           >
-            <path
-              fillRule="evenodd"
-              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </Button>
+            Begin
+          </Button>
+
+          <Button
+            type="button"
+            aria-label="Clear selection"
+            onClick={handleClear}
+            onPointerDown={stopPropagation}
+            onMouseDown={stopPropagation}
+            onTouchStart={stopPropagation}
+            variant="outline"
+            size="icon-sm"
+            className="size-8 shrink-0"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-4 w-4"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </Button>
+        </div>
       </div>
-    </div>
+
+      {detailsOpen && selectedTieredTopic && barUnlockStatus ? (
+        <TopicDetailsPopup
+          isOpen={detailsOpen}
+          topic={selectedTieredTopic}
+          unlockStatus={barUnlockStatus}
+          onClose={() => setDetailsOpen(false)}
+          onUnlock={handleUnlockFromBar}
+        />
+      ) : null}
+    </>
   );
 }
