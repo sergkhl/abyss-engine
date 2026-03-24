@@ -44,4 +44,3 @@ export function buildDiagramSystemPrompt(topic: string, sourceText: string): str
     examples: extractExamplesSection(sourceText),
   });
 }
-
