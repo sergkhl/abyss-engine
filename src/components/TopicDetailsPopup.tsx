@@ -5,12 +5,12 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
+  AbyssDialog,
+  AbyssDialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/components/ui/abyss-dialog';
 import type { TieredTopic, TopicUnlockStatus } from '@/features/progression/progressionUtils';
 
 /**
@@ -41,7 +41,7 @@ export function TopicDetailsPopup({
   const isContentAvailable = topic.isContentAvailable;
 
   return (
-    <Dialog
+    <AbyssDialog
       open={isOpen}
       onOpenChange={(nextOpen) => {
         if (!nextOpen) {
@@ -49,7 +49,7 @@ export function TopicDetailsPopup({
         }
       }}
     >
-      <DialogContent className="flex max-h-[95vh] min-h-0 w-[min(95%,30rem)] flex-col overflow-hidden rounded-[20px] border border-border bg-card p-3 shadow-2xl sm:p-6">
+      <AbyssDialogContent className="flex max-h-[95vh] min-h-0 w-[min(95%,30rem)] flex-col overflow-hidden rounded-[20px] border border-border bg-card p-3 shadow-2xl sm:p-6">
         <DialogHeader>
           <DialogTitle>{topic.name}</DialogTitle>
           <DialogDescription>{topic.subjectName}</DialogDescription>
@@ -113,7 +113,7 @@ export function TopicDetailsPopup({
             </div>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </AbyssDialogContent>
+    </AbyssDialog>
   );
 }

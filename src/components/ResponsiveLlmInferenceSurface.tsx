@@ -1,25 +1,27 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { useRef } from 'react';
 
 import MathMarkdownRenderer from './MathMarkdownRenderer';
 import { Button } from './ui/button';
 import {
-  Dialog,
-  DialogContent,
+  AbyssDialog,
+  AbyssDialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from './ui/dialog';
+} from '@/components/ui/abyss-dialog';
 import {
-  Sheet,
+  AbyssSheet,
+  AbyssSheetContent,
   SheetClose,
-  SheetContent,
   SheetDescription,
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from './ui/sheet';
+} from '@/components/ui/abyss-sheet';
+import { useRegisterModalBodyScrollShard } from '@/components/ui/modal-body-scroll-lock';
 import { cn } from '@/lib/utils';
 
 export const LLM_INFERENCE_SURFACE_Z_CLASS = 'z-[60]';
@@ -60,10 +62,17 @@ export function ResponsiveLlmInferenceSurface({
   sheetBodyScrollClassName,
   children,
 }: ResponsiveLlmInferenceSurfaceProps) {
+  const desktopSurfaceRef = useRef<HTMLDivElement>(null);
+  const sheetSurfaceRef = useRef<HTMLDivElement>(null);
+
+  useRegisterModalBodyScrollShard(desktopSurfaceRef, open && isDesktop);
+  useRegisterModalBodyScrollShard(sheetSurfaceRef, open && !isDesktop);
+
   if (isDesktop) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
-        <DialogContent
+      <AbyssDialog open={open} onOpenChange={onOpenChange} modal={false}>
+        <AbyssDialogContent
+          ref={desktopSurfaceRef}
           data-llm-inference-surface=""
           className={cn(LLM_INFERENCE_SURFACE_Z_CLASS, desktopContentClassName)}
           onPointerDownOutside={onDismissOutside}
@@ -83,14 +92,15 @@ export function ResponsiveLlmInferenceSurface({
             )}
           </DialogHeader>
           {children}
-        </DialogContent>
-      </Dialog>
+        </AbyssDialogContent>
+      </AbyssDialog>
     );
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange} modal={false}>
-      <SheetContent
+    <AbyssSheet open={open} onOpenChange={onOpenChange} modal={false}>
+      <AbyssSheetContent
+        ref={sheetSurfaceRef}
         data-llm-inference-surface=""
         side="bottom"
         className={cn(
@@ -124,7 +134,7 @@ export function ResponsiveLlmInferenceSurface({
             </Button>
           </SheetClose>
         </SheetFooter>
-      </SheetContent>
-    </Sheet>
+      </AbyssSheetContent>
+    </AbyssSheet>
   );
 }

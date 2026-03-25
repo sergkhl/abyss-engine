@@ -9,13 +9,13 @@ import {
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 import {
-  Dialog,
-  DialogContent,
+  AbyssDialog,
+  AbyssDialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/components/ui/abyss-dialog';
 import {
   Field,
   FieldContent,
@@ -165,7 +165,7 @@ export function AscentWeaverModal({ isOpen, onClose, onSuccess }: AscentWeaverMo
         assistantText={streamingAssistantText}
         errorMessage={displayError}
       />
-      <Dialog
+      <AbyssDialog
         open={isOpen}
         onOpenChange={(open) => {
           if (!open) {
@@ -173,7 +173,7 @@ export function AscentWeaverModal({ isOpen, onClose, onSuccess }: AscentWeaverMo
           }
         }}
       >
-        <DialogContent
+        <AbyssDialogContent
           className="max-h-[95vh] overflow-y-auto flex flex-col gap-4 sm:max-w-lg"
           onPointerDownOutside={(e) => {
             const t = e.target;
@@ -424,8 +424,8 @@ export function AscentWeaverModal({ isOpen, onClose, onSuccess }: AscentWeaverMo
             {pending ? 'Generating…' : 'Generate curriculum'}
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </AbyssDialogContent>
+    </AbyssDialog>
     </>
   );
 }

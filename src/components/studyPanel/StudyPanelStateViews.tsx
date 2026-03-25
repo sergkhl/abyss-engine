@@ -11,13 +11,13 @@ import { StudyPanelTab } from './types';
 import { buildDiagramSystemPrompt, extractExamplesSection, stripTheoryMarkdownForSpeech } from '../../features/studyPanel';
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
+  AbyssDialog,
+  AbyssDialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '../ui/dialog';
+} from '@/components/ui/abyss-dialog';
 import { Badge } from '@/components/ui/badge';
 
 interface StudyPanelStateViewsProps {
@@ -303,7 +303,7 @@ export function StudyPanelStateViews({
               {topicSystemPrompt}
             </pre>
           </div>
-          <Dialog
+          <AbyssDialog
             open={isDiagramPromptDialogOpen}
             onOpenChange={(open) => {
               if (!open) {
@@ -313,7 +313,7 @@ export function StudyPanelStateViews({
               }
             }}
           >
-            <DialogContent className="w-[min(95vw,42rem)]">
+            <AbyssDialogContent className="w-[min(95vw,42rem)]">
               <DialogHeader>
                 <DialogTitle>Diagram Prompt</DialogTitle>
                 <DialogDescription>
@@ -347,8 +347,8 @@ export function StudyPanelStateViews({
                   Process
                 </Button>
               </DialogFooter>
-            </DialogContent>
-          </Dialog>
+            </AbyssDialogContent>
+          </AbyssDialog>
         </div>
       )}
 

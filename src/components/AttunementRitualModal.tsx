@@ -39,7 +39,15 @@ import {
   FieldLegend,
   FieldSet,
 } from './ui/field';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
+import {
+  AbyssDialog,
+  AbyssDialogContent,
+  DialogClose,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/abyss-dialog';
 import { useTopicMetadata } from '../features/content';
 import { deckRepository } from '../infrastructure/di';
 import { topicCardsQueryKey } from '../hooks/useDeckData';
@@ -203,12 +211,12 @@ export function AttunementRitualModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
+    <AbyssDialog open={isOpen} onOpenChange={(open) => {
       if (!open) {
         onClose();
       }
     }}>
-      <DialogContent
+      <AbyssDialogContent
         className="max-h-[95vh] overflow-hidden flex flex-col"
       >
         <DialogHeader>
@@ -448,7 +456,7 @@ export function AttunementRitualModal({
             </Button>
           </motion.div>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </AbyssDialogContent>
+    </AbyssDialog>
   );
 }

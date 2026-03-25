@@ -6,13 +6,13 @@ import { XIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
+  AbyssDialog,
   DialogDescription,
   DialogHeader,
   DialogOverlay,
   DialogPortal,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/components/ui/abyss-dialog';
 import { cn } from '@/lib/utils';
 
 type StudyMermaidPreviewProps = {
@@ -141,7 +141,7 @@ export function StudyMermaidPreview({ code }: StudyMermaidPreviewProps) {
         Tap diagram to view full screen
       </p>
 
-      <Dialog open={fullscreenOpen} onOpenChange={setFullscreenOpen}>
+      <AbyssDialog open={fullscreenOpen} onOpenChange={setFullscreenOpen}>
         <DialogPortal>
           <DialogOverlay className="z-[200] bg-black/40 supports-backdrop-filter:backdrop-blur-xs" />
           <DialogPrimitive.Content
@@ -163,7 +163,7 @@ export function StudyMermaidPreview({ code }: StudyMermaidPreviewProps) {
             {fullscreenOpen ? <StudyMermaidFullscreenPane code={code} /> : null}
           </DialogPrimitive.Content>
         </DialogPortal>
-      </Dialog>
+      </AbyssDialog>
     </div>
   );
 }

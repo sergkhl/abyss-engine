@@ -12,12 +12,12 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
-  Dialog,
-  DialogContent,
+  AbyssDialog,
+  AbyssDialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/components/ui/abyss-dialog';
 import {
   Popover,
   PopoverContent,
@@ -426,8 +426,8 @@ export function StudyTimelineModal({
   const mainContent = drilledBucket ? detailContent : summaryContent;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-h-[95vh] flex flex-col">
+    <AbyssDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <AbyssDialogContent className="max-h-[95vh] flex flex-col">
         <DialogHeader>
           <div className="flex items-center gap-2">
             {drilledBucket ? (
@@ -465,8 +465,8 @@ export function StudyTimelineModal({
         <div className="overflow-y-auto -mx-4 px-4 no-scrollbar flex-1 min-h-0">
           {mainContent}
         </div>
-      </DialogContent>
-    </Dialog>
+      </AbyssDialogContent>
+    </AbyssDialog>
   );
 }
 

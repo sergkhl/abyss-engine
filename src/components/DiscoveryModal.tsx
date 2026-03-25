@@ -4,12 +4,12 @@ import { useProgressionStore as useStudyStore } from '../features/progression';
 import { useAllGraphs, useSubjects } from '../features/content';
 import type { TieredTopic, TopicUnlockStatus } from '../features/progression/progressionUtils';
 import {
-  Dialog,
-  DialogContent,
+  AbyssDialog,
+  AbyssDialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '@/components/ui/abyss-dialog';
 import { ParticlesAnimation, RITUAL_PARTICLE_ANIMATION } from './ui/particles-animation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -100,7 +100,7 @@ export function DiscoveryModal({
 
   return (
     <>
-      <Dialog
+      <AbyssDialog
         open={isOpen}
         onOpenChange={(open) => {
           if (!open) {
@@ -109,7 +109,7 @@ export function DiscoveryModal({
           }
         }}
       >
-        <DialogContent className="flex max-h-[95vh] flex-col">
+        <AbyssDialogContent className="flex max-h-[95vh] flex-col">
           <DialogHeader>
             <DialogTitle>🏛️ Wisdom Altar</DialogTitle>
             <DialogDescription>Unlock topic crystals to expand your knowledge</DialogDescription>
@@ -224,8 +224,8 @@ export function DiscoveryModal({
               </div>
             )}
           </div>
-        </DialogContent>
-      </Dialog>
+        </AbyssDialogContent>
+      </AbyssDialog>
 
       {selectedTopic && selectedTopicStatus && (
         <TopicDetailsPopup

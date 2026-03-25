@@ -6,7 +6,13 @@ import { Rating } from '../types';
 import { getRatingColor, getRatingLabel, useProgressionStore as useStudyStore } from '../features/progression';
 import { evaluateAnswer as evaluateChoiceAnswer } from '../features/content';
 import { telemetry } from '../features/telemetry';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
+import {
+  AbyssDialog,
+  AbyssDialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/abyss-dialog';
 import { Tabs, TabsList, TabsTrigger } from './ui/tabs';
 import { TARGET_AUDIENCE_OPTIONS, useStudySettingsStore } from '../store/studySettingsStore';
 import { StudyPanelStateViews } from './studyPanel/StudyPanelStateViews';
@@ -188,12 +194,17 @@ export function StudyPanelModal({
   if (!isOpen) return null;
 
   return (
-    <Dialog modal={false} open={isOpen} onOpenChange={(open) => {
-      if (!open) {
-        onClose();
-      }
-    }}>
-      <DialogContent
+    <AbyssDialog
+      modal={false}
+      lockScroll
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
+    >
+      <AbyssDialogContent
         className="max-h-[95vh] flex flex-col"
       >
       <DialogHeader>
@@ -278,8 +289,8 @@ export function StudyPanelModal({
             />
           )}
       </div>
-      </DialogContent>
-    </Dialog>
+      </AbyssDialogContent>
+    </AbyssDialog>
   );
 }
 
