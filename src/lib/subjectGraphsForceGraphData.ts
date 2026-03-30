@@ -1,3 +1,4 @@
+import { normalizeGraphPrerequisites } from '@/lib/graphPrerequisites';
 import type { SubjectGraph } from '@/types/core';
 
 /** Separates subject and topic segments in composite node ids (unlikely in kebab-case ids). */
@@ -68,7 +69,7 @@ export function buildSubjectGraphsForceGraphData(graphs: SubjectGraph[]): Subjec
       if (!nodeById.has(targetId)) {
         continue;
       }
-      for (const prereqTopicId of node.prerequisites) {
+      for (const { topicId: prereqTopicId } of normalizeGraphPrerequisites(node.prerequisites)) {
         const sourceId = compositeTopicNodeId(graph.subjectId, prereqTopicId);
         if (!nodeById.has(sourceId)) {
           continue;

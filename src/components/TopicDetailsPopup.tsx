@@ -63,38 +63,19 @@ export function TopicDetailsPopup({
             </p>
           )}
 
-          {topic.isLocked && (
+          {topic.isLocked && !unlockStatus.hasPrerequisites && (
             <div className="mb-4 space-y-2">
-              {unlockStatus.hasPrerequisites && unlockStatus.hasEnoughPoints ? (
-                <div className="bg-accent/10 border-accent rounded-lg border p-3">
-                  <Badge variant="secondary" className="mb-2">
-                    ✅ Prerequisites Met
-                  </Badge>
-                  <div className="text-muted-foreground text-sm">Cost: 1 Unlock Point</div>
-                </div>
-              ) : !unlockStatus.hasPrerequisites ? (
-                <div className="bg-destructive/10 border-destructive rounded-lg border p-3">
-                  <Badge variant="destructive" className="mb-2">
-                    🔒 Requires Prerequisites
-                  </Badge>
-                  {unlockStatus.missingPrerequisites.map((prereq) => (
-                    <div key={prereq.topicId} className="text-destructive text-sm">
-                      • {prereq.topicName} Level {prereq.requiredLevel} (Current: Level{' '}
-                      {prereq.currentLevel})
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-lg border border-border bg-muted/40 p-3">
-                  <Badge variant="secondary" className="mb-2">
-                    ⭐ Unlock point required
-                  </Badge>
-                  <div className="text-muted-foreground text-sm">
-                    Topic prerequisites are met. You have {unlockStatus.unlockPoints} unlock point
-                    {unlockStatus.unlockPoints === 1 ? '' : 's'}; unlocking costs 1.
+              <div className="bg-destructive/10 border-destructive rounded-lg border p-3">
+                <Badge variant="destructive" className="mb-2">
+                  🔒 Requires prerequisites
+                </Badge>
+                {unlockStatus.missingPrerequisites.map((prereq) => (
+                  <div key={prereq.topicId} className="text-destructive text-sm">
+                    • {prereq.topicName} Level {prereq.requiredLevel} (Current: Level{' '}
+                    {prereq.currentLevel})
                   </div>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
           )}
 

@@ -15,11 +15,14 @@ export interface Subject {
   topicIds?: string[];
 }
 
+/** Curriculum edge: parent `topicId` must reach at least `minLevel` (crystal) before the dependent unlocks. */
+export type GraphPrerequisiteEntry = string | { topicId: string; minLevel: number };
+
 export interface GraphNode {
   topicId: string;
   title: string;
   tier: number;
-  prerequisites: string[];
+  prerequisites: GraphPrerequisiteEntry[];
   learningObjective: string;
 }
 

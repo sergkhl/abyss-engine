@@ -1,3 +1,4 @@
+import { normalizeGraphPrerequisites } from '@/lib/graphPrerequisites';
 import { ActiveCrystal, GraphNode, SubjectGraph } from '../../types/core';
 import { Rating } from '../../types';
 import { BuffEngine } from './buffs/buffEngine';
@@ -235,9 +236,9 @@ function resolveTopic(
     description: node.learningObjective,
     subjectId: findTopicSubject(topicId, allGraphs) ?? '',
     cardIds: [],
-    prerequisites: (node.prerequisites || []).map((prereq) => ({
-      topicId: prereq,
-      requiredLevel: 1,
+    prerequisites: normalizeGraphPrerequisites(node.prerequisites).map((p) => ({
+      topicId: p.topicId,
+      requiredLevel: p.minLevel,
     })),
   };
 }
@@ -262,7 +263,8 @@ export function calculateTopicTier(topicId: string, allGraphs: SubjectGraph[] = 
     }
 
     const node = findGraphNode(id, allGraphs);
-    if (!node || !node.prerequisites.length) {
+    const prereqNorm = node ? normalizeGraphPrerequisites(node.prerequisites) : [];
+    if (!node || prereqNorm.length === 0) {
       visited.add(id);
       return 1;
     }
@@ -271,7 +273,7 @@ export function calculateTopicTier(topicId: string, allGraphs: SubjectGraph[] = 
     nextStack.add(id);
 
     let maxPrereqTier = 0;
-    for (const prereqId of node.prerequisites) {
+    for (const { topicId: prereqId } of prereqNorm) {
       const prereqTier = resolve(prereqId, nextStack);
       if (prereqTier > maxPrereqTier) {
         maxPrereqTier = prereqTier;

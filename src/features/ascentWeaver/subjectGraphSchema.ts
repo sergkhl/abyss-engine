@@ -1,10 +1,18 @@
 import { z } from 'zod';
 
+const graphPrerequisiteEntrySchema = z.union([
+  z.string().min(1),
+  z.object({
+    topicId: z.string().min(1),
+    minLevel: z.number().int().min(1),
+  }),
+]);
+
 export const graphNodeSchema = z.object({
   topicId: z.string().min(1),
   title: z.string().min(1),
   tier: z.number().int().positive(),
-  prerequisites: z.array(z.string()),
+  prerequisites: z.array(graphPrerequisiteEntrySchema),
   learningObjective: z.string().min(1),
 });
 

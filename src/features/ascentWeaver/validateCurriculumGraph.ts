@@ -1,3 +1,4 @@
+import { normalizeGraphPrerequisites } from '@/lib/graphPrerequisites';
 import type { SubjectGraph } from '../../types/core';
 
 export interface CurriculumGraphExpectations {
@@ -60,19 +61,21 @@ export function validateCurriculumGraph(
   }
 
   for (const node of graph.nodes) {
+    const prereqsNorm = normalizeGraphPrerequisites(node.prerequisites);
+
     if (node.tier === 1) {
-      if (node.prerequisites.length > 0) {
+      if (prereqsNorm.length > 0) {
         return { ok: false, error: `Tier 1 topic ${node.topicId} must have empty prerequisites` };
       }
       continue;
     }
 
-    if (node.prerequisites.length === 0) {
+    if (prereqsNorm.length === 0) {
       return { ok: false, error: `Topic ${node.topicId} (tier ${node.tier}) must list prerequisites` };
     }
 
     let hasImmediateLowerTier = false;
-    for (const prereqId of node.prerequisites) {
+    for (const { topicId: prereqId } of prereqsNorm) {
       const prereq = topicIdSet.get(prereqId);
       if (!prereq) {
         return { ok: false, error: `Unknown prerequisite "${prereqId}" on topic ${node.topicId}` };

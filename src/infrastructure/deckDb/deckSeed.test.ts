@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
+import type { GraphPrerequisiteEntry } from '@/types/core';
+
 import { deckDb } from './deckDb';
 import { ensureDeckSeeded, resetDeckInfrastructureForTests, resetDeckSeedSingletonForTests } from './deckSeed';
 
@@ -30,7 +32,13 @@ describe('ensureDeckSeeded', () => {
       title: 'X',
       themeId: 'sub-x',
       maxTier: 0,
-      nodes: [] as { topicId: string; title: string; tier: number; prerequisites: string[]; learningObjective: string }[],
+      nodes: [] as {
+        topicId: string;
+        title: string;
+        tier: number;
+        prerequisites: GraphPrerequisiteEntry[];
+        learningObjective: string;
+      }[],
     };
 
     vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {

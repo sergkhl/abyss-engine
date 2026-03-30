@@ -16,6 +16,9 @@ Requirements:
 10. Domain / scope to cover: {{domainDescription}}
 11. Every entry in nodes must include a non-empty string learningObjective (one sentence, learner-facing, specific to that topic—not a repeat of the title)
 
+Each prerequisite may be either a topic id string (minimum parent crystal level defaults to 1) or an object:
+`{ "topicId": "parent-id", "minLevel": 2 }` when mastery level 2+ is required on the parent.
+
 Output valid JSON matching this schema:
 
 {
@@ -30,6 +33,20 @@ Output valid JSON matching this schema:
       "tier": 1,
       "prerequisites": [],
       "learningObjective": "A clear, professional sentence describing what the learner will master."
+    },
+    {
+      "topicId": "advanced-topic",
+      "title": "Advanced Topic",
+      "tier": 2,
+      "prerequisites": ["example-topic"],
+      "learningObjective": "..."
+    },
+    {
+      "topicId": "gated-topic",
+      "title": "Gated Topic",
+      "tier": 3,
+      "prerequisites": [{ "topicId": "advanced-topic", "minLevel": 2 }],
+      "learningObjective": "..."
     }
   ]
 }

@@ -172,6 +172,40 @@ describe('progressionUtils', () => {
       expect(status.hasEnoughPoints).toBe(true);
       expect(status.canUnlock).toBe(true);
     });
+
+    it('object prerequisite with minLevel 2: false when parent crystal is only level 1', () => {
+      const graphMin2: SubjectGraph[] = [
+        {
+          subjectId: 's1',
+          title: 'S1',
+          themeId: 't1',
+          maxTier: 2,
+          nodes: [
+            { topicId: 'a', title: 'A', tier: 1, learningObjective: '', prerequisites: [] },
+            {
+              topicId: 'b',
+              title: 'B',
+              tier: 2,
+              learningObjective: '',
+              prerequisites: [{ topicId: 'a', minLevel: 2 }],
+            },
+          ],
+        },
+      ];
+      const crystalsL1 = [createActiveCrystal('a', 100)];
+      const blocked = getTopicUnlockStatus('b', crystalsL1, 1, graphMin2, []);
+      expect(blocked.hasPrerequisites).toBe(false);
+      expect(blocked.missingPrerequisites[0]).toMatchObject({
+        topicId: 'a',
+        requiredLevel: 2,
+        currentLevel: 1,
+      });
+
+      const crystalsL2 = [createActiveCrystal('a', 200)];
+      const open = getTopicUnlockStatus('b', crystalsL2, 1, graphMin2, []);
+      expect(open.hasPrerequisites).toBe(true);
+      expect(open.canUnlock).toBe(true);
+    });
   });
 
   describe('applyCrystalXpDelta', () => {

@@ -71,13 +71,8 @@ function styleForNode(
   const topicId = d.topicId;
   const hasCrystal = activeCrystals.some((c) => c.topicId === topicId);
   const unlocked = unlockedTopicIds.includes(topicId);
-  const canUnlock = getTopicUnlockStatus(
-    topicId,
-    activeCrystals,
-    unlockPoints,
-    allGraphs,
-    [],
-  ).canUnlock;
+  const unlockStatus = getTopicUnlockStatus(topicId, activeCrystals, unlockPoints, allGraphs, []);
+  const { hasPrerequisites: masteryGatesMet, canUnlock } = unlockStatus;
 
   let base: { fill: string; stroke: string; strokeWidth: number };
   if (hasCrystal) {
@@ -92,11 +87,11 @@ function styleForNode(
       stroke: 'var(--foreground)',
       strokeWidth: 2,
     };
-  } else if (canUnlock) {
+  } else if (masteryGatesMet) {
     base = {
-      fill: 'var(--accent)',
-      stroke: 'var(--primary)',
-      strokeWidth: 2,
+      fill: canUnlock ? 'var(--accent)' : 'var(--muted)',
+      stroke: '#ffffff',
+      strokeWidth: 4,
     };
   } else {
     base = {
