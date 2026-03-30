@@ -1,12 +1,26 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { StudyForceGraph } from '@/components/StudyForceGraph';
 import StudyPanelModal from '@/components/StudyPanelModal';
 import TopicSelectionBar from '@/components/TopicSelectionBar';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { useSubjects, useSubjectGraphs, useTopicCards, useTopicMetadata } from '@/features/content';
 import { useProgressionStore } from '@/features/progression';
+import {
+  buildSubjectGraphsForceGraphData,
+  computeTopicGraphBfsDistances,
+  getSelectableMaxHop,
+  resolveEffectiveTopicGraphDistances,
+} from '@/lib/subjectGraphsForceGraphData';
 import { useUIStore } from '@/store/uiStore';
 import type { Card } from '@/types/core';
 import type { Rating } from '@/types';
@@ -44,6 +58,34 @@ export function StudyGraphPageClient() {
     [subjectsQuery.data],
   );
   const graphsQuery = useSubjectGraphs(subjectIds);
+
+  const currentSubjectId = useProgressionStore((s) => s.currentSubjectId);
+  const [maxHop, setMaxHop] = useState<number | null>(2);
+
+  const visibleGraphsForStudy = useMemo(() => {
+    const data = graphsQuery.data;
+    if (!data?.length) {
+      return [];
+    }
+    if (!currentSubjectId) {
+      return data;
+    }
+    return data.filter((g) => g.subjectId === currentSubjectId);
+  }, [graphsQuery.data, currentSubjectId]);
+
+  const selectableMaxHop = useMemo(() => {
+    if (!visibleGraphsForStudy.length) {
+      return 2;
+    }
+    const full = buildSubjectGraphsForceGraphData(visibleGraphsForStudy);
+    const { distances } = computeTopicGraphBfsDistances(full, unlockedTopicIds);
+    const effective = resolveEffectiveTopicGraphDistances(full, unlockedTopicIds, distances);
+    return getSelectableMaxHop(effective);
+  }, [visibleGraphsForStudy, unlockedTopicIds]);
+
+  useEffect(() => {
+    setMaxHop((h) => (h === null ? h : Math.min(h, selectableMaxHop)));
+  }, [selectableMaxHop]);
 
   const isLoading = subjectsQuery.isLoading || (subjectIds.length > 0 && graphsQuery.isLoading);
   const error = subjectsQuery.error ?? graphsQuery.error;
@@ -127,16 +169,46 @@ export function StudyGraphPageClient() {
         ) : null}
 
         {!isLoading && !error && graphsQuery.data?.length ? (
-          <StudyForceGraph
-            allGraphs={graphsQuery.data}
-            unlockedTopicIds={unlockedTopicIds}
-            activeCrystals={activeCrystals}
-            unlockPoints={unlockPoints}
-            selectedTopicId={selectedTopicId}
-            onSelectTopic={(topicId) => selectTopic(topicId)}
-            onClearSelection={() => selectTopic(null)}
-            className="h-full w-full min-h-0"
-          />
+          <>
+            <div className="bg-background/80 absolute top-3 left-3 z-20 flex max-w-[min(100%,20rem)] flex-col gap-1.5 rounded-lg border border-border p-2 shadow-sm backdrop-blur-sm sm:top-4 sm:left-4">
+              <Label htmlFor="study-graph-hop-select" className="text-muted-foreground text-xs font-medium">
+                Topic hops from progress
+              </Label>
+              <Select
+                value={maxHop === null ? 'all' : String(maxHop)}
+                onValueChange={(v) => {
+                  setMaxHop(v === 'all' ? null : Number.parseInt(v, 10));
+                }}
+              >
+                <SelectTrigger id="study-graph-hop-select" size="sm" className="w-full min-w-0">
+                  <SelectValue placeholder="Hop depth" />
+                </SelectTrigger>
+                <SelectContent position="popper">
+                  {Array.from({ length: selectableMaxHop + 1 }, (_, i) => (
+                    <SelectItem key={i} value={String(i)}>
+                      {i === 0
+                        ? 'Entry topics only'
+                        : i === 1
+                          ? 'Within 1 hop'
+                          : `Within ${i} hops`}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="all">Show all</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <StudyForceGraph
+              allGraphs={graphsQuery.data}
+              unlockedTopicIds={unlockedTopicIds}
+              activeCrystals={activeCrystals}
+              unlockPoints={unlockPoints}
+              selectedTopicId={selectedTopicId}
+              onSelectTopic={(topicId) => selectTopic(topicId)}
+              onClearSelection={() => selectTopic(null)}
+              maxHop={maxHop}
+              className="h-full w-full min-h-0"
+            />
+          </>
         ) : null}
       </div>
 

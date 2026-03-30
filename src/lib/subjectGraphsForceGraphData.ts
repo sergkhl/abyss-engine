@@ -85,6 +85,162 @@ export function buildSubjectGraphsForceGraphData(graphs: SubjectGraph[]): Subjec
   };
 }
 
+export interface TopicGraphBfsResult {
+  /** Shortest hop count from any seed along prerequisite → dependent edges; omitted if unreachable. */
+  distances: ReadonlyMap<string, number>;
+  seedIds: string[];
+}
+
+/**
+ * Seeds: nodes whose `topicId` is in `unlockedTopicIds`. If none exist in `data`, seeds are indegree-0 nodes.
+ * BFS expands along directed links source → target.
+ */
+export function computeTopicGraphBfsDistances(
+  data: SubjectGraphsForceGraphData,
+  unlockedTopicIds: string[],
+): TopicGraphBfsResult {
+  const unlocked = new Set(unlockedTopicIds);
+  const indegree = new Map<string, number>();
+  for (const n of data.nodes) {
+    indegree.set(n.id, 0);
+  }
+  for (const l of data.links) {
+    indegree.set(l.target, (indegree.get(l.target) ?? 0) + 1);
+  }
+
+  const seedIds = data.nodes.filter((n) => unlocked.has(n.topicId)).map((n) => n.id);
+  const seeds =
+    seedIds.length > 0 ? seedIds : data.nodes.filter((n) => (indegree.get(n.id) ?? 0) === 0).map((n) => n.id);
+
+  const adj = new Map<string, string[]>();
+  for (const n of data.nodes) {
+    adj.set(n.id, []);
+  }
+  for (const l of data.links) {
+    const out = adj.get(l.source);
+    if (out) {
+      out.push(l.target);
+    }
+  }
+
+  const distances = new Map<string, number>();
+  const queue: string[] = [];
+  for (const id of seeds) {
+    if (!distances.has(id)) {
+      distances.set(id, 0);
+      queue.push(id);
+    }
+  }
+
+  while (queue.length > 0) {
+    const u = queue.shift()!;
+    const du = distances.get(u) ?? 0;
+    for (const v of adj.get(u) ?? []) {
+      if (!distances.has(v)) {
+        distances.set(v, du + 1);
+        queue.push(v);
+      }
+    }
+  }
+
+  return { distances, seedIds: seeds };
+}
+
+/**
+ * Locked topics with no prerequisites (indegree 0) that BFS never reaches are treated as **distance 1**
+ * for hop filtering and depth opacity (same as one hop from seeds). Nodes already in `rawDistances` are unchanged
+ * (so bootstrap seeds stay at 0 when nothing is unlocked).
+ */
+export function resolveEffectiveTopicGraphDistances(
+  data: SubjectGraphsForceGraphData,
+  unlockedTopicIds: string[],
+  rawDistances: ReadonlyMap<string, number>,
+): Map<string, number> {
+  const unlocked = new Set(unlockedTopicIds);
+  const indegree = new Map<string, number>();
+  for (const n of data.nodes) {
+    indegree.set(n.id, 0);
+  }
+  for (const l of data.links) {
+    indegree.set(l.target, (indegree.get(l.target) ?? 0) + 1);
+  }
+
+  const out = new Map<string, number>(rawDistances);
+  for (const n of data.nodes) {
+    if (out.has(n.id)) {
+      continue;
+    }
+    if ((indegree.get(n.id) ?? 0) !== 0) {
+      continue;
+    }
+    if (unlocked.has(n.topicId)) {
+      continue;
+    }
+    out.set(n.id, 1);
+  }
+  return out;
+}
+
+/** Largest finite BFS distance among reachable nodes, or 0 if none. */
+export function getMaxBfsDepthFromSeeds(distances: ReadonlyMap<string, number>): number {
+  let m = 0;
+  for (const d of distances.values()) {
+    if (d > m) {
+      m = d;
+    }
+  }
+  return m;
+}
+
+/**
+ * Max hop value for UI: at least 2 so default depth-2 is always a valid option.
+ */
+export function getSelectableMaxHop(distances: ReadonlyMap<string, number>): number {
+  return Math.max(2, getMaxBfsDepthFromSeeds(distances));
+}
+
+/**
+ * Keeps nodes with `distances.get(id) <= maxHop` and links with both endpoints kept.
+ * Pass **effective** distances from `resolveEffectiveTopicGraphDistances` so locked entry topics count as hop 1.
+ * Rebuilds `subjectIdsOrdered` and `clusterIndex` for remaining subjects only.
+ */
+export function filterSubjectGraphsForceGraphDataByMaxHop(
+  data: SubjectGraphsForceGraphData,
+  distances: ReadonlyMap<string, number>,
+  maxHop: number,
+): SubjectGraphsForceGraphData {
+  const allowed = new Set<string>();
+  for (const n of data.nodes) {
+    const d = distances.get(n.id);
+    if (d !== undefined && d <= maxHop) {
+      allowed.add(n.id);
+    }
+  }
+
+  const nodes = data.nodes.filter((n) => allowed.has(n.id));
+  const links = data.links.filter((l) => allowed.has(l.source) && allowed.has(l.target));
+
+  const subjectIdsOrdered: string[] = [];
+  const subjectToCluster = new Map<string, number>();
+  for (const sid of data.subjectIdsOrdered) {
+    if (nodes.some((n) => n.subjectId === sid)) {
+      subjectToCluster.set(sid, subjectIdsOrdered.length);
+      subjectIdsOrdered.push(sid);
+    }
+  }
+
+  const remappedNodes = nodes.map((n) => ({
+    ...n,
+    clusterIndex: subjectToCluster.get(n.subjectId) ?? 0,
+  }));
+
+  return {
+    subjectIdsOrdered,
+    nodes: remappedNodes,
+    links,
+  };
+}
+
 /**
  * Evenly spaces cluster focal points on a circle inside the given box (padding inset).
  */

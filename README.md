@@ -27,7 +27,7 @@ Goal is to make process of studying difficult topics easygoing and rewarding by 
 
 - **Framework**: Next.js 16 + React 19
 - **Language**: TypeScript 5
-- **3D Rendering**: React Three Fiber (v10), @react-three/drei, Three.js 0.182
+- **3D Rendering**: React Three Fiber (v10), @react-three/drei, Three.js 0.183
 - **State Management**: Zustand
 - **Server State/Data Fetching**: TanStack Query (React Query)
 - **Styling**: Tailwind CSS 4

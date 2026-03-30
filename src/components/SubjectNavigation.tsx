@@ -38,14 +38,14 @@ export const SubjectNavigation: React.FC = () => {
           className="text-xs"
           aria-label="Select floor"
         >
-          <SelectValue placeholder="All Floors" />
+          <SelectValue placeholder="All Subjects" />
         </SelectTrigger>
 
         <SelectContent>
           <SelectItem value="__all_floors__">
             <span className="flex w-full items-center gap-2">
               <span className="size-2 shrink-0 rounded-sm bg-muted" aria-hidden />
-              <span>All Floors</span>
+              <span>All Subjects</span>
             </span>
           </SelectItem>
 

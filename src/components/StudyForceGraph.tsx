@@ -18,7 +18,13 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useProgressionStore } from '@/features/progression';
 import { getTopicUnlockStatus } from '@/features/progression/progressionUtils';
 import type { SubjectGraphsForceGraphData, SubjectGraphForceNode } from '@/lib/subjectGraphsForceGraphData';
-import { buildSubjectGraphsForceGraphData, clusterCentersOnCircle } from '@/lib/subjectGraphsForceGraphData';
+import {
+  buildSubjectGraphsForceGraphData,
+  clusterCentersOnCircle,
+  computeTopicGraphBfsDistances,
+  filterSubjectGraphsForceGraphDataByMaxHop,
+  resolveEffectiveTopicGraphDistances,
+} from '@/lib/subjectGraphsForceGraphData';
 import type { ActiveCrystal, SubjectGraph } from '@/types/core';
 
 import { cn } from '@/lib/utils';
@@ -31,6 +37,14 @@ type LayoutSnapshot = Pick<SimNode, 'x' | 'y' | 'vx' | 'vy' | 'fx' | 'fy'>;
 
 const NODE_FADE_MS = 340;
 const LINK_FADE_MS = 300;
+
+/** Unreachable or BFS distance ≥ 2 → dimmed (50%). */
+export function nodeOpacityFromBfsDist(dist: number | undefined): number {
+  if (dist === undefined) {
+    return 0.5;
+  }
+  return dist <= 1 ? 1 : 0.5;
+}
 
 function linkNodeX(endpoint: string | SimNode): number {
   if (typeof endpoint === 'string') {
@@ -110,19 +124,27 @@ function paintTopicNodeVisuals(
   unlockPoints: number,
   allGraphs: SubjectGraph[],
   selectedTopicId: string | null,
+  bfsDistances: ReadonlyMap<string, number>,
 ) {
   const root = select(svgRoot);
   root
     .selectAll<SVGCircleElement, SimNode>('g.plot-view g.nodes circle')
     .each(function paintCircle(d) {
       const s = styleForNode(d, unlockedTopicIds, activeCrystals, unlockPoints, allGraphs, selectedTopicId);
-      select(this).attr('fill', s.fill).attr('stroke', s.stroke).attr('stroke-width', s.strokeWidth);
+      const op = nodeOpacityFromBfsDist(bfsDistances.get(d.id));
+      select(this)
+        .attr('fill', s.fill)
+        .attr('stroke', s.stroke)
+        .attr('stroke-width', s.strokeWidth)
+        .attr('opacity', op);
     });
   root
     .selectAll<SVGTextElement, SimNode>('g.plot-view g.labels text')
     .each(function paintLabel(d) {
       const isSelected = Boolean(selectedTopicId && d.topicId === selectedTopicId);
+      const op = nodeOpacityFromBfsDist(bfsDistances.get(d.id));
       select(this)
+        .attr('opacity', op)
         .attr('fill-opacity', isSelected ? 0.95 : 0.78)
         .attr('font-weight', isSelected ? 600 : 500);
     });
@@ -140,6 +162,8 @@ export interface StudyForceGraphProps {
   onSelectTopic?: (topicId: string) => void;
   /** Invoked when the user activates the empty graph background (tap outside nodes). */
   onClearSelection?: () => void;
+  /** `null` = show full graph (all nodes); integer = max BFS hop from seeds. */
+  maxHop?: number | null;
   className?: string;
 }
 
@@ -274,6 +298,7 @@ export function StudyForceGraph({
   selectedTopicId = null,
   onSelectTopic,
   onClearSelection,
+  maxHop = null,
   className,
 }: StudyForceGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -299,6 +324,30 @@ export function StudyForceGraph({
     return buildSubjectGraphsForceGraphData(visibleGraphs);
   }, [visibleGraphs]);
 
+  const bfsResult = useMemo(() => {
+    if (!graphData) {
+      return null;
+    }
+    return computeTopicGraphBfsDistances(graphData, unlockedTopicIds);
+  }, [graphData, unlockedTopicIds]);
+
+  const effectiveDistances = useMemo(() => {
+    if (!graphData || !bfsResult) {
+      return null;
+    }
+    return resolveEffectiveTopicGraphDistances(graphData, unlockedTopicIds, bfsResult.distances);
+  }, [graphData, bfsResult, unlockedTopicIds]);
+
+  const displayData = useMemo((): SubjectGraphsForceGraphData | null => {
+    if (!graphData || !effectiveDistances) {
+      return null;
+    }
+    if (maxHop === null) {
+      return graphData;
+    }
+    return filterSubjectGraphsForceGraphDataByMaxHop(graphData, effectiveDistances, maxHop);
+  }, [graphData, effectiveDistances, maxHop]);
+
   const progressionRef = useRef({
     unlockedTopicIds,
     activeCrystals,
@@ -320,8 +369,15 @@ export function StudyForceGraph({
   const progressionPaintKey = useMemo(() => {
     const unlocked = [...unlockedTopicIds].sort().join('\0');
     const crystalTopics = [...new Set(activeCrystals.map((c) => c.topicId))].sort().join('|');
-    return `${unlocked}#${unlockPoints}#${crystalTopics}`;
-  }, [unlockedTopicIds, activeCrystals, unlockPoints]);
+    const distKey =
+      effectiveDistances == null
+        ? ''
+        : [...effectiveDistances.entries()]
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([k, v]) => `${k}:${v}`)
+            .join('|');
+    return `${unlocked}#${unlockPoints}#${crystalTopics}#${distKey}`;
+  }, [unlockedTopicIds, activeCrystals, unlockPoints, effectiveDistances]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -343,25 +399,32 @@ export function StudyForceGraph({
 
   useEffect(() => {
     const svgEl = svgRef.current;
-    if (!svgEl || size.w < 32 || size.h < 32 || !graphData || graphData.nodes.length === 0) {
+    if (!svgEl || size.w < 32 || size.h < 32 || !displayData || displayData.nodes.length === 0 || !effectiveDistances) {
       return;
     }
+
+    const depthDistances = effectiveDistances;
+    const linkOpacity = (d: LinkDatum) => {
+      const sid = typeof d.source === 'object' ? d.source.id : d.source;
+      const tid = typeof d.target === 'object' ? d.target.id : d.target;
+      return Math.min(nodeOpacityFromBfsDist(depthDistances.get(sid)), nodeOpacityFromBfsDist(depthDistances.get(tid)));
+    };
 
     const { w, h } = size;
     const vp = nodeCenterViewportBounds(w, h);
     const clusterPadding = Math.max(56, vp.minX, vp.minY, h - vp.maxY);
-    const centers = clusterCentersOnCircle(graphData.subjectIdsOrdered.length, w, h, clusterPadding);
+    const centers = clusterCentersOnCircle(displayData.subjectIdsOrdered.length, w, h, clusterPadding);
     const cx = w / 2;
     const cy = h / 2;
     const snap = layoutSnapshotRef.current;
-    const nextIds = new Set(graphData.nodes.map((n) => n.id));
+    const nextIds = new Set(displayData.nodes.map((n) => n.id));
     for (const id of snap.keys()) {
       if (!nextIds.has(id)) {
         snap.delete(id);
       }
     }
 
-    const simNodes: SimNode[] = graphData.nodes.map((n) => {
+    const simNodes: SimNode[] = displayData.nodes.map((n) => {
       const prev = snap.get(n.id);
       if (prev && prev.x != null && prev.y != null) {
         return {
@@ -383,7 +446,7 @@ export function StudyForceGraph({
       };
     });
 
-    const linkData: LinkDatum[] = graphData.links.map((l) => ({
+    const linkData: LinkDatum[] = displayData.links.map((l) => ({
       source: l.source,
       target: l.target,
     }));
@@ -435,7 +498,7 @@ export function StudyForceGraph({
       .distance(52)
       .strength(0.7);
 
-    const clusterStrength = graphData.subjectIdsOrdered.length <= 1 ? 0.08 : 0.14;
+    const clusterStrength = displayData.subjectIdsOrdered.length <= 1 ? 0.08 : 0.14;
 
     const minYGapForColumnNeighbors = LABEL_Y_OFFSET + NODE_RADIUS + 10;
 
@@ -506,9 +569,9 @@ export function StudyForceGraph({
       .attr('stroke-width', 1.25)
       .style('pointer-events', 'none');
 
-    lineSel.attr('opacity', 1);
+    lineSel.attr('opacity', (d) => linkOpacity(d));
 
-    lineEnter.transition().duration(LINK_FADE_MS).attr('opacity', 1);
+    lineEnter.transition().duration(LINK_FADE_MS).attr('opacity', (d) => linkOpacity(d));
 
     const lineMerge = lineEnter.merge(lineSel);
 
@@ -547,9 +610,12 @@ export function StudyForceGraph({
           .attr('aria-label', `${d.title}, tier ${d.tier}`);
       });
 
-    circleSel.attr('opacity', 1);
+    circleSel.attr('opacity', (d) => nodeOpacityFromBfsDist(depthDistances.get(d.id)));
 
-    circleEnter.transition().duration(NODE_FADE_MS).attr('opacity', 1);
+    circleEnter
+      .transition()
+      .duration(NODE_FADE_MS)
+      .attr('opacity', (d) => nodeOpacityFromBfsDist(depthDistances.get(d.id)));
 
     const circleMerge = circleEnter.merge(circleSel);
 
@@ -578,9 +644,12 @@ export function StudyForceGraph({
       .attr('fill', 'currentColor')
       .text((d) => truncateTopicTitle(d.title));
 
-    textSel.attr('opacity', 1);
+    textSel.attr('opacity', (d) => nodeOpacityFromBfsDist(depthDistances.get(d.id)));
 
-    textEnter.transition().duration(NODE_FADE_MS).attr('opacity', 1);
+    textEnter
+      .transition()
+      .duration(NODE_FADE_MS)
+      .attr('opacity', (d) => nodeOpacityFromBfsDist(depthDistances.get(d.id)));
 
     const textMerge = textEnter.merge(textSel);
 
@@ -618,11 +687,13 @@ export function StudyForceGraph({
         .attr('x1', (d) => linkNodeX(d.source))
         .attr('y1', (d) => linkNodeY(d.source))
         .attr('x2', (d) => linkNodeX(d.target))
-        .attr('y2', (d) => linkNodeY(d.target));
+        .attr('y2', (d) => linkNodeY(d.target))
+        .attr('opacity', (d) => linkOpacity(d));
 
       circleMerge
         .attr('cx', (d) => d.x ?? 0)
         .attr('cy', (d) => d.y ?? 0)
+        .attr('opacity', (d) => nodeOpacityFromBfsDist(depthDistances.get(d.id)))
         .each(function eachTick(d) {
           const s = styleForNode(
             d,
@@ -639,6 +710,7 @@ export function StudyForceGraph({
         .attr('x', (d) => d.x ?? 0)
         .attr('y', (d) => (d.y ?? 0) + LABEL_Y_OFFSET)
         .text((d) => truncateTopicTitle(d.title))
+        .attr('opacity', (d) => nodeOpacityFromBfsDist(depthDistances.get(d.id)))
         .each(function eachLabelTick(d) {
           const sel = selectedTopicIdRef.current;
           const isSelected = Boolean(sel && d.topicId === sel);
@@ -656,11 +728,11 @@ export function StudyForceGraph({
       simulation.stop();
       simulationRef.current = null;
     };
-  }, [graphData, size.w, size.h]);
+  }, [displayData, effectiveDistances, size.w, size.h, maxHop]);
 
   useEffect(() => {
     const svgEl = svgRef.current;
-    if (!svgEl || !graphData || graphData.nodes.length === 0) {
+    if (!svgEl || !displayData || displayData.nodes.length === 0 || !effectiveDistances) {
       return;
     }
     paintTopicNodeVisuals(
@@ -670,15 +742,16 @@ export function StudyForceGraph({
       unlockPoints,
       visibleGraphs,
       selectedTopicId,
+      effectiveDistances,
     );
-  }, [selectedTopicId, progressionPaintKey, graphData, visibleGraphs]);
+  }, [selectedTopicId, progressionPaintKey, displayData, visibleGraphs, effectiveDistances]);
 
   return (
     <div
       ref={containerRef}
       className={cn('h-full w-full min-h-0', className)}
     >
-      {size.w >= 32 && size.h >= 32 && graphData && graphData.nodes.length > 0 ? (
+      {size.w >= 32 && size.h >= 32 && displayData && displayData.nodes.length > 0 ? (
         <svg ref={svgRef} className="block h-full w-full text-foreground" />
       ) : (
         <div className="text-muted-foreground flex h-full min-h-[12rem] items-center justify-center text-sm">
@@ -688,7 +761,9 @@ export function StudyForceGraph({
               ? 'No graph for this subject.'
               : graphData && graphData.nodes.length === 0
                 ? 'No curriculum topics to display.'
-                : 'Resizing…'}
+                : graphData && displayData && displayData.nodes.length === 0
+                  ? 'No topics in this hop range.'
+                  : 'Resizing…'}
         </div>
       )}
     </div>
