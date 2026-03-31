@@ -15,10 +15,10 @@ import {
 import {
   AbyssSheet,
   AbyssSheetContent,
+  AbyssSheetHeader,
   SheetClose,
   SheetDescription,
   SheetFooter,
-  SheetHeader,
   SheetTitle,
 } from '@/components/ui/abyss-sheet';
 import { useRegisterModalBodyScrollShard } from '@/components/ui/modal-body-scroll-lock';
@@ -103,6 +103,9 @@ export function ResponsiveLlmInferenceSurface({
         ref={sheetSurfaceRef}
         data-llm-inference-surface=""
         side="bottom"
+        sheetOpen={open}
+        headerDragToDismiss
+        onHeaderDragDismiss={() => onOpenChange(false)}
         className={cn(
           LLM_INFERENCE_SURFACE_Z_CLASS,
           'gap-0 p-0',
@@ -111,7 +114,7 @@ export function ResponsiveLlmInferenceSurface({
         onPointerDownOutside={onDismissOutside}
         onInteractOutside={onDismissOutside}
       >
-        <SheetHeader className="text-left">
+        <AbyssSheetHeader className="text-left">
           <SheetTitle>{title}</SheetTitle>
           {description.kind === 'srOnly' ? (
             <SheetDescription className="sr-only">{description.text}</SheetDescription>
@@ -123,7 +126,7 @@ export function ResponsiveLlmInferenceSurface({
               />
             </SheetDescription>
           )}
-        </SheetHeader>
+        </AbyssSheetHeader>
         <div className={cn('no-scrollbar overflow-y-auto px-4', sheetBodyScrollClassName)}>
           {children}
         </div>

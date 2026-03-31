@@ -38,6 +38,7 @@ describe('ResponsiveLlmInferenceSurface', () => {
     expect(document.body.textContent).toContain('Stream body');
     const body = document.body.querySelector('[data-testid="inference-surface-body"]');
     expect(body).not.toBeNull();
+    expect(document.body.querySelector('[data-slot="sheet-header"]')).not.toBeNull();
     const closeBtn = Array.from(document.body.querySelectorAll('button')).find((b) =>
       b.textContent?.includes('Close'),
     );
