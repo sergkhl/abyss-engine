@@ -4,30 +4,31 @@
 
 import { useMemo } from 'react';
 import * as THREE from 'three/webgpu';
-import { SubjectGeometry as CoreSubjectGeometry } from '../types/core';
+import { SubjectGeometry as CoreSubjectGeometry, type GeometryType } from '../types/core';
 import { Subject } from '../types/core';
 import { useManifest } from '../hooks/useDeckData';
 
 export type SubjectGeometryMap = Record<string, CoreSubjectGeometry>;
 
-function createBoxGeometry(): THREE.BoxGeometry {
+function createPlaneGeometry(): THREE.PlaneGeometry {
+  return new THREE.PlaneGeometry(0.9, 0.9);
+}
+
+/** Altar / decorative subject meshes (legacy shared shape keys with manifest `altar`). */
+function createAltarBoxGeometry(): THREE.BoxGeometry {
   return new THREE.BoxGeometry(0.4, 0.6, 0.4);
 }
 
-function createCylinderGeometry(): THREE.CylinderGeometry {
+function createAltarCylinderGeometry(): THREE.CylinderGeometry {
   return new THREE.CylinderGeometry(0.2, 0.2, 0.6, 8);
 }
 
-function createSphereGeometry(): THREE.SphereGeometry {
+function createAltarSphereGeometry(): THREE.SphereGeometry {
   return new THREE.SphereGeometry(0.25, 16, 12);
 }
 
-function createOctahedronGeometry(): THREE.OctahedronGeometry {
+function createAltarOctahedronGeometry(): THREE.OctahedronGeometry {
   return new THREE.OctahedronGeometry(0.25, 0);
-}
-
-function createPlaneGeometry(): THREE.PlaneGeometry {
-  return new THREE.PlaneGeometry(0.9, 0.9);
 }
 
 function createGridBoxGeometry(): THREE.BoxGeometry {
@@ -42,11 +43,11 @@ function createGridSphereGeometry(): THREE.SphereGeometry {
   return new THREE.SphereGeometry(0.4, 16, 8);
 }
 
-const crystalGeometryFactories: Record<CoreSubjectGeometry['gridTile'], () => THREE.BufferGeometry> = {
-  box: createBoxGeometry,
-  cylinder: createCylinderGeometry,
-  sphere: createSphereGeometry,
-  octahedron: createOctahedronGeometry,
+const altarGeometryFactories: Record<GeometryType, () => THREE.BufferGeometry> = {
+  box: createAltarBoxGeometry,
+  cylinder: createAltarCylinderGeometry,
+  sphere: createAltarSphereGeometry,
+  octahedron: createAltarOctahedronGeometry,
   plane: createPlaneGeometry,
 };
 
@@ -142,7 +143,7 @@ export function getSubjectColorByMap(
 
 export function getGeometryForSubject(
   subjectId: string | null,
-  elementType: 'crystal' | 'altar' | 'gridTile',
+  elementType: 'altar' | 'gridTile',
   subjectsMap: SubjectGeometryMap = {},
 ): THREE.BufferGeometry {
   const cacheKey = `${subjectId || 'default'}-${elementType}-${Object.keys(subjectsMap).length}`;
@@ -151,20 +152,26 @@ export function getGeometryForSubject(
     return cached;
   }
 
-  let geometryType = defaultSubjectGeometry().crystal;
+  const defaults = defaultSubjectGeometry();
+  const factories =
+    elementType === 'gridTile' ? gridGeometryFactories : altarGeometryFactories;
+  let geometryType: GeometryType =
+    elementType === 'gridTile' ? defaults.gridTile : defaults.altar;
   if (subjectId) {
-    geometryType = subjectsMap[subjectId]?.[elementType === 'gridTile' ? 'gridTile' : elementType] || geometryType;
+    const subjectGeometry = subjectsMap[subjectId];
+    geometryType =
+      (elementType === 'gridTile' ? subjectGeometry?.gridTile : subjectGeometry?.altar) ?? geometryType;
   }
 
-  const factories = elementType === 'gridTile' ? gridGeometryFactories : crystalGeometryFactories;
-  const geometry = (factories as Record<string, () => THREE.BufferGeometry>)[geometryType]?.() || createBoxGeometry();
+  const geometry =
+    factories[geometryType]?.() ?? (elementType === 'gridTile' ? createGridBoxGeometry() : createAltarBoxGeometry());
   geometryCache.set(cacheKey, geometry);
   return geometry;
 }
 
 export function getGeometryForSubjectBySubjects(
   subjectId: string | null,
-  elementType: 'crystal' | 'altar' | 'gridTile',
+  elementType: 'altar' | 'gridTile',
   subjects: Subject[] = [],
 ): THREE.BufferGeometry {
   const subjectsMap = toSubjectGeometryMap(subjects);
@@ -215,7 +222,7 @@ export function clearGeometryCache(): void {
 
 export function useSubjectGeometry(
   subjectId: string | null,
-  elementType: 'crystal' | 'altar' | 'gridTile',
+  elementType: 'altar' | 'gridTile',
 ): THREE.BufferGeometry {
   const manifestQuery = useManifest();
   const subjects = manifestQuery.data?.subjects ?? [];

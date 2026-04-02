@@ -1,4 +1,4 @@
 import { extend } from '@react-three/fiber/webgpu';
-import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
+import { MeshBasicNodeMaterial, MeshPhysicalNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
 
-extend({ MeshBasicNodeMaterial, MeshStandardNodeMaterial });
+extend({ MeshBasicNodeMaterial, MeshStandardNodeMaterial, MeshPhysicalNodeMaterial });

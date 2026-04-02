@@ -5,13 +5,26 @@ import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber/webgpu';
 import { Html } from '@react-three/drei/webgpu';
 import * as THREE from 'three/webgpu';
 import { ActiveCrystal } from '../types';
-import { calculateLevelFromXP, getCrystalScale } from '../features/progression';
+import {
+  calculateLevelFromXP,
+  crystalCeremonyStore,
+  getCrystalScale,
+  subjectSeedFromId,
+} from '../features/progression';
 import { useUIStore } from '../store/uiStore';
-import { useSubjectColor, useSubjectGeometry } from '../utils/geometryMapping';
+import { getSubjectColor } from '../utils/geometryMapping';
 import { useTopicMetadata } from '../features/content';
 import { GrowthParticles } from '../graphics/GrowthParticles';
 import { playLevelUpSound } from '../utils/sound';
 import { useSceneInvalidator } from '../hooks/useSceneInvalidator';
+import { useCrystalCeremonySync } from '../hooks/useCrystalCeremonySync';
+import { useManifest } from '../hooks/useDeckData';
+import {
+  createCrystalInstancedAttributes,
+  createCrystalNodeMaterial,
+  CRYSTAL_MAX_INSTANCES,
+  getCrystalGeometry,
+} from '../graphics/crystals';
 import {
   getLabelOpacity,
   getLabelOcclusionFactor,
@@ -20,11 +33,8 @@ import {
   MAX_LABEL_DISTANCE,
   MAX_VISIBLE_LABELS,
   CRYSTAL_LABEL_OFFSET_Y,
+  LABEL_SECONDARY_OFFSET_Y,
 } from './crystalLabelVisibility';
-
-const crystalInnerGeometry = new THREE.SphereGeometry(0.15, 8, 6);
-const levelIndicatorGeometry = new THREE.SphereGeometry(0.08, 16, 16);
-const glowRingGeometry = new THREE.RingGeometry(0.35, 0.55, 32);
 
 interface TopicMetadata {
   title?: string;
@@ -39,397 +49,11 @@ interface CrystalsProps {
   isStudyPanelOpen?: boolean;
 }
 
-interface SingleCrystalProps {
-  crystal: ActiveCrystal;
-  isSelected: boolean;
-  topicMeta?: TopicMetadata;
-  onSelect: (crystal: ActiveCrystal) => void;
-  isStudyPanelOpen: boolean;
-  labelVisibility: LabelVisibilityState;
-  onCrystalMeshRef: (topicId: string, mesh: THREE.Mesh | null) => void;
-}
-
-const SingleCrystal: React.FC<SingleCrystalProps> = ({
-  crystal,
-  isSelected,
-  topicMeta,
-  onSelect,
-  isStudyPanelOpen,
-  labelVisibility,
-  onCrystalMeshRef,
-}) => {
-  const [x, z] = crystal.gridPosition;
-  const groupRef = useRef<THREE.Group>(null);
-  const innerRef = useRef<THREE.Mesh>(null);
-  const levelRef = useRef<THREE.Mesh>(null);
-  const glowRingRef = useRef<THREE.Mesh>(null);
-  const labelRef = useRef<HTMLDivElement>(null);
-  const { invalidate, isPaused } = useSceneInvalidator();
-  const animationRef = useRef({
-    start: performance.now(),
-    from: 0,
-    to: 0,
-    running: false,
-  });
-  const growthRef = useRef({
-    phase: 0,
-    progress: 0,
-  });
-  const selectedEmissiveIntensity = isSelected ? 1.5 : 0.6;
-  const selectedEmissiveIntensityInner = isSelected ? 5 : 1.5;
-  const subjectColor = useSubjectColor(topicMeta?.subjectId || null);
-  const crystalGeometry = useSubjectGeometry(topicMeta?.subjectId || null, 'crystal');
-  const colors = useMemo(() => ({
-    outerColor: subjectColor,
-    innerColor: subjectColor,
-    emissiveColor: subjectColor,
-  }), [subjectColor]);
-  const level = calculateLevelFromXP(crystal.xp);
-  const [showParticles, setShowParticles] = useState(false);
-  const previousLevel = useRef(level);
-  const pendingTargetScale = useRef<number | null>(null);
-  const pendingParticles = useRef(false);
-  const pendingLevelUpSound = useRef(false);
-  const burstTimerRef = useRef<number | null>(null);
-  const initialized = useRef(false);
-  const suppressNextClickRef = useRef(false);
-
-  const handleCrystalSelection = () => {
-    onSelect(crystal);
-  };
-
-  const handleCrystalPointerUp = (e: ThreeEvent<PointerEvent>) => {
-    e.stopPropagation();
-    suppressNextClickRef.current = true;
-    handleCrystalSelection();
-  };
-
-  const handleCrystalClick = (e: ThreeEvent<MouseEvent>) => {
-    e.stopPropagation();
-    if (suppressNextClickRef.current) {
-      suppressNextClickRef.current = false;
-      return;
-    }
-    handleCrystalSelection();
-  };
-
-  const triggerParticleBurst = () => {
-    if (burstTimerRef.current !== null) {
-      window.clearTimeout(burstTimerRef.current);
-      burstTimerRef.current = null;
-    }
-    setShowParticles(true);
-    burstTimerRef.current = window.setTimeout(() => {
-      setShowParticles(false);
-      burstTimerRef.current = null;
-    }, 1200);
-  };
-
-  useEffect(() => {
-    const nextScale = getCrystalScale(level);
-    if (!initialized.current) {
-      initialized.current = true;
-      pendingTargetScale.current = null;
-      const currentScale = groupRef.current?.scale.x ?? 0;
-      animationRef.current = {
-        start: performance.now(),
-        from: currentScale,
-        to: nextScale,
-        running: true,
-      };
-      growthRef.current = {
-        phase: 0,
-        progress: 0,
-      };
-      invalidate();
-      return;
-    }
-
-    if (level === previousLevel.current) {
-      return;
-    }
-
-    if (level > previousLevel.current && isStudyPanelOpen) {
-      pendingTargetScale.current = nextScale;
-    } else {
-      pendingTargetScale.current = null;
-      if (!isStudyPanelOpen) {
-        const currentScale = groupRef.current?.scale.x ?? 0;
-        animationRef.current = {
-          start: performance.now(),
-          from: currentScale,
-          to: nextScale,
-          running: true,
-        };
-        growthRef.current = {
-          phase: 0,
-          progress: 0,
-        };
-        invalidate();
-      }
-    }
-  }, [level, isStudyPanelOpen, invalidate]);
-
-  useEffect(() => {
-    if (isStudyPanelOpen || pendingTargetScale.current === null) {
-      return;
-    }
-    const nextScale = pendingTargetScale.current;
-    pendingTargetScale.current = null;
-
-    const currentScale = groupRef.current?.scale.x ?? 0;
-    animationRef.current = {
-      start: performance.now(),
-      from: currentScale,
-      to: nextScale,
-      running: true,
-    };
-    growthRef.current = {
-      phase: 0,
-      progress: 0,
-    };
-    invalidate();
-  }, [isStudyPanelOpen, invalidate]);
-
-  useEffect(() => {
-    if (level > previousLevel.current && level > 0) {
-      if (isStudyPanelOpen) {
-        pendingParticles.current = true;
-        pendingLevelUpSound.current = true;
-      } else {
-        playLevelUpSound();
-        triggerParticleBurst();
-      }
-    }
-
-    previousLevel.current = level;
-  }, [level, isStudyPanelOpen]);
-
-  useEffect(() => {
-    if (!isStudyPanelOpen && pendingParticles.current) {
-      pendingParticles.current = false;
-      triggerParticleBurst();
-      if (pendingLevelUpSound.current) {
-        pendingLevelUpSound.current = false;
-        playLevelUpSound();
-      }
-    }
-  }, [isStudyPanelOpen]);
-
-  useEffect(() => () => {
-    if (burstTimerRef.current !== null) {
-      window.clearTimeout(burstTimerRef.current);
-      burstTimerRef.current = null;
-    }
-  }, []);
-
-  const camera = useThree((state) => state.camera);
-
-  const outerMaterial = useMemo(
-    () => {
-      const material = new THREE.MeshStandardNodeMaterial({
-        color: colors.outerColor,
-        metalness: 0.4,
-        roughness: 0.3,
-        emissive: colors.emissiveColor,
-        emissiveIntensity: selectedEmissiveIntensity,
-      });
-      return material;
-    },
-    [colors, selectedEmissiveIntensity],
-  );
-
-  const innerMaterial = useMemo(
-    () => {
-      const material = new THREE.MeshStandardNodeMaterial({
-        color: colors.innerColor,
-        metalness: 0.7,
-        roughness: 0.1,
-        emissive: colors.emissiveColor,
-        transparent: true,
-        opacity: 0.8,
-        emissiveIntensity: selectedEmissiveIntensityInner,
-      });
-      return material;
-    },
-    [colors, selectedEmissiveIntensityInner],
-  );
-
-  const levelMaterial = useMemo(
-    () => {
-      const material = new THREE.MeshStandardNodeMaterial({
-        color: '#fbbf24',
-        metalness: 0.5,
-        roughness: 0.3,
-        emissive: '#f59e0b',
-        emissiveIntensity: 0.3,
-      });
-      return material;
-    },
-    [],
-  );
-
-  const glowMaterial = useMemo(
-    () =>
-      new THREE.MeshBasicNodeMaterial({
-        color: colors.emissiveColor,
-        transparent: true,
-        opacity: isSelected ? 0.55 : 0.35,
-        blending: THREE.AdditiveBlending,
-        side: THREE.DoubleSide,
-        depthWrite: false,
-      }),
-    [colors.emissiveColor, isSelected],
-  );
-  const labelLayerRange = isStudyPanelOpen ? [0, 10] : isSelected ? [50, 100] : [0, 10];
-
-  useFrame(() => {
-    if (isPaused) {
-      return;
-    }
-
-    const state = animationRef.current;
-    const elapsedTime = performance.now() / 1000;
-
-    innerMaterial.emissiveIntensity = selectedEmissiveIntensityInner;
-    glowMaterial.opacity = isSelected ? 0.55 : 0.35;
-
-    if (groupRef.current) {
-      const bob = Math.sin(elapsedTime * 2 + x * 0.5) * 0.03;
-      groupRef.current.position.y = 0.3 + bob;
-      groupRef.current.rotation.y = isSelected ? elapsedTime * 0.4 : 0;
-    }
-
-    if (!state.running) {
-      outerMaterial.emissiveIntensity = selectedEmissiveIntensity;
-    }
-
-    if (state.running && groupRef.current) {
-      const elapsed = performance.now() - state.start;
-      const progress = Math.min(elapsed / 800, 1);
-      const eased = 1 - Math.pow(1 - progress, 4);
-      const nextScale = THREE.MathUtils.lerp(state.from, state.to, eased);
-      growthRef.current.progress = progress;
-
-      if (growthRef.current.phase === 0 && progress >= 0.4) {
-        growthRef.current.phase = 1;
-      }
-
-      groupRef.current.scale.set(nextScale, nextScale, nextScale);
-
-      if (innerRef.current) {
-        const innerLift = progress < 0.4 ? progress * 2.5 : 1;
-        innerRef.current.position.y = 0.1 * nextScale * innerLift;
-      }
-
-      if (levelRef.current && level > 0) {
-        const pop = Math.max(0, (progress - 0.4) * 2.5);
-        levelRef.current.position.y = 0.4 * nextScale + Math.sin(pop * Math.PI) * 0.15;
-      }
-
-        outerMaterial.emissiveIntensity = THREE.MathUtils.lerp(
-        selectedEmissiveIntensity,
-        selectedEmissiveIntensity + 1.2,
-        Math.sin(progress * Math.PI * 6) * 0.5 + 0.5,
-      );
-
-      if (progress >= 1) {
-        state.running = false;
-        growthRef.current.phase = 1;
-        growthRef.current.progress = 1;
-        outerMaterial.emissiveIntensity = selectedEmissiveIntensity;
-        innerRef.current && (innerRef.current.position.y = 0.1 * nextScale);
-        if (levelRef.current && level > 0) {
-          levelRef.current.position.y = 0.4 * nextScale;
-        }
-      } else {
-        invalidate();
-      }
-    }
-
-    if (glowRingRef.current) {
-      const pulse = 1 + Math.sin(elapsedTime * 3 + x + z) * 0.08;
-      glowRingRef.current.quaternion.copy(camera.quaternion);
-      glowRingRef.current.scale.setScalar(pulse * (isSelected ? 1.25 : 1));
-    }
-
-    if (labelRef.current) {
-      const isLabelVisible = labelVisibility.visibleIds.has(crystal.topicId);
-      const distance = isLabelVisible ? labelVisibility.distances.get(crystal.topicId) ?? Infinity : Infinity;
-      const occlusionFactor = labelVisibility.occlusion.get(crystal.topicId) ?? 1;
-      const opacity = topicMeta?.topicName ? getLabelOpacity(distance) * occlusionFactor : 0;
-      labelRef.current.style.opacity = `${opacity}`;
-      labelRef.current.style.display = opacity === 0 ? 'none' : 'block';
-    }
-  });
-
-  return (
-    <group ref={groupRef} position={[x, 0.3, z]} scale={[0, 0, 0]}>
-      <mesh
-        ref={(mesh: THREE.Mesh | null) => onCrystalMeshRef(crystal.topicId, mesh)}
-        geometry={crystalGeometry}
-        material={outerMaterial}
-        onPointerUp={handleCrystalPointerUp}
-        onClick={handleCrystalClick}
-      />
-
-      <mesh
-        geometry={crystalInnerGeometry}
-        material={innerMaterial}
-        ref={innerRef}
-        position={[0, 0.3, 0]}
-      />
-
-      {level > 0 && (
-        <mesh
-          geometry={levelIndicatorGeometry}
-          material={levelMaterial}
-          ref={levelRef}
-          visible={level > 0}
-          position={[0, 0, 0]}
-        />
-      )}
-
-      <GrowthParticles
-        position={[0, 0.3, 0]}
-        active={showParticles}
-      />
-
-      <mesh
-        ref={glowRingRef}
-        geometry={glowRingGeometry}
-        material={glowMaterial}
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0.05, 0]}
-      />
-
-      {topicMeta?.topicName && (
-        <Html
-          center
-          transform
-          sprite
-          position={[0, -0.7, 0]}
-          zIndexRange={labelLayerRange}
-          style={{
-            pointerEvents: 'none',
-            width: '100px',
-            textAlign: 'center',
-            display: 'flex',
-            justifyContent: 'center',
-          }}
-        >
-          <div
-            ref={labelRef}
-            style={{ opacity: 0 }}
-            className="pointer-events-none max-w-[100px] truncate rounded-sm border border-border/50 bg-card/75 px-0.5 py-0.5 text-center font-sans text-[5px] font-normal leading-none tracking-wide text-foreground shadow-sm backdrop-blur-sm"
-          >
-            {topicMeta.topicName}
-          </div>
-        </Html>
-      )}
-    </group>
-  );
-};
+const matrixScratch = new THREE.Matrix4();
+const positionScratch = new THREE.Vector3();
+const quaternionScratch = new THREE.Quaternion();
+const scaleScratch = new THREE.Vector3();
+const yAxis = new THREE.Vector3(0, 1, 0);
 
 export const Crystals: React.FC<CrystalsProps> = ({
   crystals,
@@ -437,34 +61,193 @@ export const Crystals: React.FC<CrystalsProps> = ({
   isStudyPanelOpen = false,
 }) => {
   const metadataLookup = useTopicMetadata(crystals.map((crystal) => crystal.topicId));
-  const resolvedMetadata = metadataLookup;
+  const manifestQuery = useManifest();
+  const subjects = manifestQuery.data?.subjects ?? [];
+
   const selectedTopicId = useUIStore((state) => state.selectedTopicId);
   const selectTopic = useUIStore((state) => state.selectTopic);
+
+  const instancedRef = useRef<THREE.InstancedMesh>(null);
   const labelVisibility = useRef<LabelVisibilityState>({
     visibleIds: new Set(),
     distances: new Map(),
     occlusion: new Map(),
   });
-  const crystalMeshRefs = useRef(new Map<string, THREE.Mesh>());
   const raycasterRef = useRef(new THREE.Raycaster());
-  const { isPaused } = useSceneInvalidator();
+  const { invalidate, isPaused } = useSceneInvalidator();
+  const environmentMap = useThree((state) => state.scene.environment);
 
-  const setCrystalMesh = (topicId: string, mesh: THREE.Mesh | null) => {
-    if (mesh) {
-      crystalMeshRefs.current.set(topicId, mesh);
+  const prevPanelOpen = useRef(isStudyPanelOpen);
+  const prevLevelByTopic = useRef<Map<string, number>>(new Map());
+  const lastCeremonyKey = useRef<string | null>(null);
+
+  const [particleTopicId, setParticleTopicId] = useState<string | null>(null);
+  const suppressNextClickRef = useRef(false);
+
+  const labelAnchorRefs = useRef<(THREE.Group | null)[]>([]);
+  const labelOpacityRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const { arrays, attributes } = useMemo(
+    () => createCrystalInstancedAttributes(CRYSTAL_MAX_INSTANCES),
+    [],
+  );
+
+  const instanceGeometry = useMemo(() => {
+    const geo = getCrystalGeometry();
+    geo.setAttribute('instanceLevel', attributes.instanceLevel);
+    geo.setAttribute('instanceMorphProgress', attributes.instanceMorphProgress);
+    geo.setAttribute('instanceSubjectSeed', attributes.instanceSubjectSeed);
+    geo.setAttribute('instanceColor', attributes.instanceColor);
+    geo.setAttribute('instanceSelected', attributes.instanceSelected);
+    geo.setAttribute('instanceCeremonyPhase', attributes.instanceCeremonyPhase);
+    return geo;
+  }, [attributes]);
+
+  const material = useMemo(
+    () => createCrystalNodeMaterial(attributes, environmentMap),
+    [attributes, environmentMap],
+  );
+
+  useCrystalCeremonySync();
+
+  const count = Math.min(crystals.length, CRYSTAL_MAX_INSTANCES);
+
+  useEffect(() => {
+    if (!prevPanelOpen.current && isStudyPanelOpen) {
+      // opened — no flush
+    }
+    if (prevPanelOpen.current && !isStudyPanelOpen) {
+      crystalCeremonyStore.getState().onStudyPanelClosed();
+    }
+    prevPanelOpen.current = isStudyPanelOpen;
+  }, [isStudyPanelOpen]);
+
+  useEffect(() => {
+    const prev = prevLevelByTopic.current;
+    for (const crystal of crystals) {
+      const level = calculateLevelFromXP(crystal.xp);
+      const previous = prev.get(crystal.topicId);
+      if (previous !== undefined && level > previous) {
+        crystalCeremonyStore.getState().notifyLevelUp(crystal.topicId, isStudyPanelOpen);
+      }
+      prev.set(crystal.topicId, level);
+    }
+    for (const key of [...prev.keys()]) {
+      if (!crystals.some((c) => c.topicId === key)) {
+        prev.delete(key);
+      }
+    }
+  }, [crystals, isStudyPanelOpen]);
+
+  useFrame(() => {
+    if (isPaused) {
       return;
     }
-    crystalMeshRefs.current.delete(topicId);
-  };
 
-  useFrame(({ camera }) => {
+    const mesh = instancedRef.current;
+    if (!mesh) {
+      return;
+    }
+
+    const now = performance.now();
+    const elapsedTime = now / 1000;
+
+    const ceremonyApi = crystalCeremonyStore.getState();
+    ceremonyApi.syncCeremonyClock(now);
+    const ceremonyKey =
+      ceremonyApi.ceremonyTopicId != null && ceremonyApi.ceremonyStartedAt != null
+        ? `${ceremonyApi.ceremonyTopicId}:${ceremonyApi.ceremonyStartedAt}`
+        : null;
+    if (ceremonyKey && ceremonyKey !== lastCeremonyKey.current) {
+      lastCeremonyKey.current = ceremonyKey;
+      playLevelUpSound();
+      if (ceremonyApi.ceremonyTopicId) {
+        setParticleTopicId(ceremonyApi.ceremonyTopicId);
+        window.setTimeout(() => setParticleTopicId(null), 1200);
+      }
+    }
+    if (!ceremonyKey) {
+      lastCeremonyKey.current = null;
+    }
+
+    let needsInvalidate = false;
+
+    for (let i = 0; i < count; i++) {
+      const crystal = crystals[i];
+      const topicMeta = metadataLookup[crystal.topicId] as TopicMetadata | undefined;
+      const level = calculateLevelFromXP(crystal.xp);
+      const [gx, gz] = crystal.gridPosition;
+      const bob = Math.sin(elapsedTime * 2 + gx * 0.5) * 0.03;
+      const py = 0.3 + bob;
+      const isSelected = selectedTopicId === crystal.topicId;
+      const rotY = isSelected ? elapsedTime * 0.4 : 0;
+      const scale = getCrystalScale(level);
+
+      positionScratch.set(gx, py, gz);
+      quaternionScratch.setFromAxisAngle(yAxis, rotY);
+      scaleScratch.setScalar(scale);
+      matrixScratch.compose(positionScratch, quaternionScratch, scaleScratch);
+      mesh.setMatrixAt(i, matrixScratch);
+
+      const morphProgress = ceremonyApi.getCeremonyMorphProgress(crystal.topicId, now);
+      const linear = ceremonyApi.getCeremonyLinearProgress(crystal.topicId, now);
+      const ceremonyPhase = linear * (1 - linear) * 4;
+
+      const colorHex = getSubjectColor(topicMeta?.subjectId ?? null, subjects);
+      const color = new THREE.Color(colorHex);
+
+      arrays.instanceLevel[i] = level;
+      arrays.instanceMorphProgress[i] = morphProgress;
+      arrays.instanceSubjectSeed[i] = subjectSeedFromId(topicMeta?.subjectId);
+      arrays.instanceColor[i * 3] = color.r;
+      arrays.instanceColor[i * 3 + 1] = color.g;
+      arrays.instanceColor[i * 3 + 2] = color.b;
+      arrays.instanceSelected[i] = isSelected ? 1 : 0;
+      arrays.instanceCeremonyPhase[i] = ceremonyPhase;
+
+      const anchor = labelAnchorRefs.current[i];
+      if (anchor) {
+        anchor.position.set(gx, py, gz);
+      }
+
+      const labelEl = labelOpacityRefs.current[i];
+      if (labelEl && topicMeta?.topicName) {
+        const isLabelVisible = labelVisibility.current.visibleIds.has(crystal.topicId);
+        const distance = isLabelVisible
+          ? labelVisibility.current.distances.get(crystal.topicId) ?? Infinity
+          : Infinity;
+        const occlusionFactor = labelVisibility.current.occlusion.get(crystal.topicId) ?? 1;
+        const opacity = getLabelOpacity(distance) * occlusionFactor;
+        labelEl.style.opacity = `${opacity}`;
+        labelEl.style.display = opacity === 0 ? 'none' : 'block';
+        if (opacity > 0) {
+          needsInvalidate = true;
+        }
+      }
+    }
+
+    mesh.instanceMatrix.needsUpdate = true;
+    attributes.instanceLevel.needsUpdate = true;
+    attributes.instanceMorphProgress.needsUpdate = true;
+    attributes.instanceSubjectSeed.needsUpdate = true;
+    attributes.instanceColor.needsUpdate = true;
+    attributes.instanceSelected.needsUpdate = true;
+    attributes.instanceCeremonyPhase.needsUpdate = true;
+    mesh.count = count;
+
+    if (needsInvalidate) {
+      invalidate();
+    }
+  });
+
+  useFrame(({ camera: cam }) => {
     if (isPaused) {
       return;
     }
 
     const candidates = getVisibleLabelCandidates(
       crystals,
-      camera.position,
+      cam.position,
       CRYSTAL_LABEL_OFFSET_Y,
       MAX_LABEL_DISTANCE,
       MAX_VISIBLE_LABELS,
@@ -474,28 +257,50 @@ export const Crystals: React.FC<CrystalsProps> = ({
     distances.clear();
     labelVisibility.current.occlusion.clear();
 
-    const occluders = Array.from(crystalMeshRefs.current.values());
+    const mesh = instancedRef.current;
+    const occluders = mesh ? [mesh] : [];
 
     candidates.forEach((candidate) => {
       visibleIds.add(candidate.topicId);
       distances.set(candidate.topicId, candidate.distance);
-      const occluder = crystalMeshRefs.current.get(candidate.topicId) ?? null;
+      const instanceIndex = crystals.findIndex((c) => c.topicId === candidate.topicId);
       const occlusionFactor = getLabelOcclusionFactor(
-        camera.position,
+        cam.position,
         candidate.worldPosition,
         raycasterRef.current,
         occluders,
-        occluder,
+        null,
+        LABEL_SECONDARY_OFFSET_Y,
+        mesh && instanceIndex >= 0 ? { mesh, instanceId: instanceIndex } : undefined,
       );
       labelVisibility.current.occlusion.set(candidate.topicId, occlusionFactor);
     });
   });
 
-  if (crystals.length === 0) {
-    return <group />;
-  }
+  const handleCrystalPointerUp = (e: ThreeEvent<PointerEvent>) => {
+    e.stopPropagation();
+    suppressNextClickRef.current = true;
+    handleSelectFromEvent(e);
+  };
 
-  const handleCrystalClick = (crystal: ActiveCrystal) => {
+  const handleCrystalClick = (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    if (suppressNextClickRef.current) {
+      suppressNextClickRef.current = false;
+      return;
+    }
+    handleSelectFromEvent(e);
+  };
+
+  const handleSelectFromEvent = (e: ThreeEvent<PointerEvent | MouseEvent>) => {
+    const id = e.instanceId;
+    if (id === undefined || id < 0 || id >= count) {
+      return;
+    }
+    const crystal = crystals[id];
+    if (!crystal) {
+      return;
+    }
     if (selectedTopicId === crystal.topicId) {
       onStartTopicStudySession?.(crystal.topicId);
     } else {
@@ -503,20 +308,67 @@ export const Crystals: React.FC<CrystalsProps> = ({
     }
   };
 
+  if (crystals.length === 0) {
+    return <group />;
+  }
+
+  const particleCrystal = particleTopicId
+    ? crystals.find((c) => c.topicId === particleTopicId)
+    : undefined;
+  const [px, pz] = particleCrystal?.gridPosition ?? [0, 0];
+  const particleY = 0.3;
+
   return (
     <group>
-      {crystals.map((crystal, index) => (
-        <SingleCrystal
-          key={`${crystal.topicId}-${index}`}
-          crystal={crystal}
-          isSelected={selectedTopicId === crystal.topicId}
-          onSelect={handleCrystalClick}
-          topicMeta={resolvedMetadata[crystal.topicId]}
-          isStudyPanelOpen={!!isStudyPanelOpen}
-          labelVisibility={labelVisibility.current}
-            onCrystalMeshRef={setCrystalMesh}
-        />
-      ))}
+      <instancedMesh
+        ref={instancedRef}
+        args={[instanceGeometry, material, CRYSTAL_MAX_INSTANCES]}
+        frustumCulled={false}
+        onPointerUp={handleCrystalPointerUp}
+        onClick={handleCrystalClick}
+      />
+
+      {crystals.map((crystal, index) => {
+        const topicMeta = metadataLookup[crystal.topicId] as TopicMetadata | undefined;
+        const labelLayerRange = isStudyPanelOpen ? [0, 10] : selectedTopicId === crystal.topicId ? [50, 100] : [0, 10];
+        return (
+          <group
+            key={crystal.topicId}
+            ref={(el: THREE.Group | null) => {
+              labelAnchorRefs.current[index] = el;
+            }}
+          >
+            {topicMeta?.topicName && (
+              <Html
+                center
+                transform
+                sprite
+                position={[0, -0.7, 0]}
+                zIndexRange={labelLayerRange}
+                style={{
+                  pointerEvents: 'none',
+                  width: '100px',
+                  textAlign: 'center',
+                  display: 'flex',
+                  justifyContent: 'center',
+                }}
+              >
+                <div
+                  ref={(el: HTMLDivElement | null) => {
+                    labelOpacityRefs.current[index] = el;
+                  }}
+                  style={{ opacity: 0 }}
+                  className="pointer-events-none max-w-[100px] truncate rounded-sm border border-border/50 bg-card/75 px-0.5 py-0.5 text-center font-sans text-[5px] font-normal leading-none tracking-wide text-foreground shadow-sm backdrop-blur-sm"
+                >
+                  {topicMeta.topicName}
+                </div>
+              </Html>
+            )}
+          </group>
+        );
+      })}
+
+      <GrowthParticles position={[px, particleY, pz]} active={!!particleTopicId} />
     </group>
   );
 };

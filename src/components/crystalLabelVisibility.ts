@@ -79,12 +79,18 @@ function isDescendantOrSelf(object: THREE.Object3D, candidateIgnored: THREE.Obje
   return false;
 }
 
+export interface IgnoredInstancedHit {
+  mesh: THREE.InstancedMesh;
+  instanceId: number;
+}
+
 export function isLabelTargetOccluded(
   cameraPosition: THREE.Vector3,
   targetPosition: THREE.Vector3,
   raycaster: THREE.Raycaster,
   occluders: readonly THREE.Object3D[],
   ignoredOccluder: THREE.Object3D | null,
+  ignoredInstanced?: IgnoredInstancedHit | null,
 ): boolean {
   if (!occluders.length) {
     return false;
@@ -110,6 +116,15 @@ export function isLabelTargetOccluded(
       continue;
     }
 
+    if (
+      ignoredInstanced &&
+      intersection.object === ignoredInstanced.mesh &&
+      typeof intersection.instanceId === 'number' &&
+      intersection.instanceId === ignoredInstanced.instanceId
+    ) {
+      continue;
+    }
+
     if (intersection.distance <= effectiveDistance) {
       return true;
     }
@@ -125,13 +140,14 @@ export function getLabelOcclusionFactor(
   occluders: readonly THREE.Object3D[],
   ignoredOccluder: THREE.Object3D | null,
   secondaryOffsetY = LABEL_SECONDARY_OFFSET_Y,
+  ignoredInstanced?: IgnoredInstancedHit | null,
 ): number {
   const secondaryTarget = targetPosition.clone().add(new THREE.Vector3(0, secondaryOffsetY, 0));
   const targetPoints = [targetPosition, secondaryTarget];
 
   let visiblePointCount = 0;
   for (const target of targetPoints) {
-    if (!isLabelTargetOccluded(cameraPosition, target, raycaster, occluders, ignoredOccluder)) {
+    if (!isLabelTargetOccluded(cameraPosition, target, raycaster, occluders, ignoredOccluder, ignoredInstanced)) {
       visiblePointCount += 1;
     }
   }
