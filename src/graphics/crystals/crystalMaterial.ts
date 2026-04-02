@@ -13,10 +13,15 @@ import {
   normalWorld,
   positionLocal,
   positionWorld,
+  uv,
   vec3,
 } from 'three/tsl';
 import type { CrystalInstancedAttributes } from './crystalInstanceAttributes';
-import { crystalHighFrequencyNoise, crystalLowFrequencyNoise } from './crystalNoiseNodes';
+import {
+  crystalHighFrequencyNoise,
+  crystalLowFrequencyNoise,
+  crystalSpikeNoise,
+} from './crystalNoiseNodes';
 
 const stoneColor = vec3(0.541, 0.541, 0.478);
 
@@ -56,7 +61,21 @@ function tierScalar(
 }
 
 /**
+ * Shard activation: returns 1.0 when the shard should be visible at the given tier, 0.0 otherwise.
+ * Shard 0: always, Shards 1–2: tier >= 2, Shards 3–5: tier >= 4.
+ */
+function shardActiveAtTier(shardIdx: unknown, tier: unknown) {
+  return (shardIdx as any)
+    .lessThan(0.5)
+    .select(float(1), (shardIdx as any).lessThan(2.5).select(
+      (tier as any).greaterThanEqual(2).select(float(1), float(0)),
+      (tier as any).greaterThanEqual(4).select(float(1), float(0)),
+    ));
+}
+
+/**
  * Shared MeshPhysicalNodeMaterial for instanced procedural crystals.
+ * Reads shard index from UV.x (encoded in cluster geometry) to collapse inactive shards.
  * Tier tables mirror `crystalMorphModel.ts` / morph plan.
  */
 export function createCrystalNodeMaterial(
@@ -67,16 +86,23 @@ export function createCrystalNodeMaterial(
   const iMorph = instancedDynamicBufferAttribute(attributes.instanceMorphProgress, 'float');
   const iSubjectSeed = instancedDynamicBufferAttribute(attributes.instanceSubjectSeed, 'float');
   const iColor = instancedDynamicBufferAttribute(attributes.instanceColor, 'vec3');
-  const iSelected = instancedDynamicBufferAttribute(attributes.instanceSelected, 'float');
-  const iCeremonyPhase = instancedDynamicBufferAttribute(attributes.instanceCeremonyPhase, 'float');
+  const iSelectCeremony = instancedDynamicBufferAttribute(attributes.instanceSelectCeremony, 'vec2');
+  const iSelected = iSelectCeremony.x;
+  const iCeremonyPhase = iSelectCeremony.y;
+
+  const shardIdx = uv().x;
 
   const levelInt = clamp(floor(iLevel), float(0), float(5));
   const fromTier = max(float(0), levelInt.sub(1));
   const morphT = iMorph.mul(iMorph).mul(float(3).sub(iMorph.mul(2)));
 
+  const fromActive = shardActiveAtTier(shardIdx, fromTier);
+  const toActive = shardActiveAtTier(shardIdx, levelInt);
+  const shardVisibility = mix(fromActive, toActive, morphT);
+
   const lowFreqAmp = mix(
-    tierScalar(fromTier, 0, 0.04, 0.10, 0.08, 0.06, 0.04),
-    tierScalar(levelInt, 0, 0.04, 0.10, 0.08, 0.06, 0.04),
+    tierScalar(fromTier, 0, 0.06, 0.12, 0.10, 0.08, 0.05),
+    tierScalar(levelInt, 0, 0.06, 0.12, 0.10, 0.08, 0.05),
     morphT,
   );
   const lowFreqScale = mix(
@@ -85,18 +111,28 @@ export function createCrystalNodeMaterial(
     morphT,
   );
   const highFreqAmp = mix(
-    tierScalar(fromTier, 0, 0, 0, 0.06, 0.12, 0.2),
-    tierScalar(levelInt, 0, 0, 0, 0.06, 0.12, 0.2),
+    tierScalar(fromTier, 0, 0.02, 0.06, 0.14, 0.22, 0.32),
+    tierScalar(levelInt, 0, 0.02, 0.06, 0.14, 0.22, 0.32),
     morphT,
   );
   const highFreqScale = mix(
-    tierScalar(fromTier, 0, 0, 0, 4.5, 6.0, 8.0),
-    tierScalar(levelInt, 0, 0, 0, 4.5, 6.0, 8.0),
+    tierScalar(fromTier, 0, 3.0, 4.0, 5.5, 7.0, 9.0),
+    tierScalar(levelInt, 0, 3.0, 4.0, 5.5, 7.0, 9.0),
     morphT,
   );
   const quantStep = mix(
-    tierScalar(fromTier, 0, 0, 0, 0.30, 0.4, 0.50),
-    tierScalar(levelInt, 0, 0, 0, 0.30, 0.4, 0.50),
+    tierScalar(fromTier, 0, 0, 0.15, 0.28, 0.38, 0.50),
+    tierScalar(levelInt, 0, 0, 0.15, 0.28, 0.38, 0.50),
+    morphT,
+  );
+  const spikeAmp = mix(
+    tierScalar(fromTier, 0, 0.01, 0.04, 0.10, 0.18, 0.28),
+    tierScalar(levelInt, 0, 0.01, 0.04, 0.10, 0.18, 0.28),
+    morphT,
+  );
+  const spikeScale = mix(
+    tierScalar(fromTier, 0, 2.0, 3.0, 4.0, 5.5, 7.0),
+    tierScalar(levelInt, 0, 2.0, 3.0, 4.0, 5.5, 7.0),
     morphT,
   );
 
@@ -159,9 +195,13 @@ export function createCrystalNodeMaterial(
     const lowNoise = crystalLowFrequencyNoise(p, seed, lowFreqScale);
     const highRaw = crystalHighFrequencyNoise(p, seed, highFreqScale);
     const highQuant = floor(highRaw.div(max(quantStep, float(1e-4)))).mul(quantStep);
-    const total = lowNoise.mul(lowFreqAmp).add(highQuant.mul(highFreqAmp));
+    const spike = crystalSpikeNoise(p, seed, spikeScale);
+    const total = lowNoise.mul(lowFreqAmp)
+      .add(highQuant.mul(highFreqAmp))
+      .add(spike.mul(spikeAmp));
+
     const displaced = positionLocal.add(n.mul(total));
-    return displaced;
+    return displaced.mul(shardVisibility);
   })();
 
   material.positionNode = positionNode;

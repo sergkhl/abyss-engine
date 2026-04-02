@@ -1,4 +1,5 @@
-export { getCrystalGeometry, disposeCrystalGeometry, CRYSTAL_ICOSAHEDRON_RADIUS, CRYSTAL_ICOSAHEDRON_DETAIL } from './crystalGeometry';
+export { getCrystalGeometry, disposeCrystalGeometry, CRYSTAL_BASE_RADIUS } from './crystalGeometry';
+export { getClusterGeometry, disposeClusterGeometries, SHARD_ACTIVATION_LEVELS } from './crystalClusterGeometry';
 export {
   createCrystalInstancedAttributes,
   CRYSTAL_INSTANCE_FLOAT_COUNT,
@@ -7,4 +8,4 @@ export {
   type CrystalInstancedAttributes,
 } from './crystalInstanceAttributes';
 export { createCrystalNodeMaterial } from './crystalMaterial';
-export { crystalHighFrequencyNoise, crystalLowFrequencyNoise } from './crystalNoiseNodes';
+export { crystalHighFrequencyNoise, crystalLowFrequencyNoise, crystalSpikeNoise } from './crystalNoiseNodes';

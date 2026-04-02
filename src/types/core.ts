@@ -1,5 +1,16 @@
 export type GeometryType = 'box' | 'cylinder' | 'sphere' | 'octahedron' | 'plane';
 
+export type CrystalBaseShape = 'icosahedron' | 'octahedron' | 'tetrahedron' | 'dodecahedron';
+
+export const CRYSTAL_BASE_SHAPES: readonly CrystalBaseShape[] = [
+  'icosahedron',
+  'octahedron',
+  'tetrahedron',
+  'dodecahedron',
+] as const;
+
+export const DEFAULT_CRYSTAL_BASE_SHAPE: CrystalBaseShape = 'icosahedron';
+
 export interface SubjectGeometry {
   gridTile: GeometryType;
   crystal: GeometryType;
@@ -12,6 +23,7 @@ export interface Subject {
   description: string;
   color: string;
   geometry: SubjectGeometry;
+  crystalBaseShape?: CrystalBaseShape;
   topicIds?: string[];
 }
 

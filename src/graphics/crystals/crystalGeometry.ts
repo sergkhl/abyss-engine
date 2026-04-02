@@ -1,23 +1,16 @@
-import * as THREE from 'three/webgpu';
+import type { CrystalBaseShape } from '../../types/core';
+import { getClusterGeometry, disposeClusterGeometries } from './crystalClusterGeometry';
 
-const CRYSTAL_ICOSAHEDRON_RADIUS = 0.3;
-const CRYSTAL_ICOSAHEDRON_DETAIL = 4;
+export const CRYSTAL_BASE_RADIUS = 0.3;
 
-let sharedGeometry: THREE.IcosahedronGeometry | null = null;
-
-export function getCrystalGeometry(): THREE.IcosahedronGeometry {
-  if (!sharedGeometry) {
-    sharedGeometry = new THREE.IcosahedronGeometry(
-      CRYSTAL_ICOSAHEDRON_RADIUS,
-      CRYSTAL_ICOSAHEDRON_DETAIL,
-    );
-  }
-  return sharedGeometry;
+/**
+ * Returns the pre-merged cluster geometry for the given base shape.
+ * All 6 shards are present; the shader collapses inactive ones via the `shardIndex` attribute.
+ */
+export function getCrystalGeometry(shape: CrystalBaseShape = 'icosahedron') {
+  return getClusterGeometry(shape);
 }
 
 export function disposeCrystalGeometry(): void {
-  sharedGeometry?.dispose();
-  sharedGeometry = null;
+  disposeClusterGeometries();
 }
-
-export { CRYSTAL_ICOSAHEDRON_RADIUS, CRYSTAL_ICOSAHEDRON_DETAIL };

@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber/webgpu';
 import { Html } from '@react-three/drei/webgpu';
 import * as THREE from 'three/webgpu';
-import { ActiveCrystal } from '../types';
+import { ActiveCrystal, CrystalBaseShape, CRYSTAL_BASE_SHAPES, DEFAULT_CRYSTAL_BASE_SHAPE, Subject } from '../types';
 import {
   calculateLevelFromXP,
   crystalCeremonyStore,
@@ -23,8 +23,9 @@ import {
   createCrystalInstancedAttributes,
   createCrystalNodeMaterial,
   CRYSTAL_MAX_INSTANCES,
-  getCrystalGeometry,
+  getClusterGeometry,
 } from '../graphics/crystals';
+import type { CrystalInstanceArrays, CrystalInstancedAttributes } from '../graphics/crystals';
 import {
   getLabelOpacity,
   getLabelOcclusionFactor,
@@ -49,11 +50,29 @@ interface CrystalsProps {
   isStudyPanelOpen?: boolean;
 }
 
+interface ShapeGroup {
+  geometry: THREE.BufferGeometry;
+  material: THREE.MeshPhysicalNodeMaterial;
+  arrays: CrystalInstanceArrays;
+  attributes: CrystalInstancedAttributes;
+}
+
 const matrixScratch = new THREE.Matrix4();
 const positionScratch = new THREE.Vector3();
 const quaternionScratch = new THREE.Quaternion();
 const scaleScratch = new THREE.Vector3();
 const yAxis = new THREE.Vector3(0, 1, 0);
+
+function resolveCrystalBaseShape(
+  topicId: string,
+  metadataLookup: Record<string, TopicMetadata | undefined>,
+  subjects: Subject[],
+): CrystalBaseShape {
+  const meta = metadataLookup[topicId];
+  if (!meta?.subjectId) return DEFAULT_CRYSTAL_BASE_SHAPE;
+  const subject = subjects.find((s) => s.id === meta.subjectId);
+  return subject?.crystalBaseShape ?? DEFAULT_CRYSTAL_BASE_SHAPE;
+}
 
 export const Crystals: React.FC<CrystalsProps> = ({
   crystals,
@@ -67,7 +86,15 @@ export const Crystals: React.FC<CrystalsProps> = ({
   const selectedTopicId = useUIStore((state) => state.selectedTopicId);
   const selectTopic = useUIStore((state) => state.selectTopic);
 
-  const instancedRef = useRef<THREE.InstancedMesh>(null);
+  const meshRefs = useRef<Record<CrystalBaseShape, THREE.InstancedMesh | null>>({
+    icosahedron: null,
+    octahedron: null,
+    tetrahedron: null,
+    dodecahedron: null,
+  });
+
+  const instanceToTopicRef = useRef<Map<THREE.InstancedMesh, string[]>>(new Map());
+
   const labelVisibility = useRef<LabelVisibilityState>({
     visibleIds: new Set(),
     distances: new Map(),
@@ -87,26 +114,21 @@ export const Crystals: React.FC<CrystalsProps> = ({
   const labelAnchorRefs = useRef<(THREE.Group | null)[]>([]);
   const labelOpacityRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const { arrays, attributes } = useMemo(
-    () => createCrystalInstancedAttributes(CRYSTAL_MAX_INSTANCES),
-    [],
-  );
-
-  const instanceGeometry = useMemo(() => {
-    const geo = getCrystalGeometry();
-    geo.setAttribute('instanceLevel', attributes.instanceLevel);
-    geo.setAttribute('instanceMorphProgress', attributes.instanceMorphProgress);
-    geo.setAttribute('instanceSubjectSeed', attributes.instanceSubjectSeed);
-    geo.setAttribute('instanceColor', attributes.instanceColor);
-    geo.setAttribute('instanceSelected', attributes.instanceSelected);
-    geo.setAttribute('instanceCeremonyPhase', attributes.instanceCeremonyPhase);
-    return geo;
-  }, [attributes]);
-
-  const material = useMemo(
-    () => createCrystalNodeMaterial(attributes, environmentMap),
-    [attributes, environmentMap],
-  );
+  const shapeGroups = useMemo(() => {
+    const groups = {} as Record<CrystalBaseShape, ShapeGroup>;
+    for (const shape of CRYSTAL_BASE_SHAPES) {
+      const { arrays, attributes } = createCrystalInstancedAttributes(CRYSTAL_MAX_INSTANCES);
+      const geometry = getClusterGeometry(shape).clone();
+      geometry.setAttribute('instanceLevel', attributes.instanceLevel);
+      geometry.setAttribute('instanceMorphProgress', attributes.instanceMorphProgress);
+      geometry.setAttribute('instanceSubjectSeed', attributes.instanceSubjectSeed);
+      geometry.setAttribute('instanceColor', attributes.instanceColor);
+      geometry.setAttribute('instanceSelectCeremony', attributes.instanceSelectCeremony);
+      const material = createCrystalNodeMaterial(attributes, environmentMap);
+      groups[shape] = { geometry, material, arrays, attributes };
+    }
+    return groups;
+  }, [environmentMap]);
 
   useCrystalCeremonySync();
 
@@ -140,14 +162,7 @@ export const Crystals: React.FC<CrystalsProps> = ({
   }, [crystals, isStudyPanelOpen]);
 
   useFrame(() => {
-    if (isPaused) {
-      return;
-    }
-
-    const mesh = instancedRef.current;
-    if (!mesh) {
-      return;
-    }
+    if (isPaused) return;
 
     const now = performance.now();
     const elapsedTime = now / 1000;
@@ -172,9 +187,29 @@ export const Crystals: React.FC<CrystalsProps> = ({
 
     let needsInvalidate = false;
 
+    const shapeCounts: Record<CrystalBaseShape, number> = {
+      icosahedron: 0,
+      octahedron: 0,
+      tetrahedron: 0,
+      dodecahedron: 0,
+    };
+
+    const topicMap = instanceToTopicRef.current;
+    for (const shape of CRYSTAL_BASE_SHAPES) {
+      const mesh = meshRefs.current[shape];
+      if (mesh) {
+        if (!topicMap.has(mesh)) topicMap.set(mesh, []);
+        topicMap.get(mesh)!.length = 0;
+      }
+    }
+
     for (let i = 0; i < count; i++) {
       const crystal = crystals[i];
       const topicMeta = metadataLookup[crystal.topicId] as TopicMetadata | undefined;
+      const shape = resolveCrystalBaseShape(crystal.topicId, metadataLookup, subjects);
+      const group = shapeGroups[shape];
+      const localIdx = shapeCounts[shape]++;
+
       const level = calculateLevelFromXP(crystal.xp);
       const [gx, gz] = crystal.gridPosition;
       const bob = Math.sin(elapsedTime * 2 + gx * 0.5) * 0.03;
@@ -187,7 +222,12 @@ export const Crystals: React.FC<CrystalsProps> = ({
       quaternionScratch.setFromAxisAngle(yAxis, rotY);
       scaleScratch.setScalar(scale);
       matrixScratch.compose(positionScratch, quaternionScratch, scaleScratch);
-      mesh.setMatrixAt(i, matrixScratch);
+
+      const mesh = meshRefs.current[shape];
+      if (mesh) {
+        mesh.setMatrixAt(localIdx, matrixScratch);
+        topicMap.get(mesh)![localIdx] = crystal.topicId;
+      }
 
       const morphProgress = ceremonyApi.getCeremonyMorphProgress(crystal.topicId, now);
       const linear = ceremonyApi.getCeremonyLinearProgress(crystal.topicId, now);
@@ -196,14 +236,14 @@ export const Crystals: React.FC<CrystalsProps> = ({
       const colorHex = getSubjectColor(topicMeta?.subjectId ?? null, subjects);
       const color = new THREE.Color(colorHex);
 
-      arrays.instanceLevel[i] = level;
-      arrays.instanceMorphProgress[i] = morphProgress;
-      arrays.instanceSubjectSeed[i] = subjectSeedFromId(topicMeta?.subjectId);
-      arrays.instanceColor[i * 3] = color.r;
-      arrays.instanceColor[i * 3 + 1] = color.g;
-      arrays.instanceColor[i * 3 + 2] = color.b;
-      arrays.instanceSelected[i] = isSelected ? 1 : 0;
-      arrays.instanceCeremonyPhase[i] = ceremonyPhase;
+      group.arrays.instanceLevel[localIdx] = level;
+      group.arrays.instanceMorphProgress[localIdx] = morphProgress;
+      group.arrays.instanceSubjectSeed[localIdx] = subjectSeedFromId(topicMeta?.subjectId);
+      group.arrays.instanceColor[localIdx * 3] = color.r;
+      group.arrays.instanceColor[localIdx * 3 + 1] = color.g;
+      group.arrays.instanceColor[localIdx * 3 + 2] = color.b;
+      group.arrays.instanceSelectCeremony[localIdx * 2] = isSelected ? 1 : 0;
+      group.arrays.instanceSelectCeremony[localIdx * 2 + 1] = ceremonyPhase;
 
       const anchor = labelAnchorRefs.current[i];
       if (anchor) {
@@ -226,14 +266,22 @@ export const Crystals: React.FC<CrystalsProps> = ({
       }
     }
 
-    mesh.instanceMatrix.needsUpdate = true;
-    attributes.instanceLevel.needsUpdate = true;
-    attributes.instanceMorphProgress.needsUpdate = true;
-    attributes.instanceSubjectSeed.needsUpdate = true;
-    attributes.instanceColor.needsUpdate = true;
-    attributes.instanceSelected.needsUpdate = true;
-    attributes.instanceCeremonyPhase.needsUpdate = true;
-    mesh.count = count;
+    for (const shape of CRYSTAL_BASE_SHAPES) {
+      const mesh = meshRefs.current[shape];
+      const group = shapeGroups[shape];
+      const shapeCount = shapeCounts[shape];
+      if (mesh) {
+        mesh.count = shapeCount;
+        if (shapeCount > 0) {
+          mesh.instanceMatrix.needsUpdate = true;
+          group.attributes.instanceLevel.needsUpdate = true;
+          group.attributes.instanceMorphProgress.needsUpdate = true;
+          group.attributes.instanceSubjectSeed.needsUpdate = true;
+          group.attributes.instanceColor.needsUpdate = true;
+          group.attributes.instanceSelectCeremony.needsUpdate = true;
+        }
+      }
+    }
 
     if (needsInvalidate) {
       invalidate();
@@ -241,9 +289,7 @@ export const Crystals: React.FC<CrystalsProps> = ({
   });
 
   useFrame(({ camera: cam }) => {
-    if (isPaused) {
-      return;
-    }
+    if (isPaused) return;
 
     const candidates = getVisibleLabelCandidates(
       crystals,
@@ -257,13 +303,16 @@ export const Crystals: React.FC<CrystalsProps> = ({
     distances.clear();
     labelVisibility.current.occlusion.clear();
 
-    const mesh = instancedRef.current;
-    const occluders = mesh ? [mesh] : [];
+    const occluders: THREE.InstancedMesh[] = [];
+    for (const shape of CRYSTAL_BASE_SHAPES) {
+      const mesh = meshRefs.current[shape];
+      if (mesh && mesh.count > 0) occluders.push(mesh);
+    }
 
     candidates.forEach((candidate) => {
       visibleIds.add(candidate.topicId);
       distances.set(candidate.topicId, candidate.distance);
-      const instanceIndex = crystals.findIndex((c) => c.topicId === candidate.topicId);
+
       const occlusionFactor = getLabelOcclusionFactor(
         cam.position,
         candidate.worldPosition,
@@ -271,7 +320,7 @@ export const Crystals: React.FC<CrystalsProps> = ({
         occluders,
         null,
         LABEL_SECONDARY_OFFSET_Y,
-        mesh && instanceIndex >= 0 ? { mesh, instanceId: instanceIndex } : undefined,
+        undefined,
       );
       labelVisibility.current.occlusion.set(candidate.topicId, occlusionFactor);
     });
@@ -294,17 +343,16 @@ export const Crystals: React.FC<CrystalsProps> = ({
 
   const handleSelectFromEvent = (e: ThreeEvent<PointerEvent | MouseEvent>) => {
     const id = e.instanceId;
-    if (id === undefined || id < 0 || id >= count) {
-      return;
-    }
-    const crystal = crystals[id];
-    if (!crystal) {
-      return;
-    }
-    if (selectedTopicId === crystal.topicId) {
-      onStartTopicStudySession?.(crystal.topicId);
+    if (id === undefined || id < 0) return;
+    const mesh = e.object as THREE.InstancedMesh;
+    const topics = instanceToTopicRef.current.get(mesh);
+    const topicId = topics?.[id];
+    if (!topicId) return;
+
+    if (selectedTopicId === topicId) {
+      onStartTopicStudySession?.(topicId);
     } else {
-      selectTopic(crystal.topicId);
+      selectTopic(topicId);
     }
   };
 
@@ -320,13 +368,18 @@ export const Crystals: React.FC<CrystalsProps> = ({
 
   return (
     <group>
-      <instancedMesh
-        ref={instancedRef}
-        args={[instanceGeometry, material, CRYSTAL_MAX_INSTANCES]}
-        frustumCulled={false}
-        onPointerUp={handleCrystalPointerUp}
-        onClick={handleCrystalClick}
-      />
+      {CRYSTAL_BASE_SHAPES.map((shape) => (
+        <instancedMesh
+          key={shape}
+          ref={(el: THREE.InstancedMesh | null) => {
+            meshRefs.current[shape] = el;
+          }}
+          args={[shapeGroups[shape].geometry, shapeGroups[shape].material, CRYSTAL_MAX_INSTANCES]}
+          frustumCulled={false}
+          onPointerUp={handleCrystalPointerUp}
+          onClick={handleCrystalClick}
+        />
+      ))}
 
       {crystals.map((crystal, index) => {
         const topicMeta = metadataLookup[crystal.topicId] as TopicMetadata | undefined;

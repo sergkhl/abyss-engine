@@ -15,6 +15,8 @@ export interface CrystalDisplacementParams {
   highFreqAmplitude: number;
   highFreqScale: number;
   quantizationStep: number;
+  spikeAmplitude: number;
+  spikeScale: number;
   morphEnvelope: number;
 }
 
@@ -40,12 +42,12 @@ export interface CrystalMorphParams {
 }
 
 const DISPLACEMENT_TIERS: CrystalDisplacementParams[] = [
-  { lowFreqAmplitude: 0.0, lowFreqScale: 0.0, highFreqAmplitude: 0.0, highFreqScale: 0.0, quantizationStep: 0.0, morphEnvelope: 1 },
-  { lowFreqAmplitude: 0.04, lowFreqScale: 1.8, highFreqAmplitude: 0.0, highFreqScale: 0.0, quantizationStep: 0.0, morphEnvelope: 1 },
-  { lowFreqAmplitude: 0.10, lowFreqScale: 2.2, highFreqAmplitude: 0.0, highFreqScale: 0.0, quantizationStep: 0.0, morphEnvelope: 1 },
-  { lowFreqAmplitude: 0.08, lowFreqScale: 1.5, highFreqAmplitude: 0.06, highFreqScale: 4.5, quantizationStep: 0.30, morphEnvelope: 1 },
-  { lowFreqAmplitude: 0.06, lowFreqScale: 1.2, highFreqAmplitude: 0.12, highFreqScale: 6.0, quantizationStep: 0.4, morphEnvelope: 1 },
-  { lowFreqAmplitude: 0.04, lowFreqScale: 1.0, highFreqAmplitude: 0.2, highFreqScale: 8.0, quantizationStep: 0.50, morphEnvelope: 1 },
+  { lowFreqAmplitude: 0.0, lowFreqScale: 0.0, highFreqAmplitude: 0.0, highFreqScale: 0.0, quantizationStep: 0.0, spikeAmplitude: 0.0, spikeScale: 0.0, morphEnvelope: 1 },
+  { lowFreqAmplitude: 0.06, lowFreqScale: 1.8, highFreqAmplitude: 0.02, highFreqScale: 3.0, quantizationStep: 0.0, spikeAmplitude: 0.01, spikeScale: 2.0, morphEnvelope: 1 },
+  { lowFreqAmplitude: 0.12, lowFreqScale: 2.2, highFreqAmplitude: 0.06, highFreqScale: 4.0, quantizationStep: 0.15, spikeAmplitude: 0.04, spikeScale: 3.0, morphEnvelope: 1 },
+  { lowFreqAmplitude: 0.10, lowFreqScale: 1.5, highFreqAmplitude: 0.14, highFreqScale: 5.5, quantizationStep: 0.28, spikeAmplitude: 0.10, spikeScale: 4.0, morphEnvelope: 1 },
+  { lowFreqAmplitude: 0.08, lowFreqScale: 1.2, highFreqAmplitude: 0.22, highFreqScale: 7.0, quantizationStep: 0.38, spikeAmplitude: 0.18, spikeScale: 5.5, morphEnvelope: 1 },
+  { lowFreqAmplitude: 0.05, lowFreqScale: 1.0, highFreqAmplitude: 0.32, highFreqScale: 9.0, quantizationStep: 0.50, spikeAmplitude: 0.28, spikeScale: 7.0, morphEnvelope: 1 },
 ];
 
 const MATERIAL_TIERS: CrystalMaterialParams[] = [
@@ -79,6 +81,8 @@ function blendDisplacement(a: CrystalDisplacementParams, b: CrystalDisplacementP
     highFreqAmplitude: lerp(a.highFreqAmplitude, b.highFreqAmplitude, u),
     highFreqScale: lerp(a.highFreqScale, b.highFreqScale, u),
     quantizationStep: lerp(a.quantizationStep, b.quantizationStep, u),
+    spikeAmplitude: lerp(a.spikeAmplitude, b.spikeAmplitude, u),
+    spikeScale: lerp(a.spikeScale, b.spikeScale, u),
     morphEnvelope: lerp(a.morphEnvelope, b.morphEnvelope, u),
   };
 }
