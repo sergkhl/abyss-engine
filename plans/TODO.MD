@@ -4,6 +4,13 @@
   - [P0] Pub-sub LLM Generate subject nodes; topics and cards
     - introduce "for of war" so study content generated on-demand based on user progression
   - [ ] Generate mini games for interactive learning experience
+    - [ ] Shared infrastructure: types, hooks, evaluation, LLM surface → [plan](./mini-game-shared-infrastructure-plan.md)
+    - [ ] Category Sort (tap items into category zones) → [plan](./mini-game-category-sort-plan.md)
+    - [ ] Sequence Builder (order scrambled steps into slots) → [plan](./mini-game-sequence-builder-plan.md)
+    - [ ] Connection Web (match left/right pairs with lines) → [plan](./mini-game-connection-web-plan.md)
+    - [ ] Gap Fill Flow (D3 DAG with blank nodes, player fills from answer pool)
+    - [ ] Venn Classifier (2-3 overlapping D3 circles, player places items in correct regions)
+    - [ ] Ranking Duel (D3 bar chart, player drags bar heights to rank items by a criterion)
   - [ ] Sreaks support
   - [ ] Achievements screen
     - [ ] yesterday's acknowledgement screen from metrics
