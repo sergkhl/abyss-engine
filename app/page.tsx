@@ -7,12 +7,12 @@ import { useSearchParams } from 'next/navigation';
 import { useProgressionStore as useStudyStore } from '@/features/progression';
 import { useUIStore } from '@/store/uiStore';
 import { Rating } from '@/types';
-import type { Card } from '@/types/core';
+import type { Card, CardType } from '@/types/core';
 import DebugControls from '@/components/debug/DebugControls';
 
 import { initAbyssDev } from '@/utils/abyssDev';
 import { AttunementRitualPayload } from '@/types/progression';
-import { useTopicMetadata } from '@/features/content';
+import { filterCardsByCardTypes, useTopicMetadata } from '@/features/content';
 import { deckRepository } from '@/infrastructure/di';
 import { syncDeckIndexedDbDebugFromApp } from '@/infrastructure/deckDb/deckDbDebugLog';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,7 @@ import { useScreenCaptureLlmSummary } from '@/hooks/useScreenCaptureLlmSummary';
 import { useThinkingToggle } from '@/hooks/useThinkingToggle';
 import { LlmThinkingToggle } from '@/components/LlmThinkingToggle';
 import { topicCardsQueryKey } from '@/hooks/useDeckData';
+import { toast } from 'sonner';
 
 // Dynamic import for Scene to avoid SSR issues with Three.js.
 // Loading UI is a single parent overlay until Canvas reports ready (avoids loader ↔ scene swap blink).
@@ -51,6 +52,9 @@ const Scene = dynamic(() => import('@/components/Scene'), {
 const HomeContent: React.FC = () => {
   const searchParams = useSearchParams();
   const isDebugMode = searchParams.get('debug') === '1';
+  /** E2E / Playwright: full-screen loader stays until WebGPU `onCreated`; skip it so UI is reachable even if GPU init stalls. */
+  const skipSceneLoadingOverlay =
+    searchParams.get('e2e') === '1' || process.env.NEXT_PUBLIC_PLAYWRIGHT === '1';
   const [showStats, setShowStats] = useState(true);
   const [isCameraAngleUnlocked, setIsCameraAngleUnlocked] = useState(isDebugMode);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -64,17 +68,23 @@ const HomeContent: React.FC = () => {
   // Track initialization to prevent infinite loops
   const initializedRef = useRef(false);
 
-  const [sceneOverlayMounted, setSceneOverlayMounted] = useState(true);
-  const [sceneOverlayVisible, setSceneOverlayVisible] = useState(true);
+  const [sceneOverlayMounted, setSceneOverlayMounted] = useState(() => !skipSceneLoadingOverlay);
+  const [sceneOverlayVisible, setSceneOverlayVisible] = useState(() => !skipSceneLoadingOverlay);
 
   const handleSceneCanvasReady = useCallback(() => {
+    if (skipSceneLoadingOverlay) {
+      return;
+    }
     setSceneOverlayVisible(false);
-  }, []);
+  }, [skipSceneLoadingOverlay]);
 
   const handleSceneCanvasReleased = useCallback(() => {
+    if (skipSceneLoadingOverlay) {
+      return;
+    }
     setSceneOverlayMounted(true);
     setSceneOverlayVisible(true);
-  }, []);
+  }, [skipSceneLoadingOverlay]);
 
   const handleSceneOverlayExitComplete = useCallback(() => {
     setSceneOverlayMounted(false);
@@ -90,6 +100,7 @@ const HomeContent: React.FC = () => {
   const getRemainingRitualCooldownMs = useStudyStore((state) => state.getRemainingRitualCooldownMs);
   const getDueCardsCount = useStudyStore((state) => state.getDueCardsCount);
   const focusStudyCard = useStudyStore((state) => state.focusStudyCard);
+  const startTopicStudySession = useStudyStore((state) => state.startTopicStudySession);
 
   const activeTopicIds = useMemo(() => Array.from(new Set(activeCrystals.map((crystal) => crystal.topicId))), [activeCrystals]);
   const allTopicMetadata = useTopicMetadata(activeTopicIds);
@@ -246,6 +257,27 @@ const HomeContent: React.FC = () => {
     [topicCardsById, focusStudyCard, selectTopic, closeStudyTimeline, openStudyPanel],
   );
 
+  const handleStartStudyWithCardTypes = useCallback(
+    (enabledTypes: CardType[]) => {
+      const topicId = useUIStore.getState().selectedTopicId;
+      if (!topicId) {
+        toast.error('Select a topic crystal first.');
+        return;
+      }
+      const cards = topicCardsById.get(topicId) ?? [];
+      const enabled = new Set(enabledTypes);
+      const filtered = filterCardsByCardTypes(cards, enabled);
+      if (filtered.length === 0) {
+        toast.error('No cards match the selected types.');
+        return;
+      }
+      selectTopic(topicId);
+      startTopicStudySession(topicId, filtered);
+      openStudyPanel();
+    },
+    [topicCardsById, selectTopic, startTopicStudySession, openStudyPanel],
+  );
+
   return (
     <div className="w-screen h-screen relative overflow-hidden">
       {sceneOverlayMounted && (
@@ -329,6 +361,7 @@ const HomeContent: React.FC = () => {
         isDebugMode={isDebugMode}
         onSummarizeScreen={screenCaptureLlm.startSummarize}
         onOpenAscentWeaver={() => setIsAscentWeaverOpen(true)}
+        onStartStudyWithCardTypes={handleStartStudyWithCardTypes}
       />
 
       <AscentWeaverModal isOpen={isAscentWeaverOpen} onClose={() => setIsAscentWeaverOpen(false)} />

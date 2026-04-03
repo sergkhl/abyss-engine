@@ -6,6 +6,7 @@ import {
   startConsoleErrorCapture,
   expectWebGPUAvailable,
   waitForStudyPanelReady,
+  E2E_HOME_PATH,
 } from './utils/test-helpers';
 
 /**
@@ -18,11 +19,11 @@ import {
 
 // Helper function to setup test with deck loaded
 async function setupTestWithDeck(page: any) {
-  await page.goto('/');
+  await page.goto(E2E_HOME_PATH);
   await waitForPageHydrated(page);
   await clearLocalStorage(page);
 
-  await page.goto('/');
+  await page.goto(E2E_HOME_PATH);
   await waitForPageHydrated(page);
 
   // Load default deck
@@ -172,7 +173,7 @@ test.describe('Study Session', () => {
    * Combines: Load deck -> Select crystal -> Open study -> Show answer -> Rate -> Verify stats
    */
   test('complete study session happy path', async ({ page }) => {
-    await page.goto('/');
+    await page.goto(E2E_HOME_PATH);
     await waitForPageHydrated(page);
 
     // Load deck
@@ -344,5 +345,17 @@ test.describe('Challenge Format Types', () => {
     await page.getByTestId('study-card-continue').click();
     await assertProgressionEventIncrease(page, continueEventCount);
 
+  });
+
+  test('command palette shows card type filter and study filtered command', async ({ page }) => {
+    await page.goto(E2E_HOME_PATH);
+    await waitForPageHydrated(page);
+
+    await page.getByTestId('command-palette-trigger').click();
+    const palette = page.getByRole('dialog');
+    await expect(palette).toBeVisible({ timeout: 5000 });
+    await expect(palette.getByText('Card type filter')).toBeVisible();
+    await expect(palette.getByText('Include Flashcards')).toBeVisible();
+    await expect(palette.getByText('Study filtered cards (selected topic)')).toBeVisible();
   });
 });

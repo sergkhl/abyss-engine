@@ -1,7 +1,20 @@
 'use client';
 
-import React, { useEffect } from 'react';
-import { Camera, History, Landmark, Minus, Network, Sparkles, Zap } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  BookOpen,
+  Camera,
+  Check,
+  Circle,
+  History,
+  Landmark,
+  Minus,
+  Network,
+  Sparkles,
+  Zap,
+} from 'lucide-react';
+
+import type { CardType } from '@/types/core';
 
 import {
   Command,
@@ -11,13 +24,73 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandSeparator,
 } from '@/components/ui/command';
 import { useProgressionStore } from '@/features/progression';
-import { uiStore } from '@/store/uiStore';
+import { uiStore, useUIStore } from '@/store/uiStore';
 
 const DEV_XP_BUFF_ID = 'dev_xp_multiplier_5x' as const;
 const DEV_BUFF_SOURCE = 'command_palette' as const;
 const DEV_XP_AMOUNT = 80;
+
+const CARD_TYPE_FILTER_STORAGE_KEY = 'abyss.commandPalette.cardTypeFilter';
+
+const CARD_TYPES_ORDER: readonly CardType[] = [
+  'FLASHCARD',
+  'SINGLE_CHOICE',
+  'MULTI_CHOICE',
+  'MINI_GAME',
+] as const;
+
+const CARD_TYPE_LABELS: Record<CardType, string> = {
+  FLASHCARD: 'Flashcards',
+  SINGLE_CHOICE: 'Single choice',
+  MULTI_CHOICE: 'Multiple choice',
+  MINI_GAME: 'Mini games',
+};
+
+function createDefaultCardTypeFilter(): Record<CardType, boolean> {
+  return {
+    FLASHCARD: true,
+    SINGLE_CHOICE: true,
+    MULTI_CHOICE: true,
+    MINI_GAME: true,
+  };
+}
+
+function loadCardTypeFilterFromStorage(): Record<CardType, boolean> {
+  const fallback = createDefaultCardTypeFilter();
+  if (typeof window === 'undefined') {
+    return fallback;
+  }
+  try {
+    const raw = window.localStorage.getItem(CARD_TYPE_FILTER_STORAGE_KEY);
+    if (!raw) {
+      return fallback;
+    }
+    const parsed = JSON.parse(raw) as Partial<Record<CardType, boolean>>;
+    const next = { ...fallback };
+    for (const t of CARD_TYPES_ORDER) {
+      if (typeof parsed[t] === 'boolean') {
+        next[t] = parsed[t];
+      }
+    }
+    return next;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveCardTypeFilterToStorage(filter: Record<CardType, boolean>): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  try {
+    window.localStorage.setItem(CARD_TYPE_FILTER_STORAGE_KEY, JSON.stringify(filter));
+  } catch {
+    // ignore quota / private mode
+  }
+}
 
 export interface AbyssCommandPaletteProps {
   open: boolean;
@@ -27,6 +100,8 @@ export interface AbyssCommandPaletteProps {
   onSummarizeScreen?: () => void;
   /** Opens AscentWeaver to generate a curriculum graph into IndexedDB. */
   onOpenAscentWeaver?: () => void;
+  /** Starts a study session for the selected topic using only enabled card types. */
+  onStartStudyWithCardTypes?: (enabledTypes: CardType[]) => void;
 }
 
 function matchesDevXpBuff(b: { buffId: string; source?: string }) {
@@ -39,9 +114,32 @@ export function AbyssCommandPalette({
   isDebugMode,
   onSummarizeScreen,
   onOpenAscentWeaver,
+  onStartStudyWithCardTypes,
 }: AbyssCommandPaletteProps) {
-  const selectedTopicId = uiStore((s) => s.selectedTopicId);
+  const selectedTopicId = useUIStore((s) => s.selectedTopicId);
   const devXpBuffActive = useProgressionStore((s) => s.activeBuffs.some(matchesDevXpBuff));
+  const [cardTypeFilter, setCardTypeFilter] = useState(createDefaultCardTypeFilter);
+  const skipNextCardFilterSaveRef = useRef(true);
+
+  useEffect(() => {
+    setCardTypeFilter(loadCardTypeFilterFromStorage());
+  }, []);
+
+  useEffect(() => {
+    if (skipNextCardFilterSaveRef.current) {
+      skipNextCardFilterSaveRef.current = false;
+      return;
+    }
+    saveCardTypeFilterToStorage(cardTypeFilter);
+  }, [cardTypeFilter]);
+
+  const enabledTypesList = useMemo(
+    () => CARD_TYPES_ORDER.filter((t) => cardTypeFilter[t]),
+    [cardTypeFilter],
+  );
+
+  const canStartFilteredStudy =
+    Boolean(selectedTopicId) && enabledTypesList.length > 0 && Boolean(onStartStudyWithCardTypes);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -137,6 +235,58 @@ export function AbyssCommandPalette({
               <span>Open Wisdom Altar (Discovery)</span>
             </CommandItem>
           </CommandGroup>
+          {onStartStudyWithCardTypes ? (
+            <>
+              <CommandSeparator />
+              <CommandGroup heading="Card type filter">
+                <CommandItem
+                  value="study filtered cards selected topic crystal flashcard choice mini game"
+                  disabled={!canStartFilteredStudy}
+                  onSelect={() => {
+                    if (!canStartFilteredStudy) {
+                      return;
+                    }
+                    onStartStudyWithCardTypes(enabledTypesList);
+                    onOpenChange(false);
+                  }}
+                >
+                  <BookOpen className="size-4" />
+                  <span>Study filtered cards (selected topic)</span>
+                </CommandItem>
+                {CARD_TYPES_ORDER.map((type) => {
+                  const on = cardTypeFilter[type];
+                  const label = CARD_TYPE_LABELS[type];
+                  const searchExtras =
+                    type === 'FLASHCARD'
+                      ? 'flashcard deck'
+                      : type === 'SINGLE_CHOICE'
+                        ? 'single choice mcq'
+                        : type === 'MULTI_CHOICE'
+                          ? 'multiple choice mcq'
+                          : 'mini game category sort';
+                  return (
+                    <CommandItem
+                      key={type}
+                      value={`filter include ${label} ${type} ${searchExtras} study filter toggle`}
+                      onSelect={() => {
+                        setCardTypeFilter((prev) => ({ ...prev, [type]: !prev[type] }));
+                      }}
+                    >
+                      {on ? (
+                        <Check className="size-4 text-primary" aria-hidden />
+                      ) : (
+                        <Circle className="size-4 text-muted-foreground" aria-hidden />
+                      )}
+                      <span>
+                        Include {label}
+                        <span className="sr-only">{on ? ', on' : ', off'}</span>
+                      </span>
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            </>
+          ) : null}
           {onSummarizeScreen ? (
             <CommandGroup heading="Assistant">
               <CommandItem

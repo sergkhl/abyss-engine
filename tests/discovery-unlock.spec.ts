@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import {
   waitForPageHydrated,
   waitForCanvasClickBox,
+  E2E_HOME_PATH,
 } from './utils/test-helpers';
 
 /**
@@ -16,7 +17,7 @@ test.describe('Discovery/Unlock Journey', () => {
    * This inherently tests that clicking the altar opens the modal
    */
   test('should display tiered topic grid with unlock points and lock icons', async ({ page }) => {
-    await page.goto('/');
+    await page.goto(E2E_HOME_PATH);
     await waitForPageHydrated(page);
 
     // Load deck first
@@ -57,7 +58,7 @@ test.describe('Discovery/Unlock Journey', () => {
    * Test: Can view topic details and close modal with escape
    */
   test('should open topic details and close discovery modal with escape', async ({ page }) => {
-    await page.goto('/');
+    await page.goto(E2E_HOME_PATH);
     await waitForPageHydrated(page);
 
     // Load deck

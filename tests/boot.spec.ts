@@ -4,6 +4,7 @@ import {
   getCanvas,
   startConsoleErrorCapture,
   expectWebGPUAvailable,
+  E2E_HOME_PATH,
 } from './utils/test-helpers';
 
 /**
@@ -18,7 +19,7 @@ test.describe('Boot Test', () => {
     const { errors, stop } = startConsoleErrorCapture(page);
 
     // Navigate to the home page
-    await page.goto('/');
+    await page.goto(E2E_HOME_PATH);
     await waitForPageHydrated(page);
     await expectWebGPUAvailable(page);
 

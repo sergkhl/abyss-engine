@@ -4,6 +4,9 @@ import { ConsoleMessage, expect, Locator, Page } from '@playwright/test';
  * Focused E2E helpers used by current specs.
  */
 
+/** Home path that disables the WebGPU gate overlay so Playwright can reach the shell (see `app/page.tsx`). */
+export const E2E_HOME_PATH = '/?e2e=1';
+
 /**
  * Wait for the page to be fully loaded with client-side hydration.
  */

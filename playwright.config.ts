@@ -32,15 +32,18 @@ const sandboxArgs = process.env.PW_ENABLE_NO_SANDBOX === '1' || CI_MODE ? ['--no
 const browserCommonArgs = [...baseWebGpuArgs, ...sandboxArgs];
 const browserArgs = [...new Set(browserCommonArgs)];
 
+/** Match headless WebGPU launch flags so headful runs do not hang in `WebGPURenderer.init()` while the cloud loader blocks UI. */
+const headfulLaunchArgs = process.env.PW_WEBGPU_HEADFUL_ARGS
+  ? parseBrowserArgList(process.env.PW_WEBGPU_HEADFUL_ARGS)
+  : browserArgs;
+
 const chromiumHeadfulProject = {
   name: 'chromium-headful',
   use: {
     ...devices['Desktop Chrome'],
     headless: false,
     launchOptions: {
-      args: process.env.PW_WEBGPU_HEADFUL_ARGS
-        ? parseBrowserArgList(process.env.PW_WEBGPU_HEADFUL_ARGS)
-        : ['--enable-unsafe-webgpu'],
+      args: headfulLaunchArgs,
     },
   },
 };
@@ -72,7 +75,7 @@ export default defineConfig({
 
   retries: process.env.CI ? 2 : 0,
   globalTimeout: 120 * 1000,
-  timeout: 60 * 1000,
+  timeout: 15 * 1000,
 
   use: {
     baseURL: 'http://localhost:3000',
@@ -96,5 +99,9 @@ export default defineConfig({
     timeout: 120 * 1000,
     stdout: 'pipe',
     stderr: 'pipe',
+    env: {
+      ...process.env,
+      NEXT_PUBLIC_PLAYWRIGHT: '1',
+    },
   },
 });
