@@ -382,6 +382,27 @@
         ],
         "explanation": "Eigendecomposition ($A = P D P^{-1}$) maps a space back to itself using a single basis $P$ and applies only to diagonalizable square matrices. SVD maps between different spaces using two orthogonal bases ($U$ and $V$) and applies to any rectangular matrix. Singular values are non-negative."
       }
+    },
+    {
+      "id": "linalg-mg-1-connection-web",
+      "type": "MINI_GAME",
+      "difficulty": 1,
+      "content": {
+        "gameType": "CONNECTION_WEB",
+        "prompt": "Match each linear algebra idea to its short definition",
+        "pairs": [
+          { "id": "la-cw-dot", "left": "Dot product", "right": "Sum of pairwise products of entries" },
+          { "id": "la-cw-cross", "left": "Cross product", "right": "Vector perpendicular to two 3D vectors" },
+          { "id": "la-cw-transpose", "left": "Transpose", "right": "Swap rows and columns" },
+          { "id": "la-cw-ident", "left": "Identity matrix", "right": "Ones on diagonal, zeros elsewhere" },
+          { "id": "la-cw-det", "left": "Determinant", "right": "Scaling factor for volume and orientation" }
+        ],
+        "distractors": [
+          { "id": "la-cw-dist-l", "side": "left", "label": "Eigenvalue" },
+          { "id": "la-cw-dist-r", "side": "right", "label": "Always zero for any matrix" }
+        ],
+        "explanation": "The dot product measures alignment and length; the cross product is specific to $\\mathbb{R}^3$; transpose exchanges $A_{ij}\\leftrightarrow A_{ji}$; $I$ leaves vectors unchanged; the determinant captures how a linear map scales volume and whether it flips orientation."
+      }
     }
   ]
 }

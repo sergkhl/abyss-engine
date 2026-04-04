@@ -398,6 +398,27 @@
         ],
         "explanation": "Descriptive work flows from raw data to validation, then numerical summaries, then plots that support comparison, and finally narrative interpretation tied to the analytical goal."
       }
+    },
+    {
+      "id": "descstat-mg-2-connection-web",
+      "type": "MINI_GAME",
+      "difficulty": 1,
+      "content": {
+        "gameType": "CONNECTION_WEB",
+        "prompt": "Match each summary statistic to its plain-language meaning",
+        "pairs": [
+          { "id": "ds-cw-mean", "left": "Mean", "right": "Average of all values" },
+          { "id": "ds-cw-median", "left": "Median", "right": "Middle value when sorted" },
+          { "id": "ds-cw-mode", "left": "Mode", "right": "Most frequent value" },
+          { "id": "ds-cw-var", "left": "Variance", "right": "Mean squared deviation from center" },
+          { "id": "ds-cw-iqr", "left": "IQR", "right": "Range between first and third quartiles" }
+        ],
+        "distractors": [
+          { "id": "ds-cw-dist-l", "side": "left", "label": "Correlation" },
+          { "id": "ds-cw-dist-r", "side": "right", "label": "Line through origin only" }
+        ],
+        "explanation": "The mean is the arithmetic average; the median is robust to outliers; the mode is for categorical or repeated values; variance measures spread around the mean; the interquartile range captures the middle 50% of the distribution."
+      }
     }
   ]
 }

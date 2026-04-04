@@ -95,7 +95,7 @@ export interface ConnectionWebContent {
   gameType: 'CONNECTION_WEB';
   prompt: string;
   pairs: { id: string; left: string; right: string }[];
-  distractors?: { side: 'left' | 'right'; label: string }[];
+  distractors?: { id: string; side: 'left' | 'right'; label: string }[];
   explanation: string;
 }
 

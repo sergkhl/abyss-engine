@@ -1,12 +1,18 @@
 'use client';
 
 import React, { useCallback, useMemo } from 'react';
-import type { MiniGameContent, CategorySortContent, SequenceBuildContent } from '../../types/core';
+import type {
+  MiniGameContent,
+  CategorySortContent,
+  SequenceBuildContent,
+  ConnectionWebContent,
+} from '../../types/core';
 import type { MiniGameResult } from '../../types/miniGame';
 import { evaluateMiniGame } from '../../features/content/evaluateMiniGame';
 import { useMiniGameInteraction } from '../../hooks/useMiniGameInteraction';
 import { CategorySortGame } from './CategorySortGame';
 import { SequenceBuildGame } from './SequenceBuildGame';
+import { ConnectionWebGame } from './ConnectionWebGame';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import MathMarkdownRenderer from '../MathMarkdownRenderer';
@@ -29,13 +35,25 @@ function getItemIds(content: MiniGameContent): string[] {
       return content.items.map((item) => item.id);
     case 'SEQUENCE_BUILD':
       return content.items.map((item) => item.id);
-    case 'CONNECTION_WEB':
-      return content.pairs.map((pair) => pair.left);
+    case 'CONNECTION_WEB': {
+      const leftDistractorIds = (content.distractors ?? [])
+        .filter((d) => d.side === 'left')
+        .map((d) => d.id);
+      return [...content.pairs.map((pair) => pair.id), ...leftDistractorIds];
+    }
   }
+}
+
+function getRequiredItemIds(content: MiniGameContent): string[] | undefined {
+  if (content.gameType === 'CONNECTION_WEB') {
+    return content.pairs.map((pair) => pair.id);
+  }
+  return undefined;
 }
 
 export function MiniGameView({ content, onComplete, onContinue }: MiniGameViewProps) {
   const itemIds = useMemo(() => getItemIds(content), [content]);
+  const requiredItemIds = useMemo(() => getRequiredItemIds(content), [content]);
 
   const evaluateFn = useCallback(
     (placements: Map<string, string>): MiniGameResult => {
@@ -44,7 +62,7 @@ export function MiniGameView({ content, onComplete, onContinue }: MiniGameViewPr
     [content],
   );
 
-  const interaction = useMiniGameInteraction({ itemIds, evaluateFn });
+  const interaction = useMiniGameInteraction({ itemIds, requiredItemIds, evaluateFn });
 
   const handleSubmit = useCallback(() => {
     interaction.submit();
@@ -60,6 +78,15 @@ export function MiniGameView({ content, onComplete, onContinue }: MiniGameViewPr
   const scorePercent = interaction.result
     ? Math.round(interaction.result.score * 100)
     : null;
+
+  const submitHint =
+    content.gameType === 'CONNECTION_WEB'
+      ? interaction.isComplete
+        ? 'Submit Answer'
+        : `Connect all pairs (${interaction.unplacedItemIds.length} remaining)`
+      : interaction.isComplete
+        ? 'Submit Answer'
+        : `Place all items (${interaction.unplacedItemIds.length} remaining)`;
 
   return (
     <div className="w-full" data-testid="mini-game-view">
@@ -99,6 +126,13 @@ export function MiniGameView({ content, onComplete, onContinue }: MiniGameViewPr
           />
         )}
 
+        {content.gameType === 'CONNECTION_WEB' && (
+          <ConnectionWebGame
+            content={content as ConnectionWebContent}
+            interaction={interaction}
+          />
+        )}
+
         {/* Explanation (post-submit) */}
         {interaction.phase === 'submitted' && content.explanation && (
           <div className="mt-4 pt-4 border-t border-border">
@@ -122,9 +156,7 @@ export function MiniGameView({ content, onComplete, onContinue }: MiniGameViewPr
             className={`w-full ${!interaction.canSubmit ? 'opacity-50' : ''}`}
             data-testid="mini-game-submit"
           >
-            {interaction.isComplete
-              ? 'Submit Answer'
-              : `Place all items (${interaction.unplacedItemIds.length} remaining)`}
+            {submitHint}
           </Button>
         )}
 

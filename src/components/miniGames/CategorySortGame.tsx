@@ -4,76 +4,12 @@ import React from 'react';
 import { LayoutGroup, motion } from 'motion/react';
 import type { CategorySortContent } from '../../types/core';
 import type { useMiniGameInteraction } from '../../hooks/useMiniGameInteraction';
+import { MiniGameItemChip } from './shared/MiniGameItemChip';
+import { getMiniGameItemVisualState } from './shared/miniGameVisualState';
 
 interface CategorySortGameProps {
   content: CategorySortContent;
   interaction: ReturnType<typeof useMiniGameInteraction>;
-}
-
-type ItemVisualState = 'default' | 'selected' | 'correct' | 'incorrect';
-
-function getItemVisualState(
-  itemId: string,
-  selectedItemId: string | null,
-  phase: string,
-  correctItemIds: ReadonlySet<string>,
-  incorrectItemIds: ReadonlySet<string>,
-): ItemVisualState {
-  if (phase === 'submitted') {
-    if (correctItemIds.has(itemId)) return 'correct';
-    if (incorrectItemIds.has(itemId)) return 'incorrect';
-    return 'default';
-  }
-  if (selectedItemId === itemId) return 'selected';
-  return 'default';
-}
-
-const ITEM_STYLE: Record<ItemVisualState, string> = {
-  default: 'bg-muted border-border text-foreground',
-  selected: 'bg-primary/20 border-primary text-foreground ring-2 ring-primary',
-  correct: 'bg-green-500/20 border-green-500 text-green-700 dark:text-green-300',
-  incorrect: 'bg-destructive/20 border-destructive text-destructive',
-};
-
-function ItemChip({
-  label,
-  state,
-  onTap,
-  layoutId,
-  disabled,
-}: {
-  label: string;
-  state: ItemVisualState;
-  onTap: () => void;
-  layoutId: string;
-  disabled: boolean;
-}) {
-  return (
-    <motion.button
-      layoutId={layoutId}
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        onTap();
-      }}
-      disabled={disabled}
-      className={`inline-flex items-center justify-center rounded-lg border-2 px-3 py-2 text-sm font-medium min-h-[44px] min-w-[44px] select-none ${ITEM_STYLE[state]} ${disabled ? 'opacity-70' : ''}`}
-      layout
-      transition={{ type: 'spring', stiffness: 500, damping: 35, mass: 0.8 }}
-      initial={false}
-      animate={
-        state === 'incorrect'
-          ? { x: [0, -3, 3, -3, 3, 0], transition: { duration: 0.25 } }
-          : state === 'correct'
-            ? { scale: [1, 1.06, 1], transition: { duration: 0.2 } }
-            : {}
-      }
-    >
-      {state === 'correct' && <span className="mr-1">✓</span>}
-      {state === 'incorrect' && <span className="mr-1">✗</span>}
-      {label}
-    </motion.button>
-  );
 }
 
 export function CategorySortGame({ content, interaction }: CategorySortGameProps) {
@@ -134,9 +70,15 @@ export function CategorySortGame({ content, interaction }: CategorySortGameProps
                   {placedItemIds.map((itemId) => {
                     const item = itemsById.get(itemId);
                     if (!item) return null;
-                    const state = getItemVisualState(itemId, selectedItemId, phase, correctItemIds, incorrectItemIds);
+                    const state = getMiniGameItemVisualState(
+                      itemId,
+                      selectedItemId,
+                      phase,
+                      correctItemIds,
+                      incorrectItemIds,
+                    );
                     return (
-                      <ItemChip
+                      <MiniGameItemChip
                         key={itemId}
                         layoutId={`mini-game-item-${itemId}`}
                         label={item.label}
@@ -176,9 +118,15 @@ export function CategorySortGame({ content, interaction }: CategorySortGameProps
             {unplacedItemIds.map((itemId) => {
               const item = itemsById.get(itemId);
               if (!item) return null;
-              const state = getItemVisualState(itemId, selectedItemId, phase, correctItemIds, incorrectItemIds);
+              const state = getMiniGameItemVisualState(
+                itemId,
+                selectedItemId,
+                phase,
+                correctItemIds,
+                incorrectItemIds,
+              );
               return (
-                <ItemChip
+                <MiniGameItemChip
                   key={itemId}
                   layoutId={`mini-game-item-${itemId}`}
                   label={item.label}

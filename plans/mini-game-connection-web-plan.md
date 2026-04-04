@@ -151,18 +151,20 @@ This convention is established at render time and used consistently in the inter
 
 ---
 
-## 4. D3 Component
+## 4. React + motion component (hybrid: HTML nodes + SVG connectors)
 
 ### `src/components/miniGames/ConnectionWebGame.tsx`
 
-**SVG Layout (portrait mobile, ~320×400):**
+Align with [mini-game-shared-infrastructure-plan.md](./mini-game-shared-infrastructure-plan.md): **nodes use shared `MiniGameItemChip`** (and the same state/animation vocabulary as Category Sort / Sequence Build). **D3 is not used.**
+
+**Layout (mobile-first, portrait-friendly):**
 
 ```
 ┌──────────────────────────────┐
 │                              │
 │  [Term A]      [Def 3]      │  ← left column    right column
 │                              │     (shuffled)
-│  [Term B] ———— [Def 1]      │  ← connected pair (line)
+│  [Term B] ———— [Def 1]      │  ← connector drawn in SVG overlay
 │                              │
 │  [Term C]      [Def 2]      │
 │                              │
@@ -179,30 +181,28 @@ This convention is established at render time and used consistently in the inter
 interface ConnectionWebGameProps {
   content: ConnectionWebContent;
   interaction: ReturnType<typeof useMiniGameInteraction>;
-  width: number;
-  height: number;
-  svgRef: RefObject<SVGSVGElement>;
 }
 ```
 
+No required `width` / `height` / `svgRef` props: the game measures connector endpoints with **refs + `getBoundingClientRect`** (or a resize observer on a wrapper) relative to a positioned parent; dimensions are internal.
+
 **Rendering approach:**
 
-1. **Left column** — Pair left-labels + left distractors, rendered as filled rounded `<rect>` + `<text>`. Vertically spaced. Tap handler calls `interaction.selectItem(leftNodeId)`.
+1. **Wrapper** — `relative` container; optional `LayoutGroup` from `motion/react` if node layout animation is desired.
 
-2. **Right column** — Pair right-labels + right distractors, **shuffled** at mount time. Same visual style. Tap handler calls `interaction.placeItem(rightNodeId)` when a left node is selected.
+2. **Left column** — Pair left-labels + left distractors as **`MiniGameItemChip`** (from `miniGames/shared/`). Vertical stack (flex). Tap → `interaction.selectItem(leftNodeId)`.
 
-3. **Connection lines** — `<line>` elements drawn from right edge of left node to left edge of right node. Rendered for each entry in `interaction.placements`. Line uses `stroke` from muted foreground color, `stroke-width: 2`.
+3. **Right column** — Pair right-labels + right distractors, **shuffled** at mount (deterministic seed from content ids + prompt, same idea as Sequence Build pool). Same chip component. When a left node is selected, tap right → `interaction.placeItem(rightNodeId)`.
 
-4. **Selected state** — Selected left node gets a ring highlight. Valid right targets (unconnected right nodes) get a subtle pulse or brightened border to indicate they're tappable.
+4. **Connection lines (SVG only)** — A **`MiniGameConnectorLayer`** (or inline SVG) **absolutely positioned** over the game area, behind or above chips per z-index. For each `interaction.placements` entry, draw a `<line>` (or quadratic path) from the **right edge** of the left chip to the **left edge** of the matched right chip, using measured coordinates. Default stroke: muted foreground; `stroke-width: 2`. Optional **motion** or CSS on `stroke-dashoffset` for draw-in after connect.
 
-5. **Removing connections** — Tapping a connected left node calls `interaction.removeItem(leftNodeId)`, removing the line.
+5. **Selected state** — Selected left chip: ring via shared chip styles. Valid right targets: persistent border/label cue (not hover-only).
 
-6. **Post-submission feedback** — Correct connections turn green. Incorrect connections turn red. Left distractors that were correctly left unconnected get a green check. Left distractors that were incorrectly connected get red.
+6. **Removing connections** — Tapping a connected left node → `interaction.removeItem(leftNodeId)`; line list updates reactively.
 
-**D3 usage:**
-- `d3-selection` for SVG element joins (nodes, lines)
-- `d3-transition` for line drawing animation (stroke-dashoffset trick) and feedback colors
-- No `d3-force` needed (fixed two-column layout)
+7. **Post-submission feedback** — Lines and/or endpoint chips use green/red from shared “correct” / “incorrect” states. Left distractors left unconnected: correct; wrongly connected: incorrect (per evaluation).
+
+**Why hybrid:** HTML chips reuse **one styling system** with other mini-games; SVG handles only the **polyline geometry** between columns without pulling D3 into the render path.
 
 ---
 
@@ -262,14 +262,16 @@ ConnectionWebGame
 
 ---
 
-## 7. New Files
+## 7. New / modified files
 
 | Path | Purpose |
 |---|---|
-| `src/components/miniGames/ConnectionWebGame.tsx` | D3 SVG renderer (~180 lines) |
+| `src/components/miniGames/shared/MiniGameItemChip.tsx` | Shared chip (if not already extracted for other games) |
+| `src/components/miniGames/shared/MiniGameConnectorLayer.tsx` | SVG overlay for connection lines |
+| `src/components/miniGames/ConnectionWebGame.tsx` | Two-column layout + chip wiring + connector layer (~180–220 lines) |
 | `src/components/miniGames/ConnectionWebGame.test.tsx` | Component tests |
 
-## 8. Modified Files
+## 8. Modified files
 
 | Path | Change |
 |---|---|
@@ -278,3 +280,5 @@ ConnectionWebGame
 | `src/features/miniGameWeaver/miniGameContentSchema.ts` | Add `connectionWebContentSchema` |
 | `src/components/miniGames/MiniGameView.tsx` | Add `CONNECTION_WEB` case |
 | `src/hooks/useMiniGameInteraction.ts` | Add optional `requiredItemIds` parameter for distractor support |
+| `src/components/miniGames/CategorySortGame.tsx` | Refactor to `miniGames/shared` chips/zones (same effort as shared extraction) |
+| `src/components/miniGames/SequenceBuildGame.tsx` | Refactor to `miniGames/shared` chips (same effort) |

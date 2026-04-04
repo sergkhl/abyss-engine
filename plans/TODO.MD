@@ -61,7 +61,7 @@
   - [ ] Import anki cards
 
 - [ ] **UX Improvements**
-  - [ ] Improve scene lighting (currently it's too dark when camera directed away from SceneSky)
+  - [ ] Improve 3D scene lighting (currently it's too dark when camera directed away from SceneSky)
   - [ ] Hide labels behind crystals (raycast collision)
   - [ ] Add search in Discovery Modal
   - [ ] levelup screen

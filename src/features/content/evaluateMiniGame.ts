@@ -74,26 +74,52 @@ function evaluateSequenceBuild(
   };
 }
 
+function expectedRightNodeId(pairId: string): string {
+  return `right-${pairId}`;
+}
+
 function evaluateConnectionWeb(
   content: ConnectionWebContent,
   placements: Map<string, string>,
 ): MiniGameResult {
-  const totalItems = content.pairs.length;
-  let correctItems = 0;
+  const totalPairs = content.pairs.length;
+  let pairCorrect = 0;
   const placementList: MiniGamePlacement[] = [];
 
   for (const pair of content.pairs) {
-    const placedRight = placements.get(pair.left);
-    const isItemCorrect = placedRight === pair.right;
-    if (isItemCorrect) correctItems++;
-    placementList.push({ itemId: pair.left, targetId: placedRight ?? '', isItemCorrect });
+    const leftId = pair.id;
+    const expectedRightId = expectedRightNodeId(pair.id);
+    const placedRightId = placements.get(leftId);
+    const isItemCorrect = placedRightId === expectedRightId;
+    if (isItemCorrect) pairCorrect++;
+    placementList.push({
+      itemId: leftId,
+      targetId: placedRightId ?? '',
+      isItemCorrect,
+    });
   }
 
-  const score = totalItems > 0 ? correctItems / totalItems : 0;
+  const leftDistractors = (content.distractors ?? []).filter((d) => d.side === 'left');
+  const totalItems = totalPairs + leftDistractors.length;
+  let distractorCorrect = 0;
+
+  for (const distractor of leftDistractors) {
+    const connected = placements.has(distractor.id);
+    if (!connected) distractorCorrect++;
+    const isItemCorrect = !connected;
+    placementList.push({
+      itemId: distractor.id,
+      targetId: placements.get(distractor.id) ?? '',
+      isItemCorrect,
+    });
+  }
+
+  const totalCorrect = pairCorrect + distractorCorrect;
+  const score = totalItems > 0 ? totalCorrect / totalItems : 0;
 
   return {
     totalItems,
-    correctItems,
+    correctItems: totalCorrect,
     score,
     isCorrect: score >= CORRECT_THRESHOLD,
     placements: placementList,

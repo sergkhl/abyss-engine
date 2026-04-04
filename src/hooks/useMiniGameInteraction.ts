@@ -4,10 +4,16 @@ import type { MiniGameResult } from '../types/miniGame';
 
 interface UseMiniGameInteractionConfig {
   itemIds: string[];
+  /** When set, submit is allowed when every required id has a placement (optional ids may stay unplaced). */
+  requiredItemIds?: string[];
   evaluateFn: (placements: Map<string, string>) => MiniGameResult;
 }
 
-export function useMiniGameInteraction({ itemIds, evaluateFn }: UseMiniGameInteractionConfig) {
+export function useMiniGameInteraction({
+  itemIds,
+  requiredItemIds,
+  evaluateFn,
+}: UseMiniGameInteractionConfig) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [placements, setPlacements] = useState<Map<string, string>>(new Map());
   const [phase, setPhase] = useState<MiniGamePhase>('playing');
@@ -32,18 +38,25 @@ export function useMiniGameInteraction({ itemIds, evaluateFn }: UseMiniGameInter
   );
 
   const placeItem = useCallback(
-    (targetId: string, options?: { exclusiveTarget?: boolean }) => {
+    (targetId: string, options?: { exclusiveTarget?: boolean; invertPlacement?: boolean }) => {
       if (phase !== 'playing' || !selectedItemId) return;
       setPlacements((prev) => {
         const next = new Map(prev);
+        const invert = options?.invertPlacement ?? false;
         if (options?.exclusiveTarget) {
+          const rightId = invert ? selectedItemId : targetId;
+          const anchorLeftId = invert ? targetId : selectedItemId;
           for (const [id, tid] of next) {
-            if (tid === targetId && id !== selectedItemId) {
+            if (tid === rightId && id !== anchorLeftId) {
               next.delete(id);
             }
           }
         }
-        next.set(selectedItemId, targetId);
+        if (invert) {
+          next.set(targetId, selectedItemId);
+        } else {
+          next.set(selectedItemId, targetId);
+        }
         return next;
       });
       setSelectedItemId(null);
@@ -81,9 +94,11 @@ export function useMiniGameInteraction({ itemIds, evaluateFn }: UseMiniGameInter
     setResult(null);
   }, []);
 
+  const idsForCompletion = requiredItemIds ?? itemIds;
+
   const unplacedItemIds = useMemo(
-    () => itemIds.filter((id) => !placements.has(id)),
-    [itemIds, placements],
+    () => idsForCompletion.filter((id) => !placements.has(id)),
+    [idsForCompletion, placements],
   );
 
   const isComplete = unplacedItemIds.length === 0;

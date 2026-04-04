@@ -4,94 +4,13 @@ import React, { useMemo } from 'react';
 import { LayoutGroup, motion } from 'motion/react';
 import type { SequenceBuildContent } from '../../types/core';
 import type { useMiniGameInteraction } from '../../hooks/useMiniGameInteraction';
+import { MiniGameItemChip } from './shared/MiniGameItemChip';
+import { getMiniGameItemVisualState } from './shared/miniGameVisualState';
+import { shuffleMiniGameIds } from './shared/shuffleMiniGameIds';
 
 interface SequenceBuildGameProps {
   content: SequenceBuildContent;
   interaction: ReturnType<typeof useMiniGameInteraction>;
-}
-
-type ItemVisualState = 'default' | 'selected' | 'correct' | 'incorrect';
-
-function getItemVisualState(
-  itemId: string,
-  selectedItemId: string | null,
-  phase: string,
-  correctItemIds: ReadonlySet<string>,
-  incorrectItemIds: ReadonlySet<string>,
-): ItemVisualState {
-  if (phase === 'submitted') {
-    if (correctItemIds.has(itemId)) return 'correct';
-    if (incorrectItemIds.has(itemId)) return 'incorrect';
-    return 'default';
-  }
-  if (selectedItemId === itemId) return 'selected';
-  return 'default';
-}
-
-const ITEM_STYLE: Record<ItemVisualState, string> = {
-  default: 'bg-muted border-border text-foreground',
-  selected: 'bg-primary/20 border-primary text-foreground ring-2 ring-primary',
-  correct: 'bg-green-500/20 border-green-500 text-green-700 dark:text-green-300',
-  incorrect: 'bg-destructive/20 border-destructive text-destructive',
-};
-
-function ItemChip({
-  label,
-  state,
-  onTap,
-  layoutId,
-  disabled,
-}: {
-  label: string;
-  state: ItemVisualState;
-  onTap: () => void;
-  layoutId: string;
-  disabled: boolean;
-}) {
-  return (
-    <motion.button
-      layoutId={layoutId}
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        onTap();
-      }}
-      disabled={disabled}
-      className={`inline-flex max-w-full items-center justify-center rounded-lg border-2 px-2 py-2 text-center text-sm font-medium min-h-[44px] min-w-[44px] select-none break-words ${ITEM_STYLE[state]} ${disabled ? 'opacity-70' : ''}`}
-      layout
-      transition={{ type: 'spring', stiffness: 500, damping: 35, mass: 0.8 }}
-      initial={false}
-      animate={
-        state === 'incorrect'
-          ? { x: [0, -3, 3, -3, 3, 0], transition: { duration: 0.25 } }
-          : state === 'correct'
-            ? { scale: [1, 1.06, 1], transition: { duration: 0.2 } }
-            : {}
-      }
-    >
-      {state === 'correct' && <span className="mr-1 shrink-0">✓</span>}
-      {state === 'incorrect' && <span className="mr-1 shrink-0">✗</span>}
-      <span className="line-clamp-3">{label}</span>
-    </motion.button>
-  );
-}
-
-/** Deterministic shuffle so pool order is stable across renders (SSR-safe). */
-function shuffleItemIds(itemIds: string[], seed: string): string[] {
-  const a = [...itemIds];
-  let h = 2166136261;
-  for (let i = 0; i < seed.length; i++) {
-    h ^= seed.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  for (let i = a.length - 1; i > 0; i--) {
-    h ^= h << 13;
-    h ^= h >>> 17;
-    h ^= h << 5;
-    const j = Math.abs(h) % (i + 1);
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
 }
 
 export function SequenceBuildGame({ content, interaction }: SequenceBuildGameProps) {
@@ -114,7 +33,7 @@ export function SequenceBuildGame({ content, interaction }: SequenceBuildGamePro
   const poolOrder = useMemo(() => {
     const ids = content.items.map((i) => i.id);
     const seed = `${content.prompt}:${ids.join(',')}`;
-    return shuffleItemIds(ids, seed);
+    return shuffleMiniGameIds(ids, seed);
   }, [content]);
 
   const orderedUnplaced = useMemo(() => {
@@ -192,7 +111,7 @@ export function SequenceBuildGame({ content, interaction }: SequenceBuildGamePro
                       (() => {
                         const item = itemsById.get(placedId);
                         if (!item) return null;
-                        const state = getItemVisualState(
+                        const state = getMiniGameItemVisualState(
                           placedId,
                           selectedItemId,
                           phase,
@@ -200,10 +119,11 @@ export function SequenceBuildGame({ content, interaction }: SequenceBuildGamePro
                           incorrectItemIds,
                         );
                         return (
-                          <ItemChip
+                          <MiniGameItemChip
                             layoutId={`mini-game-item-${placedId}`}
                             label={item.label}
                             state={state}
+                            multilineLabel
                             onTap={() => {
                               if (isPlaying) {
                                 if (selectedItemId) {
@@ -247,7 +167,7 @@ export function SequenceBuildGame({ content, interaction }: SequenceBuildGamePro
               {orderedUnplaced.map((itemId) => {
                 const item = itemsById.get(itemId);
                 if (!item) return null;
-                const state = getItemVisualState(
+                const state = getMiniGameItemVisualState(
                   itemId,
                   selectedItemId,
                   phase,
@@ -255,11 +175,12 @@ export function SequenceBuildGame({ content, interaction }: SequenceBuildGamePro
                   incorrectItemIds,
                 );
                 return (
-                  <ItemChip
+                  <MiniGameItemChip
                     key={itemId}
                     layoutId={`mini-game-item-${itemId}`}
                     label={item.label}
                     state={state}
+                    multilineLabel
                     onTap={() => selectItem(itemId)}
                     disabled={phase === 'submitted'}
                   />

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber/webgpu';
 import { Html } from '@react-three/drei/webgpu';
 import * as THREE from 'three/webgpu';
@@ -133,6 +133,25 @@ export const Crystals: React.FC<CrystalsProps> = ({
   useCrystalCeremonySync();
 
   const count = Math.min(crystals.length, CRYSTAL_MAX_INSTANCES);
+
+  /** When layout or per-instance scale (xp → level) changes, drop cached bounds so raycast recomputes. */
+  const crystalBoundsKey = useMemo(
+    () =>
+      crystals
+        .map((c) => `${c.topicId}:${c.gridPosition[0]},${c.gridPosition[1]}:${c.xp}`)
+        .join('|'),
+    [crystals],
+  );
+
+  useLayoutEffect(() => {
+    for (const shape of CRYSTAL_BASE_SHAPES) {
+      const mesh = meshRefs.current[shape];
+      if (mesh) {
+        mesh.boundingSphere = null;
+        mesh.boundingBox = null;
+      }
+    }
+  }, [crystalBoundsKey]);
 
   useEffect(() => {
     if (!prevPanelOpen.current && isStudyPanelOpen) {

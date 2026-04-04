@@ -2,7 +2,7 @@
 
 ## Overview
 
-Shared types, hooks, evaluation harness, LLM generation surface, and D3 rendering foundation for all interactive mini-games. Each mini-game is a thin D3 renderer that composes these shared primitives.
+Shared types, hooks, evaluation harness, LLM generation surface, and a **React + motion** presentation layer for all interactive mini-games. Each mini-game is a thin renderer that composes **`src/components/miniGames/shared/`** primitives (chips, zones, tokens, optional SVG overlays) so styling and feedback animations stay consistent. **Connection Web** additionally uses an **SVG layer only for connector lines** (hybrid layout); it does not use D3 for DOM lifecycle.
 
 ## Design Decisions
 
@@ -13,7 +13,8 @@ Shared types, hooks, evaluation harness, LLM generation surface, and D3 renderin
 | LLM generation | Separate generation surface (like AscentWeaver) | Mini-game generation needs higher compute; batch generation per topic |
 | Scoring | Binary ≥80% → correct (rating 3), else incorrect (rating 1) | Consistent with existing MCQ binary mapping |
 | Touch interaction | Tap-to-select, tap-to-place (no drag) | Mobile-first; avoids scroll conflicts |
-| Component architecture | Shared hooks + thin renderers per game type | DRY force simulation, interaction state, feedback animations |
+| Component architecture | Shared hooks + **`miniGames/shared/`** UI primitives + thin game components | DRY interaction state, **one styling/animation surface** (Tailwind + motion); games must not duplicate chip/zone logic |
+| Shared refactor | **Mandated** when introducing `shared/`: **Category Sort** and **Sequence Build** are refactored to use the same shared components | New games and refactors stay aligned; easier global theme tweaks |
 | Visual style | Clean/functional with Tailwind tokens | Readability and interaction clarity first |
 
 ---
@@ -131,26 +132,11 @@ function useMiniGameInteraction(config: {
 4. Tap "Submit" → `submit()` → runs `evaluateFn`, populates correct/incorrect sets
 5. Phase moves to `'submitted'` → UI shows feedback → Continue button calls `onSubmitResult`
 
-### `src/hooks/useMiniGameSvgContainer.ts`
+### `useMiniGameSvgContainer` (optional — not part of the default stack)
 
-Shared responsive SVG setup for all D3 mini-games.
+A responsive SVG sizing hook was spec’d for an older “all-SVG” approach. **Current standard:** mini-games use **CSS layout** (flex/grid) and **`motion/react` `LayoutGroup`** where shared layout animation helps; no global SVG stage is required.
 
-**API:**
-
-```typescript
-function useMiniGameSvgContainer(config?: {
-  aspectRatio?: number;  // default 4/3
-  minHeight?: number;    // default 280
-  maxHeight?: number;    // default 420
-}): {
-  containerRef: RefObject<HTMLDivElement>;
-  svgRef: RefObject<SVGSVGElement>;
-  width: number;
-  height: number;
-}
-```
-
-Uses `ResizeObserver` on the container div to derive SVG dimensions. The SVG fills the container width and computes height from aspect ratio, clamped to min/max.
+If a future game needs a fixed **viewBox** or a full SVG canvas, a small `useMiniGameSvgContainer` (ResizeObserver + dimensions) may be added **ad hoc**—it is **not** a dependency for Category Sort, Sequence Build, or Connection Web.
 
 ---
 
@@ -253,7 +239,7 @@ When `isMiniGame && activeTab === 'study'`:
 
 Thin orchestrator that:
 1. Receives `MiniGameContent` + `onComplete(isCorrect: boolean)` + `onContinue()`
-2. Switches on `content.gameType` to render the correct D3 component
+2. Switches on `content.gameType` to render the correct game component
 3. Uses `useMiniGameInteraction` for shared state
 4. Renders submit/continue buttons consistent with existing study panel UX
 5. Shows explanation text after submission (from `content.explanation`)
@@ -261,7 +247,7 @@ Thin orchestrator that:
 ```
 <MiniGameView>
   ├── <prompt text>
-  ├── <D3 game component>  ← switches on gameType
+  ├── <game component>  ← switches on gameType; composes miniGames/shared
   ├── <submit / continue button>
   └── <explanation (post-submit)>
 </MiniGameView>
@@ -359,46 +345,55 @@ The generated mini-game content is converted to `Card` objects with `type: 'MINI
 
 ---
 
-## 7. D3 Rendering Foundations
+## 7. React + motion rendering foundations
 
-### Shared SVG Patterns
+### Principles
 
-All mini-games render inside an `<svg>` element managed by `useMiniGameSvgContainer`. Shared visual primitives:
+- **Presentation layer:** `motion/react` (LayoutGroup where layout-id continuity helps), Tailwind classes, shadcn primitives from `src/components/ui/*` only where already used (e.g. in `MiniGameView`).
+- **No `src/components/ui` additions** for mini-game–specific widgets—shared game UI lives under **`src/components/miniGames/shared/`** (project rule: do not add new arbitrary files under `ui/` without an explicit request).
+- **D3:** not used for mini-game UIs. The repo may use D3 elsewhere (e.g. force graphs); mini-games stay declarative React.
+- **Hybrid SVG:** only where geometry is awkward in CSS alone—e.g. **Connection Web** connector lines between columns (`<line>` or `<path>` in an overlay SVG sized to the game region). Nodes remain HTML + motion.
 
-**Node rendering:**
-- Rounded rect with label text (truncated with ellipsis if needed)
-- States: `default`, `selected` (ring highlight), `placed`, `correct` (green), `incorrect` (red)
-- Use Tailwind CSS variable colors: `--color-primary`, `--color-destructive`, `--color-muted`, etc.
+### Shared visual primitives (`src/components/miniGames/shared/`)
 
-**Zone rendering:**
-- Dashed-border rect/circle target areas
-- States: `empty`, `hovering` (item selected and zone is valid target), `filled`
-- Label text above or inside zone
+Extract and reuse across **Category Sort**, **Sequence Build**, and **Connection Web** (mandated refactor for the first two when shared lands):
 
-**Feedback animations:**
-- Correct: brief green flash + scale pulse on the item
-- Incorrect: brief red flash + horizontal shake
-- Use D3 transitions (already imported via `d3-transition`)
+| Piece | Role |
+|---|---|
+| **`MiniGameItemChip`** (or equivalent) | Rounded bordered button/chip; label + truncation; states `default` \| `selected` \| `correct` \| `incorrect`; spring layout + shake/pulse from motion |
+| **`MiniGameZone`** | Dashed target region; optional header label; “empty” / “valid target” / filled affordances |
+| **`miniGameItemStyles.ts`** (or `miniGameTokens.ts`) | Shared class maps / state→Tailwind mapping so games don’t diverge |
+| **`MiniGameConnectorLayer`** (optional) | SVG absolutely positioned over a measured wrapper; used by Connection Web for lines only |
 
-**Touch events:**
-- All interactive elements use `pointer-events` and `pointerdown` / `click`
-- No `mouseover`-dependent styling (mobile-first rule from CLAUDE.md)
-- Minimum touch target: 44x44px
+**Feedback animations (motion):**
 
-### File Structure
+- Correct: brief scale pulse + green border/background tokens
+- Incorrect: horizontal shake + destructive tokens  
+- No hover-only affordances (CLAUDE.md mobile-first)
+
+**Touch:** `click` / keyboard activation on focusable controls; minimum touch target **44×44px**.
+
+### Mandated refactor (with shared module)
+
+When `miniGames/shared/` is introduced:
+
+1. **Implement** shared chip + zone helpers + tokens.
+2. **Refactor** `CategorySortGame.tsx` and `SequenceBuildGame.tsx` to import them (remove duplicated `ItemChip` / style maps in those files).
+3. **Implement** `ConnectionWebGame.tsx` using the same **`MiniGameItemChip`** for left/right nodes; add connector SVG layer as needed.
+
+### File structure (target)
 
 ```
 src/components/miniGames/
-  ├── MiniGameView.tsx                  // orchestrator (switches on gameType)
+  ├── MiniGameView.tsx
   ├── shared/
-  │   ├── MiniGameSvgContainer.tsx      // responsive SVG wrapper
-  │   ├── MiniGameNode.tsx              // SVG group: rect + label + state styling
-  │   ├── MiniGameZone.tsx              // SVG group: dashed target area
-  │   ├── MiniGameItemPool.tsx          // unplaced items area (bottom of SVG)
-  │   └── miniGameColors.ts            // color tokens from CSS variables
-  ├── CategorySortGame.tsx              // D3 renderer
-  ├── SequenceBuildGame.tsx             // D3 renderer
-  └── ConnectionWebGame.tsx             // D3 renderer
+  │   ├── MiniGameItemChip.tsx       // shared chip (motion.button + layoutId prop)
+  │   ├── MiniGameZone.tsx           // dashed zone wrapper
+  │   ├── miniGameItemStyles.ts      // state → className (or tokens)
+  │   └── MiniGameConnectorLayer.tsx // optional; Connection Web lines
+  ├── CategorySortGame.tsx           // composes shared; layout only
+  ├── SequenceBuildGame.tsx          // composes shared; layout only
+  └── ConnectionWebGame.tsx        // composes shared + connector layer
 ```
 
 ---
@@ -437,7 +432,8 @@ This ensures mini-games reinforce learning at every stage of crystal growth rath
 | Component | Coverage |
 |---|---|
 | `MiniGameView` | Renders correct game component per `gameType`, submit/continue flow |
-| Each D3 game | SVG renders expected node/zone count, tap interactions update state |
+| Shared chip/zone | Visual states and min touch size |
+| Each game component | Expected nodes/zones/slots, tap interactions update `useMiniGameInteraction` |
 
 ---
 
@@ -449,12 +445,13 @@ This ensures mini-games reinforce learning at every stage of crystal growth rath
 |---|---|---|
 | `src/types/miniGame.ts` | Types | Game phases, placements, results |
 | `src/hooks/useMiniGameInteraction.ts` | Composition | Tap-to-select/place state machine |
-| `src/hooks/useMiniGameSvgContainer.ts` | Composition | Responsive SVG dimensions |
+| `useMiniGameSvgContainer` | Optional | Only if a future game needs explicit SVG canvas sizing |
 | `src/hooks/useMiniGameWeaver.ts` | Composition | LLM generation hook |
 | `src/features/content/evaluateMiniGame.ts` | Features | Scoring harness |
 | `src/features/miniGameWeaver/` | Features | LLM generation pipeline |
 | `src/prompts/mini-game-generate.prompt` | Prompts | LLM prompt template |
-| `src/components/miniGames/` | Presentation | D3 renderers + shared SVG primitives |
+| `src/components/miniGames/shared/` | Presentation | Shared chips, zones, tokens, optional connector SVG |
+| `src/components/miniGames/*Game.tsx` | Presentation | Per-game layout composing shared primitives |
 
 ### Modified Files
 
