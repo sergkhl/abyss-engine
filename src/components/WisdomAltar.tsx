@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber/webgpu';
 import * as THREE from 'three/webgpu';
 import { Billboard, Sparkles } from '@react-three/drei/webgpu';
@@ -14,6 +14,7 @@ import {
   getFracturedBaseGeometry,
   getNexusCrystalGeometry,
 } from '../graphics/altar';
+import { CUBE_REFLECTION_EXCLUDED_LAYER } from '../constants/sceneLayers';
 
 /**
  * Visual size of the altar vs. unscaled design geometry: world scale = 1 / divisor.
@@ -74,6 +75,7 @@ export const WisdomAltar: React.FC = () => {
   const environmentMap = useThree((state) => state.scene.environment);
   const nexusGroupRef = useRef<THREE.Group>(null);
   const fragmentRefs = useRef<Array<THREE.Mesh | null>>([]);
+  const sparklesRef = useRef<THREE.InstancedMesh | null>(null);
 
   const ritualUniforms = useMemo(() => createAltarRitualUniforms(), []);
 
@@ -103,6 +105,14 @@ export const WisdomAltar: React.FC = () => {
   const getRemainingRitualCooldownMs = useStudyStore((state) => state.getRemainingRitualCooldownMs);
   const [isRitualSubmissionAvailable, setIsRitualSubmissionAvailable] = useState(true);
   const { isPaused, invalidate } = useSceneInvalidator();
+
+  useLayoutEffect(() => {
+    const mesh = sparklesRef.current;
+    if (!mesh) {
+      return;
+    }
+    mesh.layers.set(CUBE_REFLECTION_EXCLUDED_LAYER);
+  }, [isRitualSubmissionAvailable, isPaused]);
 
   useEffect(() => {
     const updateSubmissionAvailability = () => {
@@ -204,6 +214,7 @@ export const WisdomAltar: React.FC = () => {
         {isRitualSubmissionAvailable && !isPaused && (
           <Billboard position={[0, NEXUS_CENTER_Y, 0]}>
             <Sparkles
+              ref={sparklesRef}
               count={12}
               scale={SPARKLES_FIELD_SCALE}
               size={SPARKLES_POINT_SIZE}

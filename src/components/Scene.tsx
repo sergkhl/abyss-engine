@@ -1,7 +1,7 @@
 'use client'
 
-import React, { Suspense, useRef, useMemo, useEffect, useState } from 'react'
-import { Canvas } from '@react-three/fiber/webgpu'
+import React, { Suspense, useRef, useMemo, useEffect, useLayoutEffect, useState } from 'react'
+import { Canvas, useThree } from '@react-three/fiber/webgpu'
 import { PerspectiveCamera, OrbitControls } from '@react-three/drei/webgpu'
 import { useQueries } from '@tanstack/react-query'
 import * as THREE from 'three/webgpu'
@@ -25,6 +25,7 @@ import { useSelectedCrystalSpotlight } from '../hooks/useSelectedCrystalSpotligh
 import '../graphics/nodeMaterialRegistration'
 import { SceneSky, SunSyncedAmbientFill, SunSyncedDirectionalLight } from './SceneSky'
 import { FLOOR_SURFACE_Y } from '../constants/sceneFloor'
+import { CUBE_REFLECTION_EXCLUDED_LAYER } from '../constants/sceneLayers'
 
 /**
  * Scene component - Main 3D visualization for Abyss Engine
@@ -154,6 +155,15 @@ const SceneRenderInvalidator: React.FC<SceneRenderInvalidatorProps> = ({
     selectedTopicCardsCount,
   ])
 
+  return null
+}
+
+/** Enables {@link CUBE_REFLECTION_EXCLUDED_LAYER} on the active camera so altar sparkles stay visible while CubeCamera (floor) skips them. */
+const DefaultCameraReflectionExcludedLayer: React.FC = () => {
+  const camera = useThree((state) => state.camera)
+  useLayoutEffect(() => {
+    camera.layers.enable(CUBE_REFLECTION_EXCLUDED_LAYER)
+  }, [camera])
   return null
 }
 
@@ -325,6 +335,7 @@ export const Scene: React.FC<SceneProps> = ({
             c.lookAt(...ORBIT_TARGET)
           }}
         />
+        <DefaultCameraReflectionExcludedLayer />
         <OrbitCameraControls isCameraAngleUnlocked={isCameraAngleUnlocked} />
 
         <SceneSky sunDirectionRef={sunDirectionRef} />
