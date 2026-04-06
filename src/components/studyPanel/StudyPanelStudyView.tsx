@@ -16,10 +16,12 @@ import { Badge } from '@/components/ui/badge';
 import { ResponsiveLlmInferenceSurface } from '../ResponsiveLlmInferenceSurface';
 import { LlmThinkingBlock } from '../LlmThinkingBlock';
 import { LlmThinkingToggle } from '../LlmThinkingToggle';
+import { LlmTtsToggle } from '../LlmTtsToggle';
 import { Network, Redo2, Sparkles, Undo2 } from 'lucide-react';
 import { StudyKatexInteractive } from './StudyKatexInteractive';
 import { StudyQuestionMermaidLlmBody } from './StudyQuestionMermaidLlmBody';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { useLlmAssistantSpeech } from '@/hooks/useLlmAssistantSpeech';
 import { useStudyPanelLlmSurfaces } from '@/hooks/useStudyPanelLlmSurfaces';
 
 export type { StudyPanelFormulaExplainProps, StudyPanelLlmExplainProps, StudyPanelMermaidDiagramProps };
@@ -170,6 +172,12 @@ interface StudyPanelStudyViewProps {
   onToggleExplainThinking: () => void;
   onToggleFormulaThinking: () => void;
   onToggleMermaidThinking: () => void;
+  explainTtsEnabled: boolean;
+  formulaTtsEnabled: boolean;
+  mermaidTtsEnabled: boolean;
+  onToggleExplainTts: () => void;
+  onToggleFormulaTts: () => void;
+  onToggleMermaidTts: () => void;
 }
 
 const QUESTION_EXPLAIN_DESCRIPTION = 'AI explanation for the current card question.';
@@ -220,6 +228,12 @@ export function StudyPanelStudyView({
   onToggleExplainThinking,
   onToggleFormulaThinking,
   onToggleMermaidThinking,
+  explainTtsEnabled,
+  formulaTtsEnabled,
+  mermaidTtsEnabled,
+  onToggleExplainTts,
+  onToggleFormulaTts,
+  onToggleMermaidTts,
 }: StudyPanelStudyViewProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const {
@@ -235,6 +249,25 @@ export function StudyPanelStudyView({
     dismissFormulaInference,
     dismissMermaidInference,
   } = useStudyPanelLlmSurfaces({ llmExplain, llmFormulaExplain, llmMermaidDiagram });
+
+  const explainAssistantSpeech = useLlmAssistantSpeech({
+    isSurfaceOpen: explainOpen,
+    ttsEnabled: explainTtsEnabled,
+    assistantText: llmExplain.assistantText,
+    isPending: llmExplain.isPending,
+  });
+  const formulaAssistantSpeech = useLlmAssistantSpeech({
+    isSurfaceOpen: formulaOpen,
+    ttsEnabled: formulaTtsEnabled,
+    assistantText: llmFormulaExplain.assistantText,
+    isPending: llmFormulaExplain.isPending,
+  });
+  const mermaidAssistantSpeech = useLlmAssistantSpeech({
+    isSurfaceOpen: mermaidOpen,
+    ttsEnabled: mermaidTtsEnabled,
+    assistantText: llmMermaidDiagram.assistantText,
+    isPending: llmMermaidDiagram.isPending,
+  });
 
   const formatTestId = isFlashcard
     ? 'study-card-format-flashcard'
@@ -459,10 +492,17 @@ export function StudyPanelStudyView({
         sheetMaxHeightClassName="data-[side=bottom]:max-h-[70vh]"
         sheetBodyScrollClassName="max-h-[min(40vh,32rem)]"
         headerAction={
-          <LlmThinkingToggle
-            enabled={explainThinkingEnabled}
-            onToggle={onToggleExplainThinking}
-          />
+          <div className="flex items-center gap-1">
+            <LlmThinkingToggle
+              enabled={explainThinkingEnabled}
+              onToggle={onToggleExplainThinking}
+            />
+            <LlmTtsToggle
+              enabled={explainTtsEnabled}
+              onToggle={onToggleExplainTts}
+              speaking={explainAssistantSpeech.isSpeaking}
+            />
+          </div>
         }
       >
         {questionExplainBody}
@@ -479,10 +519,17 @@ export function StudyPanelStudyView({
         sheetMaxHeightClassName="data-[side=bottom]:max-h-[80vh]"
         sheetBodyScrollClassName="max-h-[min(55vh,36rem)]"
         headerAction={
-          <LlmThinkingToggle
-            enabled={mermaidThinkingEnabled}
-            onToggle={onToggleMermaidThinking}
-          />
+          <div className="flex items-center gap-1">
+            <LlmThinkingToggle
+              enabled={mermaidThinkingEnabled}
+              onToggle={onToggleMermaidThinking}
+            />
+            <LlmTtsToggle
+              enabled={mermaidTtsEnabled}
+              onToggle={onToggleMermaidTts}
+              speaking={mermaidAssistantSpeech.isSpeaking}
+            />
+          </div>
         }
       >
         <StudyQuestionMermaidLlmBody {...llmMermaidDiagram} />
@@ -499,10 +546,17 @@ export function StudyPanelStudyView({
         sheetMaxHeightClassName="data-[side=bottom]:max-h-[70vh]"
         sheetBodyScrollClassName="max-h-[min(40vh,32rem)]"
         headerAction={
-          <LlmThinkingToggle
-            enabled={formulaThinkingEnabled}
-            onToggle={onToggleFormulaThinking}
-          />
+          <div className="flex items-center gap-1">
+            <LlmThinkingToggle
+              enabled={formulaThinkingEnabled}
+              onToggle={onToggleFormulaThinking}
+            />
+            <LlmTtsToggle
+              enabled={formulaTtsEnabled}
+              onToggle={onToggleFormulaTts}
+              speaking={formulaAssistantSpeech.isSpeaking}
+            />
+          </div>
         }
       >
         {formulaExplainBody}

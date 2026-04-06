@@ -68,6 +68,12 @@ const baseProps: StudyPanelStudyViewProps = {
   onToggleExplainThinking: vi.fn(),
   onToggleFormulaThinking: vi.fn(),
   onToggleMermaidThinking: vi.fn(),
+  explainTtsEnabled: true,
+  formulaTtsEnabled: true,
+  mermaidTtsEnabled: true,
+  onToggleExplainTts: vi.fn(),
+  onToggleFormulaTts: vi.fn(),
+  onToggleMermaidTts: vi.fn(),
 };
 
 function renderStudyPanelView(override: Partial<StudyPanelStudyViewProps> = {}) {

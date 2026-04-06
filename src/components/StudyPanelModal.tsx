@@ -22,6 +22,7 @@ import { useStudyKeyboardShortcuts } from '../hooks/useStudyKeyboardShortcuts';
 import { useStudyFormulaLlmExplain } from '../hooks/useStudyFormulaLlmExplain';
 import { useStudyQuestionMermaidDiagram } from '../hooks/useStudyQuestionMermaidDiagram';
 import { useStudyQuestionLlmExplain } from '../hooks/useStudyQuestionLlmExplain';
+import { useInferenceTtsToggle } from '../hooks/useInferenceTtsToggle';
 import { useThinkingToggle } from '../hooks/useThinkingToggle';
 import { StudyPanelTab } from './studyPanel/types';
 import { MiniGameView } from './miniGames/MiniGameView';
@@ -65,6 +66,9 @@ export function StudyPanelModal({
   const explainThinking = useThinkingToggle('studyQuestionExplain');
   const formulaThinking = useThinkingToggle('studyFormulaExplain');
   const mermaidThinking = useThinkingToggle('studyQuestionMermaid');
+  const explainTts = useInferenceTtsToggle('studyQuestionExplain');
+  const formulaTts = useInferenceTtsToggle('studyFormulaExplain');
+  const mermaidTts = useInferenceTtsToggle('studyQuestionMermaid');
   const llmExplain = useStudyQuestionLlmExplain({
     topicLabel: model.resolvedTopic,
     questionText: model.currentQuestion,
@@ -320,6 +324,12 @@ export function StudyPanelModal({
               onToggleExplainThinking={explainThinking.toggleThinking}
               onToggleFormulaThinking={formulaThinking.toggleThinking}
               onToggleMermaidThinking={mermaidThinking.toggleThinking}
+              explainTtsEnabled={explainTts.enableTts}
+              formulaTtsEnabled={formulaTts.enableTts}
+              mermaidTtsEnabled={mermaidTts.enableTts}
+              onToggleExplainTts={explainTts.toggleTts}
+              onToggleFormulaTts={formulaTts.toggleTts}
+              onToggleMermaidTts={mermaidTts.toggleTts}
             />
           )}
       </div>

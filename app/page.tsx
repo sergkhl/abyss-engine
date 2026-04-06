@@ -32,8 +32,11 @@ import SubjectNavigation from '@/components/SubjectNavigation';
 import PomodoroTimerOverlay from '@/components/PomodoroTimer3D';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useScreenCaptureLlmSummary } from '@/hooks/useScreenCaptureLlmSummary';
+import { useInferenceTtsToggle } from '@/hooks/useInferenceTtsToggle';
+import { useLlmAssistantSpeech } from '@/hooks/useLlmAssistantSpeech';
 import { useThinkingToggle } from '@/hooks/useThinkingToggle';
 import { LlmThinkingToggle } from '@/components/LlmThinkingToggle';
+import { LlmTtsToggle } from '@/components/LlmTtsToggle';
 import { topicCardsQueryKey } from '@/hooks/useDeckData';
 import { toast } from 'sonner';
 
@@ -61,8 +64,15 @@ const HomeContent: React.FC = () => {
   const [isAscentWeaverOpen, setIsAscentWeaverOpen] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const screenCaptureThinking = useThinkingToggle('screenCaptureSummary');
+  const screenCaptureTts = useInferenceTtsToggle('screenCaptureSummary');
   const screenCaptureLlm = useScreenCaptureLlmSummary({
     enableThinking: screenCaptureThinking.enableThinking,
+  });
+  const screenCaptureAssistantSpeech = useLlmAssistantSpeech({
+    isSurfaceOpen: screenCaptureLlm.surfaceOpen,
+    ttsEnabled: screenCaptureTts.enableTts,
+    assistantText: screenCaptureLlm.assistantText,
+    isPending: screenCaptureLlm.isPending,
   });
 
   // Track initialization to prevent infinite loops
@@ -379,10 +389,17 @@ const HomeContent: React.FC = () => {
         reasoningText={screenCaptureLlm.reasoningText}
         errorMessage={screenCaptureLlm.errorMessage}
         headerAction={
-          <LlmThinkingToggle
-            enabled={screenCaptureThinking.enableThinking}
-            onToggle={screenCaptureThinking.toggleThinking}
-          />
+          <div className="flex items-center gap-1">
+            <LlmThinkingToggle
+              enabled={screenCaptureThinking.enableThinking}
+              onToggle={screenCaptureThinking.toggleThinking}
+            />
+            <LlmTtsToggle
+              enabled={screenCaptureTts.enableTts}
+              onToggle={screenCaptureTts.toggleTts}
+              speaking={screenCaptureAssistantSpeech.isSpeaking}
+            />
+          </div>
         }
       />
 

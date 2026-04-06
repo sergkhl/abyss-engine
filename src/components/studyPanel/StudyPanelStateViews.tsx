@@ -9,6 +9,7 @@ import {
 } from '../ui/native-select';
 import { StudyPanelTab } from './types';
 import { buildDiagramSystemPrompt, extractExamplesSection, stripTheoryMarkdownForSpeech } from '../../features/studyPanel';
+import { TTS_ICON_SPEAKING_CLASSNAME } from '@/components/LlmTtsToggle';
 import { Button } from '@/components/ui/button';
 import {
   AbyssDialog,
@@ -19,6 +20,7 @@ import {
   DialogTitle,
 } from '@/components/ui/abyss-dialog';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface StudyPanelStateViewsProps {
   activeTab: StudyPanelTab;
@@ -247,7 +249,13 @@ export function StudyPanelStateViews({
                 aria-label={isTheorySpeaking ? 'Stop reading theory aloud' : 'Read theory aloud'}
                 title={isTheorySpeaking ? 'Stop reading theory aloud' : 'Read theory aloud'}
               >
-                {isTheorySpeaking ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+                {isTheorySpeaking ? (
+                  <span className={cn('inline-flex shrink-0', TTS_ICON_SPEAKING_CLASSNAME)} aria-hidden>
+                    <VolumeX className="h-3.5 w-3.5" aria-hidden />
+                  </span>
+                ) : (
+                  <Volume2 className="h-3.5 w-3.5" aria-hidden />
+                )}
                 <span className="sr-only">
                   {isTheorySpeaking ? 'Stop reading theory aloud' : 'Read theory aloud'}
                 </span>

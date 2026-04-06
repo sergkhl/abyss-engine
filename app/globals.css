@@ -165,6 +165,31 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+@keyframes tts-icon-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.42;
+  }
+}
+
+/* Wrapper span: animating opacity on SVG alone can be a no-op under some parent transition/stacking contexts. */
+.tts-icon-speaking {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  will-change: opacity;
+  animation: tts-icon-breathe 1.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tts-icon-speaking {
+    animation: none;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

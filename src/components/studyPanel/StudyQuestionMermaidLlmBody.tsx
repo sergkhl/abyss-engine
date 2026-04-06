@@ -50,8 +50,7 @@ function MermaidAssistantRawCollapsible({ assistantText }: { assistantText: stri
   );
 }
 
-export function StudyQuestionMermaidLlmBody(props: StudyPanelMermaidDiagramProps) {
-  const llmMermaidDiagram = props;
+export function StudyQuestionMermaidLlmBody(llmMermaidDiagram: StudyPanelMermaidDiagramProps) {
   const extractedMermaidDiagram =
     llmMermaidDiagram.assistantText != null && llmMermaidDiagram.assistantText.length > 0
       ? extractMermaidFromAssistantText(llmMermaidDiagram.assistantText)
