@@ -8,7 +8,7 @@ export const SPOTLIGHT_TARGET_Y = 0.42
 export const SPOTLIGHT_DISTANCE = 6
 export const SPOTLIGHT_ANGLE = 0.45
 export const SPOTLIGHT_ATTENUATION = 11
-export const SPOTLIGHT_OPACITY = 0.5
+export const SPOTLIGHT_OPACITY = 0.7
 export const SPOTLIGHT_SELECTED_CRYSTAL_Y = 0.3
 
 interface UseSelectedCrystalSpotlightParams {

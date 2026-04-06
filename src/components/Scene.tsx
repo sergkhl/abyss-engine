@@ -23,7 +23,7 @@ import { topicCardsQueryKey } from '../hooks/useDeckData'
 import { useSceneInvalidator } from '../hooks/useSceneInvalidator'
 import { useSelectedCrystalSpotlight } from '../hooks/useSelectedCrystalSpotlight'
 import '../graphics/nodeMaterialRegistration'
-import { SceneSky, SunSyncedDirectionalLight } from './SceneSky'
+import { SceneSky, SunSyncedAmbientFill, SunSyncedDirectionalLight } from './SceneSky'
 import { FLOOR_SURFACE_Y } from '../constants/sceneFloor'
 
 /**
@@ -61,7 +61,7 @@ const TARGET_FRAME_INTERVAL_MS = 1000 / TARGET_SCENE_FPS
 const getRenderQuality = (): RenderQuality => {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') {
     return {
-      dpr: [1, 1.5],
+      dpr: [1, 1.25],
       antialias: true,
       powerPreference: 'high-performance',
     }
@@ -97,13 +97,11 @@ const CAMERA_UNLOCKED_MIN_POLAR_ANGLE = 0.08
 const CAMERA_UNLOCKED_MAX_POLAR_ANGLE = Math.PI - CAMERA_UNLOCKED_MIN_POLAR_ANGLE
 const CAMERA_FAR = 2_000_000
 const CANVAS_BACKDROP = '#1a1f33'
-const SCENE_FOG_COLOR = '#252b45'
 
 /** Sun is near horizon — floor needs fill; keep renderer exposure low so SkyMesh stays balanced. */
-const LIGHT_AMBIENT_INTENSITY = 3.62
-const LIGHT_HEMISPHERE_INTENSITY = 0.48
-const LIGHT_SUN_INTENSITY = 2.85
-const LIGHT_FILL_INTENSITY = 2.26
+const LIGHT_AMBIENT_INTENSITY = 2.12
+const LIGHT_HEMISPHERE_INTENSITY = 1.48
+const LIGHT_SUN_INTENSITY = 2.5
 
 interface OrbitCameraControlsProps {
   isCameraAngleUnlocked: boolean
@@ -300,7 +298,7 @@ export const Scene: React.FC<SceneProps> = ({
         style={{ background: CANVAS_BACKDROP }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping
-          gl.toneMappingExposure = 0.5
+          gl.toneMappingExposure = 0.55
           onCanvasReady?.()
         }}
       >
@@ -331,28 +329,19 @@ export const Scene: React.FC<SceneProps> = ({
 
         <SceneSky sunDirectionRef={sunDirectionRef} />
 
-        {/* Lighting setup — strong fill for low sun elevation; sky is unlit (not affected by these) */}
-        <ambientLight intensity={LIGHT_AMBIENT_INTENSITY} color="#eef1ff" />
-        <hemisphereLight
-          skyColor="#a8b8e8"
-          groundColor="#2a2438"
-          intensity={LIGHT_HEMISPHERE_INTENSITY}
+        {/* Fill lights scale with sun elevation (inverse of key light); sky is unlit (not affected by these) */}
+        <SunSyncedAmbientFill
+          sunDirectionRef={sunDirectionRef}
+          ambientBaseIntensity={LIGHT_AMBIENT_INTENSITY}
+          hemisphereBaseIntensity={LIGHT_HEMISPHERE_INTENSITY}
         />
         <SunSyncedDirectionalLight sunDirectionRef={sunDirectionRef} intensity={LIGHT_SUN_INTENSITY} />
-        <directionalLight
-          position={[-5, 5, -5]}
-          intensity={LIGHT_FILL_INTENSITY}
-          color="#c8d0f0"
-        />
         <SelectedCrystalSpotlight
           spotlightPosition={spotlightPosition}
           spotlightTarget={spotlightTarget}
           spotlightOpacity={spotlightOpacity}
         />
 
-
-        {/* Fog for depth — tuned to sit under analytic sky */}
-        <fog attach="fog" args={[SCENE_FOG_COLOR, 18, 85]} />
 
         <group position={[0, FLOOR_SURFACE_Y, 0]}>
           {/* Reflective floor */}

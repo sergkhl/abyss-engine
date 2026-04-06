@@ -2,7 +2,7 @@
   - [P0] 3D crystal growth (biggest blocker)
     - [P0] Procedural mesh morph on level-up (scale + new facets)
   - [P0] Pub-sub LLM Generate subject nodes; topics and cards
-    - introduce "for of war" so study content generated on-demand based on user progression
+    - introduce "fog of war" to generate study content on-demand based on user progression
   - [ ] Generate mini games for interactive learning experience
     - [ ] Shared infrastructure: types, hooks, evaluation, LLM surface → [plan](./mini-game-shared-infrastructure-plan.md)
     - [x] Category Sort (tap items into category zones) → [plan](./mini-game-category-sort-plan.md)
@@ -64,12 +64,16 @@
   - [ ] Improve 3D scene lighting (currently it's too dark when camera directed away from SceneSky)
   - [ ] Hide labels behind crystals (raycast collision)
   - [ ] Add search in Discovery Modal
+  - [ ] Restore study session on app restart
+  - [ ] Incorrect selected choice should have cross mark and red background and border; Correct unselected choice should have check mark and no background or border;
+  - [ ] drag card to dismiss, calculate threshold by %
   - [ ] levelup screen
   - [ ] features in command pallete are "invisible"; need to create items on overlay screen or other screen
   - [ ] add always visible scrollbar for llm inference modals and sheets
   - [ ] add answers into llm prompts for focused results
   - [ ] get xp for partial answers
   - [ ] tts for llm answers
+  - [ ] color themes
 
 - [ ] **Separate Tooling (Out of this project scope)**
   - [ ] Train model for mermaid diagrams via funtion calling

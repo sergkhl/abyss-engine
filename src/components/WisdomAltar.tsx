@@ -204,7 +204,7 @@ export const WisdomAltar: React.FC = () => {
         {isRitualSubmissionAvailable && !isPaused && (
           <Billboard position={[0, NEXUS_CENTER_Y, 0]}>
             <Sparkles
-              count={28}
+              count={12}
               scale={SPARKLES_FIELD_SCALE}
               size={SPARKLES_POINT_SIZE}
               speed={3.2}

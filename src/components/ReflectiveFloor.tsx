@@ -55,7 +55,7 @@ export const ReflectiveFloor: React.FC<ReflectiveFloorProps> = ({
   const subjectColor = useSubjectColor(currentSubjectId);
   const floorColor = useMemo(() => {
     const shadedColor = new THREE.Color(subjectColor);
-    shadedColor.offsetHSL(0, 0, -0.45);
+    shadedColor.offsetHSL(-0.2, 0, -0.23);
     return `#${shadedColor.getHexString()}`;
   }, [subjectColor]);
 

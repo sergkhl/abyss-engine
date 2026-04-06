@@ -4,14 +4,15 @@ import React, { useLayoutEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber/webgpu'
 import * as THREE from 'three/webgpu'
 import { SkyMesh } from 'three/addons/objects/SkyMesh.js'
+import { attachOppositeHemisphereGrading } from '../graphics/sky'
 
 /** Defaults aligned with three.js webgpu sky example (art direction hub). */
 export const SCENE_SKY_DEFAULTS = {
   scale: 450_000,
-  turbidity: 10,
-  rayleigh: 3,
-  mieCoefficient: 0.005,
-  mieDirectionalG: 0.7,
+  turbidity: 2.5,
+  rayleigh: 2.05,
+  mieCoefficient: 0.0035,
+  mieDirectionalG: 0.75,
   /** Degrees above horizon */
   elevation: 2,
   /** Degrees, 0 = +Z */
@@ -25,11 +26,11 @@ export const SCENE_SKY_DEFAULTS = {
  * Below-horizon intro: hazy, warm mie, denser clouds — animates to {@link SCENE_SKY_DEFAULTS}.
  */
 export const SCENE_SKY_ANIMATION_START = {
-  elevation: -2,
-  turbidity: 12.5,
+  elevation: -0.5,
+  turbidity: 6,
   rayleigh: 2.05,
-  mieCoefficient: 0.0088,
-  mieDirectionalG: 0.82,
+  mieCoefficient: 0.0018,
+  mieDirectionalG: 0.42,
   azimuth: 175.5,
   cloudCoverage: 0.58,
   cloudDensity: 0.52,
@@ -37,7 +38,7 @@ export const SCENE_SKY_ANIMATION_START = {
   cloudSpeed: 0.00006,
 } as const
 
-export const SKY_STARTUP_ANIMATION_SEC = 4
+export const SKY_STARTUP_ANIMATION_SEC = 3
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t
 
@@ -146,6 +147,7 @@ export const SceneSky: React.FC<SceneSkyProps> = ({ sunDirectionRef }) => {
     // Scene Fog uses depth/distance; SkyMesh snaps to camera far — would otherwise blend to fogColor.
     mesh.material.fog = false
     mesh.frustumCulled = false
+    attachOppositeHemisphereGrading(mesh)
     return mesh
   }, [])
 
@@ -162,6 +164,96 @@ export const SceneSky: React.FC<SceneSkyProps> = ({ sunDirectionRef }) => {
 }
 
 const SUN_LIGHT_DISTANCE = 120
+
+/** Same elevation band as {@link SunSyncedDirectionalLight} intensity ramp — keeps fill inversely paired with key light. */
+const SUN_ELEVATION_SMOOTH_MIN = -0.12
+const SUN_ELEVATION_SMOOTH_MAX = 0.08
+
+function sunKeyLightLift(sunY: number): number {
+  return THREE.MathUtils.smoothstep(sunY, SUN_ELEVATION_SMOOTH_MIN, SUN_ELEVATION_SMOOTH_MAX)
+}
+
+/**
+ * Sky sun uses spherical coords with polar angle (90° − elevation°); unit direction `y` equals sin(elevation).
+ * Below the cutoff elevation, synced scene lights drop to a subtle floor (not full black).
+ */
+const SYNC_LIGHT_ELEVATION_CUTOFF_DEG = -1.0
+const SUN_Y_AT_SYNC_CUTOFF = Math.sin(THREE.MathUtils.degToRad(SYNC_LIGHT_ELEVATION_CUTOFF_DEG))
+/** Remainder of full synced intensity when sun is below cutoff (~5% — enough to read silhouettes, not a hard black). */
+const SYNC_LIGHT_VISIBILITY_FLOOR = 0.15
+
+function sunSyncedLightVisibility(sunY: number): number {
+  const t = THREE.MathUtils.smoothstep(
+    sunY,
+    SUN_Y_AT_SYNC_CUTOFF - 0.008,
+    SUN_Y_AT_SYNC_CUTOFF + 0.028,
+  )
+  return SYNC_LIGHT_VISIBILITY_FLOOR + (1 - SYNC_LIGHT_VISIBILITY_FLOOR) * t
+}
+
+const ambientCool = new THREE.Color('#eef1ff')
+const ambientWarm = new THREE.Color('#e8e0f5')
+const hemiSkyCool = new THREE.Color('#a8b8e8')
+const hemiSkyWarm = new THREE.Color('#c4b8e0')
+const hemiGroundCool = new THREE.Color('#2a2438')
+const hemiGroundWarm = new THREE.Color('#322a40')
+
+export interface SunSyncedAmbientFillProps {
+  sunDirectionRef: React.MutableRefObject<THREE.Vector3>
+  /** Base ambient intensity before sun sync (matches prior fixed scene fill). */
+  ambientBaseIntensity?: number
+  /** Base hemisphere intensity before sun sync. */
+  hemisphereBaseIntensity?: number
+}
+
+/**
+ * Ambient + hemisphere fill: stronger when the sun is low (directional is weak), cooler when the sun is high.
+ */
+export const SunSyncedAmbientFill: React.FC<SunSyncedAmbientFillProps> = ({
+  sunDirectionRef,
+  ambientBaseIntensity = 2.12,
+  hemisphereBaseIntensity = 0.48,
+}) => {
+  const ambientRef = useRef<THREE.AmbientLight>(null)
+  const hemiRef = useRef<THREE.HemisphereLight>(null)
+  const scratchColor = useMemo(() => new THREE.Color(), [])
+
+  useFrame(() => {
+    const sunY = sunDirectionRef.current.y
+    const vis = sunSyncedLightVisibility(sunY)
+    const lift = sunKeyLightLift(sunY)
+    const fillMul = 0.78 + 0.38 * (1 - lift)
+    const warm = THREE.MathUtils.smoothstep(0.08 - sunY, 0, 0.28)
+
+    const ambient = ambientRef.current
+    if (ambient) {
+      ambient.intensity = ambientBaseIntensity * fillMul * vis
+      scratchColor.copy(ambientCool).lerp(ambientWarm, warm)
+      ambient.color.copy(scratchColor)
+    }
+
+    const hemi = hemiRef.current
+    if (hemi) {
+      hemi.intensity = hemisphereBaseIntensity * (0.62 + 0.36 * (1 - lift)) * vis
+      scratchColor.copy(hemiSkyCool).lerp(hemiSkyWarm, warm)
+      hemi.color.copy(scratchColor)
+      scratchColor.copy(hemiGroundCool).lerp(hemiGroundWarm, warm)
+      hemi.groundColor.copy(scratchColor)
+    }
+  })
+
+  return (
+    <>
+      <ambientLight ref={ambientRef} intensity={ambientBaseIntensity} color="#eef1ff" />
+      <hemisphereLight
+        ref={hemiRef}
+        skyColor="#a8b8e8"
+        groundColor="#2a2438"
+        intensity={hemisphereBaseIntensity}
+      />
+    </>
+  )
+}
 
 export interface SunSyncedDirectionalLightProps {
   sunDirectionRef: React.MutableRefObject<THREE.Vector3>
@@ -196,8 +288,9 @@ export const SunSyncedDirectionalLight: React.FC<SunSyncedDirectionalLightProps>
     light.target.updateMatrixWorld()
 
     const sunY = sun.y
-    const lift = THREE.MathUtils.smoothstep(sunY, -0.12, 0.08)
-    light.intensity = intensity * (0.28 + 0.62 * lift)
+    const vis = sunSyncedLightVisibility(sunY)
+    const lift = sunKeyLightLift(sunY)
+    light.intensity = intensity * (0.28 + 0.62 * lift) * vis
   })
 
   return (
