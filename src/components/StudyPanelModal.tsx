@@ -257,7 +257,7 @@ export function StudyPanelModal({
             </TabsList>
           </Tabs>
       </DialogHeader>
-        <div data-testid="study-panel-modal-content" className="-mx-4 px-4 no-scrollbar overflow-y-auto">
+        <div data-testid="study-panel-modal-content" className="-mx-4 px-4 overflow-y-auto">
           <StudyPanelStateViews
             activeTab={activeTab}
             hasTheory={model.hasTheory}

@@ -136,7 +136,7 @@ export function ResponsiveLlmInferenceSurface({
             </SheetDescription>
           )}
         </AbyssSheetHeader>
-        <div className={cn('no-scrollbar overflow-y-auto px-4', sheetBodyScrollClassName)}>
+        <div className={cn('overflow-y-auto px-4', sheetBodyScrollClassName)}>
           {children}
         </div>
         <SheetFooter className="border-t bg-background pt-2">

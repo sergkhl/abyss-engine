@@ -7,10 +7,10 @@
     - [ ] Shared infrastructure: types, hooks, evaluation, LLM surface → [plan](./mini-game-shared-infrastructure-plan.md)
     - [x] Category Sort (tap items into category zones) → [plan](./mini-game-category-sort-plan.md)
     - [x] Sequence Builder (order scrambled steps into slots) → [plan](./mini-game-sequence-builder-plan.md)
-    - [ ] Connection Web (match left/right pairs with lines) → [plan](./mini-game-connection-web-plan.md)
-    - [ ] Gap Fill Flow (D3 DAG with blank nodes, player fills from answer pool)
+    - [x] Connection Web (match left/right pairs with lines) → [plan](./mini-game-connection-web-plan.md)
+    - [ ] Gap Fill Flow with blank nodes, player fills from answer pool
     - [ ] Venn Classifier (2-3 overlapping D3 circles, player places items in correct regions)
-    - [ ] Ranking Duel (D3 bar chart, player drags bar heights to rank items by a criterion)
+    - [ ] Ranking Duel with bar chart, player drags bar heights to rank items by a criterion
   - [ ] Sreaks support
   - [ ] Achievements screen
     - [ ] yesterday's acknowledgement screen from metrics
@@ -61,7 +61,6 @@
   - [ ] Import anki cards
 
 - [ ] **UX Improvements**
-  - [ ] Improve 3D scene lighting (currently it's too dark when camera directed away from SceneSky)
   - [ ] Hide labels behind crystals (raycast collision)
   - [ ] Add search in Discovery Modal
   - [ ] Restore study session on app restart
@@ -69,7 +68,6 @@
   - [ ] drag card to dismiss, calculate threshold by %
   - [ ] levelup screen
   - [ ] features in command pallete are "invisible"; need to create items on overlay screen or other screen
-  - [ ] add always visible scrollbar for llm inference modals and sheets
   - [ ] add answers into llm prompts for focused results
   - [ ] get xp for partial answers
   - [ ] tts for llm answers

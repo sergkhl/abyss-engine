@@ -154,7 +154,7 @@ export function DiscoveryModal({
               </div>
             </div>
           </DialogHeader>
-          <div className="no-scrollbar -mx-4 overflow-y-auto px-4">
+          <div className="-mx-4 overflow-y-auto px-4">
             <div className="space-y-6">
               {topicsByTier.map((tierData) => (
                 <div key={tierData.tier}>

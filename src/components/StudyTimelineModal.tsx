@@ -325,7 +325,7 @@ function SessionDetailStrip({
               {formatSessionHeaderTimeRange(session.entries, session.totalDurationMs)}
             </span>
           </div>
-          <div className="overflow-x-auto p-2 no-scrollbar">
+          <div className="overflow-x-auto p-2">
             <div className="flex items-end gap-0">
               {session.entries.map((entry: StudyTimelineEntry) => (
                 <TimelineReviewBlock
@@ -462,7 +462,7 @@ export function StudyTimelineModal({
           </div>
         </DialogHeader>
 
-        <div className="overflow-y-auto -mx-4 px-4 no-scrollbar flex-1 min-h-0">
+        <div className="overflow-y-auto -mx-4 px-4 flex-1 min-h-0">
           {mainContent}
         </div>
       </AbyssDialogContent>
