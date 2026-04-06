@@ -125,9 +125,9 @@ const optionPresentation: Record<OptionState, OptionPresentation> = {
     markerClass: 'text-destructive',
   },
   'unselected-correct': {
-    marker: '✗',
-    style: 'bg-transparent border-destructive',
-    markerClass: 'text-destructive',
+    marker: '✓',
+    style: 'bg-transparent border-border hover:border-foreground/40',
+    markerClass: 'text-accent-foreground',
   },
   'unselected-incorrect': {
     marker: null,

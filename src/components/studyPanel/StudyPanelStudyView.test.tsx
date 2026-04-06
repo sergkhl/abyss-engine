@@ -341,16 +341,16 @@ describe('StudyPanelStudyView', () => {
     const optionThree = container.querySelector('[data-testid="study-card-choice-option-2"]') as HTMLButtonElement;
     const optionFour = container.querySelector('[data-testid="study-card-choice-option-3"]') as HTMLButtonElement;
 
-    expect(optionOne?.textContent).toContain('✗');
-    expect(optionOne?.className).toContain('border-destructive');
+    expect(optionOne?.textContent).toContain('✓');
+    expect(optionOne?.className).toContain('border-border');
     expect(optionOne?.className).not.toContain('bg-destructive/20');
 
     expect(optionTwo?.textContent).toContain('✗');
     expect(optionTwo?.className).toContain('bg-destructive/20');
     expect(optionTwo?.className).toContain('border-destructive');
 
-    expect(optionThree?.textContent).toContain('✗');
-    expect(optionThree?.className).toContain('border-destructive');
+    expect(optionThree?.textContent).toContain('✓');
+    expect(optionThree?.className).toContain('border-border');
     expect(optionThree?.className).not.toContain('bg-destructive/20');
     expect(optionFour?.textContent).not.toContain('✓');
     expect(optionFour?.textContent).not.toContain('✗');

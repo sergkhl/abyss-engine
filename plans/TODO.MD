@@ -64,10 +64,10 @@
   - [ ] Hide labels behind crystals (raycast collision)
   - [ ] Add search in Discovery Modal
   - [ ] Restore study session on app restart
-  - [ ] Incorrect selected choice should have cross mark and red background and border; Correct unselected choice should have check mark and no background or border;
   - [ ] drag card to dismiss, calculate threshold by %
   - [ ] levelup screen
   - [ ] features in command pallete are "invisible"; need to create items on overlay screen or other screen
+  - [ ] migrate from radix-ui to base-ui [GUIDE](https://github.com/shadcn-ui/ui/discussions/9562)
   - [ ] add answers into llm prompts for focused results
   - [ ] get xp for partial answers
   - [ ] tts for llm answers
