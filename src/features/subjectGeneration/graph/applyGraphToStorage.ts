@@ -1,7 +1,7 @@
-import type { IDeckContentWriter } from '../../types/repository';
-import type { Subject, SubjectGraph } from '../../types/core';
+import type { Subject, SubjectGraph } from '@/types/core';
+import type { IDeckContentWriter } from '@/types/repository';
 
-export interface ApplyCurriculumGraphInput {
+export interface ApplyGraphToStorageInput {
   subject: Subject;
   graph: SubjectGraph;
 }
@@ -9,9 +9,9 @@ export interface ApplyCurriculumGraphInput {
 /**
  * Persists subject row, full graph, stub topic details, and empty card decks for every node.
  */
-export async function applyCurriculumGraphToIndexedDb(
+export async function applyGraphToStorage(
   writer: IDeckContentWriter,
-  input: ApplyCurriculumGraphInput,
+  input: ApplyGraphToStorageInput,
 ): Promise<void> {
   const { subject, graph } = input;
 

@@ -1,3 +1,6 @@
+import type { GenerationStrategy } from './generationStrategy';
+import type { StudyChecklist } from './studyChecklist';
+
 export type GeometryType = 'box' | 'cylinder' | 'sphere' | 'octahedron' | 'plane';
 
 export type CrystalBaseShape = 'icosahedron' | 'octahedron' | 'tetrahedron' | 'dodecahedron';
@@ -15,6 +18,11 @@ export interface SubjectGeometry {
   gridTile: GeometryType;
 }
 
+export interface SubjectMetadata {
+  checklist: StudyChecklist;
+  strategy: GenerationStrategy;
+}
+
 export interface Subject {
   id: string;
   name: string;
@@ -23,6 +31,7 @@ export interface Subject {
   geometry: SubjectGeometry;
   crystalBaseShape?: CrystalBaseShape;
   topicIds?: string[];
+  metadata?: SubjectMetadata;
 }
 
 /** Curriculum edge: parent `topicId` must reach at least `minLevel` (crystal) before the dependent unlocks. */

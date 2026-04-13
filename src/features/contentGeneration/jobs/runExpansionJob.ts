@@ -38,6 +38,10 @@ export async function runExpansionJob(
     return { ok: false, error: `No syllabus questions for difficulty ${difficulty}` };
   }
 
+  const manifest = await deckRepository.getManifest();
+  const subjectRow = manifest.subjects.find((s) => s.id === subjectId);
+  const contentBrief = subjectRow?.metadata?.strategy?.content?.contentBrief?.trim() || undefined;
+
   const graph = await deckRepository.getSubjectGraph(subjectId);
   const node = graph.nodes.find((n) => n.topicId === topicId);
   const topicTitle = node?.title ?? details.title;
@@ -64,6 +68,7 @@ export async function runExpansionJob(
       theoryExcerpt,
       syllabusQuestions,
       difficulty,
+      contentBrief,
     }),
     enableThinking,
     externalSignal: signal,

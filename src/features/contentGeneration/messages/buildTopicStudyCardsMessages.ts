@@ -1,21 +1,26 @@
 import type { ChatMessage } from '@/types/llm';
 import topicStudyCardsTemplate from '@/prompts/topic-study-cards.prompt';
-import { interpolateAscentWeaverTemplate } from '@/features/ascentWeaver/interpolateAscentWeaverTemplate';
+import { appendContentBriefToSystem } from '@/lib/appendContentBriefToSystem';
+import { interpolatePromptTemplate } from '@/lib/interpolatePromptTemplate';
 
 export interface TopicStudyCardsPromptParams {
   topicId: string;
   topicTitle: string;
   theory: string;
   difficulty1Questions: string;
+  contentBrief?: string;
 }
 
 export function buildTopicStudyCardsMessages(params: TopicStudyCardsPromptParams): ChatMessage[] {
-  const systemContent = interpolateAscentWeaverTemplate(topicStudyCardsTemplate, {
-    topicId: params.topicId,
-    topicTitle: params.topicTitle,
-    theory: params.theory,
-    difficulty1Questions: params.difficulty1Questions,
-  });
+  const systemContent = appendContentBriefToSystem(
+    interpolatePromptTemplate(topicStudyCardsTemplate, {
+      topicId: params.topicId,
+      topicTitle: params.topicTitle,
+      theory: params.theory,
+      difficulty1Questions: params.difficulty1Questions,
+    }),
+    params.contentBrief,
+  );
 
   return [
     { role: 'system', content: systemContent },

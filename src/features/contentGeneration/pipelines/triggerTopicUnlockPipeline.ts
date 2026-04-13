@@ -1,20 +1,13 @@
-import { deckRepository, deckWriter } from '@/infrastructure/di';
-import { getChatCompletionsRepositoryForSurface } from '@/infrastructure/llmInferenceRegistry';
-
-import { runTopicUnlockPipeline } from './runTopicUnlockPipeline';
+import { appEventBus } from '@/infrastructure/eventBus';
 
 export function triggerTopicUnlockPipeline(
   subjectId: string,
   topicId: string,
   options?: { enableThinking?: boolean; signal?: AbortSignal },
-): Promise<{ ok: boolean; pipelineId: string; error?: string }> {
-  return runTopicUnlockPipeline({
-    chat: getChatCompletionsRepositoryForSurface('topicContent'),
-    deckRepository,
-    writer: deckWriter,
+): void {
+  appEventBus.emit('topic:unlock-pipeline', {
     subjectId,
     topicId,
     enableThinking: options?.enableThinking ?? false,
-    signal: options?.signal,
   });
 }

@@ -1,7 +1,7 @@
 import { normalizeGraphPrerequisites } from '@/lib/graphPrerequisites';
-import type { SubjectGraph } from '../../types/core';
+import type { SubjectGraph } from '@/types/core';
 
-export interface CurriculumGraphExpectations {
+export interface GraphValidationExpectations {
   subjectId: string;
   themeId: string;
   topicCount: number;
@@ -11,12 +11,9 @@ export interface CurriculumGraphExpectations {
 
 const kebabTopicId = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-export type ValidateCurriculumGraphResult = { ok: true } | { ok: false; error: string };
+export type ValidateGraphResult = { ok: true } | { ok: false; error: string };
 
-export function validateCurriculumGraph(
-  graph: SubjectGraph,
-  expectations: CurriculumGraphExpectations,
-): ValidateCurriculumGraphResult {
+export function validateGraph(graph: SubjectGraph, expectations: GraphValidationExpectations): ValidateGraphResult {
   if (graph.subjectId !== expectations.subjectId) {
     return { ok: false, error: `subjectId mismatch: expected "${expectations.subjectId}", got "${graph.subjectId}"` };
   }

@@ -162,6 +162,7 @@ export interface ProgressionActions {
       isContentAvailable: boolean;
       isLocked: boolean;
       isUnlocked: boolean;
+      isCurriculumVisible: boolean;
     }[];
   }[];
   getDueCardsCount: (cards?: Array<{ id: string }>) => number;

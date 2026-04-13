@@ -1,12 +1,10 @@
 import { extractJsonString, logJsonParseError } from '@/lib/llmResponseText';
-import type { SubjectGraph } from '../../types/core';
-import { subjectGraphSchema } from './subjectGraphSchema';
+import type { SubjectGraph } from '@/types/core';
+import { subjectGraphSchema } from './graphSchema';
 
-export type ParseSubjectGraphResult =
-  | { ok: true; graph: SubjectGraph }
-  | { ok: false; error: string };
+export type ParseGraphResult = { ok: true; graph: SubjectGraph } | { ok: false; error: string };
 
-export function parseSubjectGraphResponse(raw: string): ParseSubjectGraphResult {
+export function parseGraphResponse(raw: string): ParseGraphResult {
   const jsonStr = extractJsonString(raw);
   if (!jsonStr) {
     return { ok: false, error: 'No JSON found in assistant response' };
@@ -16,7 +14,7 @@ export function parseSubjectGraphResponse(raw: string): ParseSubjectGraphResult 
   try {
     parsed = JSON.parse(jsonStr) as unknown;
   } catch (e) {
-    logJsonParseError('parseSubjectGraphResponse', e, jsonStr);
+    logJsonParseError('parseGraphResponse', e, jsonStr);
     return { ok: false, error: 'Assistant response is not valid JSON' };
   }
 

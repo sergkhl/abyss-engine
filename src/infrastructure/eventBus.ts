@@ -1,4 +1,5 @@
 import type { Buff } from '@/types/progression';
+import type { StudyChecklist } from '@/types/studyChecklist';
 
 type Rating = 1 | 2 | 3 | 4;
 
@@ -48,6 +49,15 @@ export type AppEventMap = {
     sessionId?: string;
     undoCount: number;
     redoCount: number;
+  };
+  'topic:unlock-pipeline': {
+    subjectId: string;
+    topicId: string;
+    enableThinking?: boolean;
+  };
+  'subject:generation-pipeline': {
+    subjectId: string;
+    checklist: StudyChecklist;
   };
 };
 

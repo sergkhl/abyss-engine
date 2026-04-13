@@ -16,7 +16,7 @@ import 'd3-transition';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useProgressionStore } from '@/features/progression';
-import { getTopicUnlockStatus } from '@/features/progression/progressionUtils';
+import { getTopicUnlockStatus, getVisibleTopicIds } from '@/features/progression/progressionUtils';
 import type { SubjectGraphsForceGraphData, SubjectGraphForceNode } from '@/lib/subjectGraphsForceGraphData';
 import {
   DEFAULT_CLUSTER_TERRITORY_PAD_PX,
@@ -323,12 +323,19 @@ export function StudyForceGraph({
     return allGraphs.filter((g) => g.subjectId === currentSubjectId);
   }, [allGraphs, currentSubjectId]);
 
+  const curriculumVisibleGraphs = useMemo(() => {
+    return visibleGraphs.map((g) => {
+      const ids = getVisibleTopicIds(g, activeCrystals);
+      return { ...g, nodes: g.nodes.filter((n) => ids.has(n.topicId)) };
+    });
+  }, [visibleGraphs, activeCrystals]);
+
   const graphData = useMemo((): SubjectGraphsForceGraphData | null => {
-    if (!visibleGraphs.length) {
+    if (!curriculumVisibleGraphs.length) {
       return null;
     }
-    return buildSubjectGraphsForceGraphData(visibleGraphs);
-  }, [visibleGraphs]);
+    return buildSubjectGraphsForceGraphData(curriculumVisibleGraphs);
+  }, [curriculumVisibleGraphs]);
 
   const bfsResult = useMemo(() => {
     if (!graphData) {
@@ -360,8 +367,8 @@ export function StudyForceGraph({
     unlockPoints,
   });
   progressionRef.current = { unlockedTopicIds, activeCrystals, unlockPoints };
-  const graphsRef = useRef(visibleGraphs);
-  graphsRef.current = visibleGraphs;
+  const graphsRef = useRef(curriculumVisibleGraphs);
+  graphsRef.current = curriculumVisibleGraphs;
   const selectedTopicIdRef = useRef(selectedTopicId);
   selectedTopicIdRef.current = selectedTopicId;
   const onSelectTopicRef = useRef(onSelectTopic);

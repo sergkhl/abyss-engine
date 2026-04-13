@@ -17,7 +17,7 @@ export const LLM_INFERENCE_PROVIDER_BY_SURFACE: Record<
   studyFormulaExplain: 'openai-compatible',
   studyQuestionMermaid: 'openai-compatible',
   screenCaptureSummary: 'openai-compatible',
-  ascentWeaver: 'gemini',
+  subjectGeneration: 'gemini',
   topicContent: 'gemini',
 };
 

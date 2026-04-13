@@ -5,6 +5,9 @@ import { crystalCeremonyStore } from '@/features/progression/crystalCeremonyStor
 import { deckRepository, deckWriter } from './di';
 import { getChatCompletionsRepositoryForSurface } from './llmInferenceRegistry';
 import { runExpansionJob } from '@/features/contentGeneration/jobs/runExpansionJob';
+import { runTopicUnlockPipeline } from '@/features/contentGeneration/pipelines/runTopicUnlockPipeline';
+import { createSubjectGenerationOrchestrator } from '@/features/subjectGeneration';
+import { resolveModelForSurface } from './llmInferenceSurfaceProviders';
 
 const g = globalThis as typeof globalThis & {
   __abyssEventBusHandlersRegistered?: boolean;
@@ -60,6 +63,27 @@ if (!g.__abyssEventBusHandlersRegistered) {
         cardId: e.cardId,
       },
       { topicId: e.topicId, sessionId: e.sessionId },
+    );
+  });
+
+  appEventBus.on('topic:unlock-pipeline', (e) => {
+    void runTopicUnlockPipeline({
+      chat: getChatCompletionsRepositoryForSurface('topicContent'),
+      deckRepository,
+      writer: deckWriter,
+      subjectId: e.subjectId,
+      topicId: e.topicId,
+      enableThinking: e.enableThinking ?? false,
+    });
+  });
+
+  appEventBus.on('subject:generation-pipeline', (e) => {
+    const chat = getChatCompletionsRepositoryForSurface('subjectGeneration');
+    const model = resolveModelForSurface('subjectGeneration');
+    const orchestrator = createSubjectGenerationOrchestrator();
+    void orchestrator.execute(
+      { subjectId: e.subjectId, checklist: e.checklist },
+      { chat, writer: deckWriter, model, enableThinking: false },
     );
   });
 

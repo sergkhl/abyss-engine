@@ -471,7 +471,14 @@ export const useProgressionStore = create<ProgressionStore>()(
 
       getTopicsByTier: (allGraphs, subjects, currentSubjectId, contentAvailabilityByTopicId) => {
         const unlockedTopicIds = get().activeCrystals.map((c) => c.topicId);
-        return computeTopicsByTier(allGraphs, unlockedTopicIds, subjects, currentSubjectId, contentAvailabilityByTopicId);
+        return computeTopicsByTier(
+          allGraphs,
+          unlockedTopicIds,
+          subjects,
+          currentSubjectId,
+          contentAvailabilityByTopicId,
+          get().activeCrystals,
+        );
       },
 
       getDueCardsCount: (cards = []) => {

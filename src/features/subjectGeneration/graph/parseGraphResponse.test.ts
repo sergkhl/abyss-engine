@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseSubjectGraphResponse } from './parseSubjectGraphResponse';
+import { parseGraphResponse } from './parseGraphResponse';
 
-describe('parseSubjectGraphResponse', () => {
+describe('parseGraphResponse', () => {
   const minimalValid = {
     subjectId: 'test-subject',
     title: 'Test',
@@ -20,7 +20,7 @@ describe('parseSubjectGraphResponse', () => {
   };
 
   it('parses minimal valid graph', () => {
-    const result = parseSubjectGraphResponse(JSON.stringify(minimalValid));
+    const result = parseGraphResponse(JSON.stringify(minimalValid));
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.graph.subjectId).toBe('test-subject');
@@ -30,12 +30,12 @@ describe('parseSubjectGraphResponse', () => {
 
   it('parses fenced response', () => {
     const wrapped = `\`\`\`json\n${JSON.stringify(minimalValid)}\n\`\`\``;
-    const result = parseSubjectGraphResponse(wrapped);
+    const result = parseGraphResponse(wrapped);
     expect(result.ok).toBe(true);
   });
 
   it('fails on invalid JSON', () => {
-    const result = parseSubjectGraphResponse('{');
+    const result = parseGraphResponse('{');
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.error).toContain('JSON');
@@ -43,7 +43,7 @@ describe('parseSubjectGraphResponse', () => {
   });
 
   it('fails on wrong shape', () => {
-    const result = parseSubjectGraphResponse('{"foo":1}');
+    const result = parseGraphResponse('{"foo":1}');
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.error).toContain('schema');

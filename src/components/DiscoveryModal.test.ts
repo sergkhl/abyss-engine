@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
+import { act } from 'react-dom/test-utils';
 
 import DiscoveryModal from './DiscoveryModal';
 
@@ -48,6 +49,27 @@ afterEach(() => {
 });
 
 describe('DiscoveryModal', () => {
+  it('opens IncrementalSubjectModal from the new subject header action', async () => {
+    const onClose = vi.fn();
+    const { root } = renderDiscoveryModal({
+      isOpen: true,
+      unlockPoints: 3,
+      onClose,
+    });
+
+    const newSubjectButton = document.body.querySelector('[aria-label="Generate new subject"]') as
+      | HTMLButtonElement
+      | null;
+    expect(newSubjectButton).not.toBeNull();
+    await act(async () => {
+      newSubjectButton?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+    expect(document.body.textContent).toContain('New subject');
+
+    root.unmount();
+  });
+
   it('opens the attunement ritual modal through the header action', () => {
     const onOpenRitual = vi.fn();
     const onClose = vi.fn();
@@ -113,6 +135,7 @@ describe('DiscoveryModal', () => {
             isContentAvailable: true,
             isLocked: false,
             isUnlocked: true,
+            isCurriculumVisible: true,
           },
         ],
       },
@@ -126,6 +149,55 @@ describe('DiscoveryModal', () => {
 
     expect(document.body.textContent).toContain('Quantum Physics');
     expect(document.body.textContent).toContain('Alpha Topic');
+    root.unmount();
+  });
+
+  it('hides tier sections that have no curriculum-visible topics', () => {
+    progressionState.getTopicsByTier.mockReturnValue([
+      {
+        tier: 1,
+        topics: [
+          {
+            id: 't1',
+            name: 'Visible',
+            description: '',
+            subjectId: 's',
+            subjectName: 'S',
+            isContentAvailable: true,
+            isLocked: true,
+            isUnlocked: false,
+            isCurriculumVisible: true,
+          },
+        ],
+      },
+      {
+        tier: 2,
+        topics: [
+          {
+            id: 't2',
+            name: 'Hidden tier row',
+            description: '',
+            subjectId: 's',
+            subjectName: 'S',
+            isContentAvailable: true,
+            isLocked: true,
+            isUnlocked: false,
+            isCurriculumVisible: false,
+          },
+        ],
+      },
+    ]);
+
+    const { root } = renderDiscoveryModal({
+      isOpen: true,
+      unlockPoints: 1,
+      onClose: vi.fn(),
+    });
+
+    expect(document.body.textContent).toContain('Tier 1');
+    expect(document.body.textContent).not.toContain('Tier 2');
+    expect(document.body.textContent).toContain('Visible');
+    expect(document.body.textContent).not.toContain('Hidden tier row');
     root.unmount();
   });
 });

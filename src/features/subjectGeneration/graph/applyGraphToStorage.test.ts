@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { IDeckContentWriter } from '../../types/repository';
-import type { Subject, SubjectGraph } from '../../types/core';
+import type { Subject, SubjectGraph } from '@/types/core';
+import type { IDeckContentWriter } from '@/types/repository';
 
-import { applyCurriculumGraphToIndexedDb } from './applyCurriculumGraphToIndexedDb';
+import { applyGraphToStorage } from './applyGraphToStorage';
 
-describe('applyCurriculumGraphToIndexedDb', () => {
+describe('applyGraphToStorage', () => {
   it('writes subject, graph, stub details, and empty cards in order', async () => {
     const calls: string[] = [];
     const writer: IDeckContentWriter = {
@@ -30,6 +30,24 @@ describe('applyCurriculumGraphToIndexedDb', () => {
       description: 'D',
       color: '#000',
       geometry: { gridTile: 'box' },
+      metadata: {
+        checklist: { topicName: 'T' },
+        strategy: {
+          graph: {
+            totalTiers: 1,
+            topicsPerTier: 1,
+            audienceBrief: '',
+            domainBrief: '',
+            focusConstraints: '',
+          },
+          content: {
+            theoryDepth: 'standard',
+            cardMix: { flashcardWeight: 1, choiceWeight: 0, miniGameWeight: 0 },
+            difficultyBias: 'balanced',
+            contentBrief: '',
+          },
+        },
+      },
     };
 
     const graph: SubjectGraph = {
@@ -48,9 +66,15 @@ describe('applyCurriculumGraphToIndexedDb', () => {
       ],
     };
 
-    await applyCurriculumGraphToIndexedDb(writer, { subject, graph });
+    await applyGraphToStorage(writer, { subject, graph });
 
     expect(calls).toEqual(['subject', 'graph', 'details', 'cards']);
+    expect(writer.upsertSubject).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 's1',
+        metadata: expect.objectContaining({ checklist: { topicName: 'T' } }),
+      }),
+    );
     expect(writer.upsertTopicDetails).toHaveBeenCalledWith({
       topicId: 'a-topic',
       title: 'A',
@@ -84,8 +108,6 @@ describe('applyCurriculumGraphToIndexedDb', () => {
       maxTier: 1,
       nodes: [],
     };
-    await expect(applyCurriculumGraphToIndexedDb(writer, { subject, graph })).rejects.toThrow(
-      /does not match graph\.subjectId/,
-    );
+    await expect(applyGraphToStorage(writer, { subject, graph })).rejects.toThrow(/does not match graph\.subjectId/);
   });
 });

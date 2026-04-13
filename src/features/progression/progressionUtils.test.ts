@@ -5,6 +5,8 @@ import {
   applyCrystalXpDelta,
   getCrystalLevelProgressToNext,
   getTopicUnlockStatus,
+  getTopicsByTier,
+  getVisibleTopicIds,
 } from './progressionUtils';
 
 function createActiveCrystal(topicId: string, xp = 0): ActiveCrystal {
@@ -108,6 +110,77 @@ describe('progressionUtils', () => {
       const open = getTopicUnlockStatus('b', crystalsL2, 1, graphMin2, []);
       expect(open.hasPrerequisites).toBe(true);
       expect(open.canUnlock).toBe(true);
+    });
+  });
+
+  describe('getVisibleTopicIds', () => {
+    function graphTwoTier(): SubjectGraph {
+      return {
+        subjectId: 's',
+        title: 'T',
+        themeId: 's',
+        maxTier: 2,
+        nodes: [
+          { topicId: 'a', title: 'A', tier: 1, prerequisites: [], learningObjective: 'o' },
+          { topicId: 'b', title: 'B', tier: 2, prerequisites: ['a'], learningObjective: 'o' },
+        ],
+      };
+    }
+
+    it('tier 1 always visible', () => {
+      const g = graphTwoTier();
+      const v = getVisibleTopicIds(g, []);
+      expect(v.has('a')).toBe(true);
+      expect(v.has('b')).toBe(false);
+    });
+
+    it('tier 2 visible when any prerequisite has a crystal; graph minLevel ignored', () => {
+      const g = graphTwoTier();
+      g.nodes[1].prerequisites = [{ topicId: 'a', minLevel: 2 }];
+      expect(getVisibleTopicIds(g, [createActiveCrystal('a', 0)]).has('b')).toBe(true);
+      expect(getVisibleTopicIds(g, []).has('b')).toBe(false);
+    });
+
+    it('tier 2 visible when at least one of several prerequisites is unlocked', () => {
+      const g: SubjectGraph = {
+        subjectId: 's',
+        title: 'T',
+        themeId: 's',
+        maxTier: 2,
+        nodes: [
+          { topicId: 'a', title: 'A', tier: 1, prerequisites: [], learningObjective: 'o' },
+          { topicId: 'x', title: 'X', tier: 1, prerequisites: [], learningObjective: 'o' },
+          { topicId: 'b', title: 'B', tier: 2, prerequisites: ['a', 'x'], learningObjective: 'o' },
+        ],
+      };
+      expect(getVisibleTopicIds(g, [createActiveCrystal('x', 0)]).has('b')).toBe(true);
+      expect(getVisibleTopicIds(g, []).has('b')).toBe(false);
+    });
+  });
+
+  describe('getTopicsByTier curriculum visibility', () => {
+    it('marks isCurriculumVisible from activeCrystals when provided', () => {
+      const graphs: SubjectGraph[] = [
+        {
+          subjectId: 's',
+          title: 'T',
+          themeId: 's',
+          maxTier: 2,
+          nodes: [
+            { topicId: 'a', title: 'A', tier: 1, prerequisites: [], learningObjective: 'o' },
+            { topicId: 'b', title: 'B', tier: 2, prerequisites: ['a'], learningObjective: 'o' },
+          ],
+        },
+      ];
+      const withoutCrystal = getTopicsByTier(graphs, [], [], undefined, undefined, []);
+      const bHidden = withoutCrystal.flatMap((t) => t.topics).find((x) => x.id === 'b');
+      expect(bHidden?.isCurriculumVisible).toBe(false);
+
+      const withCrystal = getTopicsByTier(graphs, [], [], undefined, undefined, [
+        createActiveCrystal('a', 0),
+      ]);
+      const bVisible = withCrystal.flatMap((t) => t.topics).find((x) => x.id === 'b');
+      expect(bVisible?.isCurriculumVisible).toBe(true);
     });
   });
 

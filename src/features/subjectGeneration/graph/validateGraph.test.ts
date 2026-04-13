@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import type { SubjectGraph } from '../../types/core';
+import type { SubjectGraph } from '@/types/core';
 
-import { validateCurriculumGraph } from './validateCurriculumGraph';
+import { validateGraph } from './validateGraph';
 
 function buildFifteenNodeGraph(subjectId: string): SubjectGraph {
   const nodes: SubjectGraph['nodes'] = [];
@@ -50,15 +50,15 @@ const expectations = {
   topicsPerTier: 5,
 };
 
-describe('validateCurriculumGraph', () => {
+describe('validateGraph', () => {
   it('accepts a well-formed 15-node graph', () => {
     const graph = buildFifteenNodeGraph('demo-subject');
-    expect(validateCurriculumGraph(graph, expectations)).toEqual({ ok: true });
+    expect(validateGraph(graph, expectations)).toEqual({ ok: true });
   });
 
   it('rejects subjectId mismatch', () => {
     const graph = buildFifteenNodeGraph('wrong-id');
-    const r = validateCurriculumGraph(graph, expectations);
+    const r = validateGraph(graph, expectations);
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.error).toContain('subjectId');
@@ -68,7 +68,7 @@ describe('validateCurriculumGraph', () => {
   it('rejects tier 1 with prerequisites', () => {
     const graph = buildFifteenNodeGraph('demo-subject');
     graph.nodes[0].prerequisites = ['t1-2'];
-    const r = validateCurriculumGraph(graph, expectations);
+    const r = validateGraph(graph, expectations);
     expect(r.ok).toBe(false);
   });
 
@@ -79,7 +79,7 @@ describe('validateCurriculumGraph', () => {
     if (t3) {
       t3.prerequisites = ['t1-1'];
     }
-    const r = validateCurriculumGraph(graph, expectations);
+    const r = validateGraph(graph, expectations);
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.error).toContain('tier 2');
@@ -89,7 +89,7 @@ describe('validateCurriculumGraph', () => {
   it('rejects wrong per-tier counts', () => {
     const graph = buildFifteenNodeGraph('demo-subject');
     graph.nodes[5].tier = 1;
-    const r = validateCurriculumGraph(graph, expectations);
+    const r = validateGraph(graph, expectations);
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.error).toContain('Tier 1');
@@ -99,11 +99,11 @@ describe('validateCurriculumGraph', () => {
   it('rejects invalid kebab topicId', () => {
     const graph = buildFifteenNodeGraph('demo-subject');
     graph.nodes[0].topicId = 'Bad_Id';
-    const r = validateCurriculumGraph(graph, expectations);
+    const r = validateGraph(graph, expectations);
     expect(r.ok).toBe(false);
   });
 
-  it('accepts a 10-node two-tier incremental graph', () => {
+  it('accepts a 10-node two-tier graph', () => {
     const nodes: SubjectGraph['nodes'] = [];
     for (let i = 1; i <= 5; i += 1) {
       nodes.push({
@@ -130,7 +130,7 @@ describe('validateCurriculumGraph', () => {
       maxTier: 2,
       nodes,
     };
-    const r = validateCurriculumGraph(graph, {
+    const r = validateGraph(graph, {
       subjectId: 'demo-subject',
       themeId: 'demo-subject',
       topicCount: 10,

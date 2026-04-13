@@ -55,6 +55,19 @@ describe('contentGenerationStore', () => {
     expect(useContentGenerationStore.getState().pipelines.p1?.label).toBe('P');
   });
 
+  it('hydrateFromPersisted accepts subject-graph jobs like other kinds', () => {
+    const job = baseJob({
+      id: 'subj-graph-1',
+      kind: 'subject-graph',
+      label: 'Curriculum — Test',
+      subjectId: 'test-subject',
+      topicId: null,
+      finishedAt: 20,
+    });
+    useContentGenerationStore.getState().hydrateFromPersisted([job], []);
+    expect(useContentGenerationStore.getState().jobs['subj-graph-1']?.kind).toBe('subject-graph');
+  });
+
   it('clearCompletedJobs removes terminal jobs and calls clearPersistedLogs', () => {
     useContentGenerationStore.setState({
       jobs: { a: baseJob({ id: 'a', status: 'completed' }) },

@@ -44,6 +44,7 @@ export async function runTopicUnlockPipeline(
   const manifest = await deckRepository.getManifest();
   const subject = manifest.subjects.find((s) => s.id === subjectId);
   const subjectTitle = subject?.name ?? graph.title;
+  const contentBrief = subject?.metadata?.strategy?.content?.contentBrief?.trim() || undefined;
 
   store.registerPipeline(
     {
@@ -69,6 +70,7 @@ export async function runTopicUnlockPipeline(
       topicId,
       topicTitle: node.title,
       learningObjective: node.learningObjective,
+      contentBrief,
     }),
     enableThinking,
     externalSignal: pipelineAc.signal,
@@ -116,6 +118,7 @@ export async function runTopicUnlockPipeline(
       topicTitle: node.title,
       theory: theory.theory,
       difficulty1Questions,
+      contentBrief,
     }),
     enableThinking,
     externalSignal: pipelineAc.signal,
@@ -148,6 +151,7 @@ export async function runTopicUnlockPipeline(
       topicTitle: node.title,
       theory: theory.theory,
       difficulty1Questions,
+      contentBrief,
     }),
     enableThinking,
     externalSignal: pipelineAc.signal,

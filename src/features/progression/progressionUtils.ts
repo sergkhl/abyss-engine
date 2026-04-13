@@ -57,6 +57,8 @@ export interface TieredTopic {
   isContentAvailable: boolean;
   isLocked: boolean;
   isUnlocked: boolean;
+  /** False when prerequisite crystal levels hide this topic from the curriculum list (tier > 1). */
+  isCurriculumVisible: boolean;
 }
 
 export interface SubjectLike {
@@ -127,6 +129,36 @@ export function calculateLevelFromXP(xp: number): number {
     MAX_CRYSTAL_LEVEL,
     Math.floor(Math.max(0, xp) / CRYSTAL_XP_PER_LEVEL),
   );
+}
+
+/**
+ * Topic ids that may appear in curriculum / graph UI: tier 1 always; higher tiers when
+ * prerequisites are empty (always) or at least one listed prerequisite has an active crystal.
+ * Graph `minLevel` is ignored here — unlock eligibility still uses minLevel via `getTopicUnlockStatus`.
+ */
+export function getVisibleTopicIds(graph: SubjectGraph, activeCrystals: readonly ActiveCrystal[]): Set<string> {
+  const crystalTopicIds = new Set(activeCrystals.map((c) => c.topicId));
+
+  const visible = new Set<string>();
+  for (const node of graph.nodes) {
+    if (node.tier === 1) {
+      visible.add(node.topicId);
+      continue;
+    }
+
+    const prereqs = normalizeGraphPrerequisites(node.prerequisites);
+    if (prereqs.length === 0) {
+      visible.add(node.topicId);
+      continue;
+    }
+
+    const anyPrereqUnlocked = prereqs.some((p) => crystalTopicIds.has(p.topicId));
+    if (anyPrereqUnlocked) {
+      visible.add(node.topicId);
+    }
+  }
+
+  return visible;
 }
 
 /** Result of applying an XP delta to one topic's crystal (used by study + addXP for consistent unlock rewards). */
@@ -397,6 +429,8 @@ export function getTopicsByTier(
   currentSubjectId?: string | null,
   /** When set, `isContentAvailable` uses this map (missing topicId → false). When omitted, defaults to true. */
   contentAvailabilityByTopicId?: Record<string, boolean>,
+  /** When set, `isCurriculumVisible` reflects prerequisite crystal levels per graph. */
+  activeCrystals?: readonly ActiveCrystal[],
 ) {
   const subjectMap = toSubjectMap(subjects);
   const tierMap = new Map<number, TieredTopic[]>();
@@ -406,6 +440,7 @@ export function getTopicsByTier(
     : allGraphs;
 
   for (const graph of graphs) {
+    const visibleIds = activeCrystals ? getVisibleTopicIds(graph, activeCrystals) : null;
     for (const node of graph.nodes) {
       const tier = node.tier || calculateTopicTier(node.topicId, allGraphs);
       const subjectName = subjectMap[graph.subjectId]?.name || 'Unknown';
@@ -420,6 +455,7 @@ export function getTopicsByTier(
           : true,
         isLocked: !unlockedTopicIds.includes(node.topicId),
         isUnlocked: unlockedTopicIds.includes(node.topicId),
+        isCurriculumVisible: visibleIds ? visibleIds.has(node.topicId) : true,
       };
 
       const current = tierMap.get(tier);

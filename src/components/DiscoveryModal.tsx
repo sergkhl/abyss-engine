@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { triggerTopicUnlockPipeline } from '@/features/contentGeneration';
 import { useTopicContentAvailabilityMap } from '@/hooks/useTopicContentAvailabilityMap';
 import { scheduleTopicDetailsDismiss, TopicDetailsPopup } from './TopicDetailsPopup';
+import { IncrementalSubjectModal } from './IncrementalSubjectModal';
 
 interface DiscoveryModalProps {
   isOpen: boolean;
@@ -41,11 +42,13 @@ export function DiscoveryModal({
 }: DiscoveryModalProps) {
   /** Stable selection key; tier list + availability are derived fresh via `topicsByTier`. */
   const [selectedTopicKey, setSelectedTopicKey] = useState<{ subjectId: string; topicId: string } | null>(null);
+  const [isNewSubjectOpen, setIsNewSubjectOpen] = useState(false);
   const isRitualSubmissionAvailable = ritualCooldownRemainingMs <= 0;
 
   useEffect(() => {
     if (!isOpen) {
       setSelectedTopicKey(null);
+      setIsNewSubjectOpen(false);
     }
   }, [isOpen]);
 
@@ -68,6 +71,11 @@ export function DiscoveryModal({
   const topicsByTier = useMemo(() => {
     return getTopicsByTier(allGraphs, subjectList, undefined, contentAvailabilityByTopicId);
   }, [getTopicsByTier, allGraphs, subjectList, contentAvailabilityByTopicId]);
+
+  const tiersWithVisibleTopics = useMemo(
+    () => topicsByTier.filter((tierData) => tierData.topics.some((t) => t.isCurriculumVisible)),
+    [topicsByTier],
+  );
 
   const selectedTopic = useMemo((): TieredTopic | null => {
     if (!selectedTopicKey) {
@@ -92,7 +100,10 @@ export function DiscoveryModal({
 
   const lockedTopicsCount = useMemo(() => {
     return topicsByTier.reduce((count, tierData) => {
-      return count + tierData.topics.filter((topic) => topic.isLocked).length;
+      return (
+        count +
+        tierData.topics.filter((topic) => topic.isCurriculumVisible && topic.isLocked).length
+      );
     }, 0);
   }, [topicsByTier]);
 
@@ -156,6 +167,17 @@ export function DiscoveryModal({
                 </div>
                 <Button
                   type="button"
+                  onClick={() => setIsNewSubjectOpen(true)}
+                  className="relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-accent transition-colors"
+                  aria-label="Generate new subject"
+                  title="Generate new subject"
+                >
+                  <span className="relative z-10 text-lg leading-none text-foreground" aria-hidden="true">
+                    🌱
+                  </span>
+                </Button>
+                <Button
+                  type="button"
                   onClick={() => onOpenRitual?.()}
                   className={`relative inline-flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
                     isRitualSubmissionAvailable ? 'bg-accent' : 'bg-muted'
@@ -181,7 +203,7 @@ export function DiscoveryModal({
           </DialogHeader>
           <div className="-mx-4 overflow-y-auto px-4">
             <div className="space-y-6">
-              {topicsByTier.map((tierData) => (
+              {tiersWithVisibleTopics.map((tierData) => (
                 <div key={tierData.tier}>
                   <div className="mb-3 flex items-center">
                     <div className="h-px flex-1 bg-border" />
@@ -192,7 +214,9 @@ export function DiscoveryModal({
                   </div>
 
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-                    {tierData.topics.map((topic) => (
+                    {tierData.topics
+                      .filter((topic) => topic.isCurriculumVisible)
+                      .map((topic) => (
                       <Button
                         key={topic.id}
                         onClick={() => setSelectedTopicKey({ subjectId: topic.subjectId, topicId: topic.id })}
@@ -243,7 +267,7 @@ export function DiscoveryModal({
               ))}
             </div>
 
-            {topicsByTier.length === 0 && (
+            {tiersWithVisibleTopics.length === 0 && (
               <div className="py-8 text-center">
                 <p className="text-muted-foreground">No topics available</p>
               </div>
@@ -261,6 +285,15 @@ export function DiscoveryModal({
           onUnlock={handleUnlock}
         />
       )}
+
+      <IncrementalSubjectModal
+        isOpen={isNewSubjectOpen}
+        onClose={() => setIsNewSubjectOpen(false)}
+        onEnqueued={() => {
+          setIsNewSubjectOpen(false);
+          onClose();
+        }}
+      />
     </>
   );
 }
