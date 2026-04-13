@@ -3,7 +3,6 @@
 import React, { Suspense, useRef, useMemo, useEffect, useLayoutEffect, useState } from 'react'
 import { Canvas, useThree } from '@react-three/fiber/webgpu'
 import { PerspectiveCamera, OrbitControls } from '@react-three/drei/webgpu'
-import { useQueries } from '@tanstack/react-query'
 import * as THREE from 'three/webgpu'
 import { Grid, GRID_SIZE } from './Grid'
 import { ReflectiveFloor } from './ReflectiveFloor'
@@ -18,8 +17,7 @@ import { useProgressionStore as useStudyStore } from '../features/progression'
 import { useUIStore } from '../store/uiStore'
 import { useTopicMetadata, type TopicMetadata } from '../features/content'
 import { Card } from '../types/core'
-import { deckRepository } from '../infrastructure/di'
-import { topicCardsQueryKey } from '../hooks/useDeckData'
+import { useTopicCardQueriesForActiveTopics } from '../hooks/useTopicCardQueries'
 import { useSceneInvalidator } from '../hooks/useSceneInvalidator'
 import { useSelectedCrystalSpotlight } from '../hooks/useSelectedCrystalSpotlight'
 import '../graphics/nodeMaterialRegistration'
@@ -212,27 +210,7 @@ export const Scene: React.FC<SceneProps> = ({
     () => Array.from(new Set(activeCrystals.map((crystal) => crystal.topicId))),
     [activeCrystals],
   )
-  const topicCardQueries = useQueries({
-    queries: activeTopicIds.map((topicId) => {
-      const subjectId = allTopicMetadata[topicId]?.subjectId || ''
-      return {
-        queryKey: topicCardsQueryKey(subjectId, topicId),
-        queryFn: () => deckRepository.getTopicCards(subjectId, topicId),
-        enabled: Boolean(subjectId),
-        staleTime: Infinity,
-      }
-    }),
-  })
-  const topicCardsById = useMemo(() => {
-    const map = new Map<string, Card[]>()
-    activeTopicIds.forEach((topicId, index) => {
-      const cards = topicCardQueries[index]?.data
-      if (cards) {
-        map.set(topicId, cards)
-      }
-    })
-    return map
-  }, [activeTopicIds, topicCardQueries])
+  const { topicCardsById } = useTopicCardQueriesForActiveTopics(activeTopicIds, allTopicMetadata)
 
   const selectedTopicMetadata: TopicMetadata | undefined = selectedTopicId
     ? allTopicMetadata[selectedTopicId]

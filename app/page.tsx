@@ -2,7 +2,6 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
 import dynamic from 'next/dynamic';
-import { useQueries } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import { useProgressionStore as useStudyStore } from '@/features/progression';
 import { undoManager } from '@/features/progression/undoManager';
@@ -14,7 +13,6 @@ import DebugControls from '@/components/debug/DebugControls';
 import { initAbyssDev } from '@/utils/abyssDev';
 import { AttunementRitualPayload } from '@/types/progression';
 import { filterCardsForStudy, useTopicMetadata, type StudyCardFilterSelection } from '@/features/content';
-import { deckRepository } from '@/infrastructure/di';
 import { syncDeckIndexedDbDebugFromApp } from '@/infrastructure/deckDb/deckDbDebugLog';
 import { Button } from '@/components/ui/button';
 import { CloudLoadingScreen } from '@/components/ui/CloudLoadingScreen';
@@ -41,7 +39,7 @@ import { useContentGenerationLifecycle } from '@/hooks/useContentGenerationLifec
 import { useThinkingToggle } from '@/hooks/useThinkingToggle';
 import { LlmThinkingToggle } from '@/components/LlmThinkingToggle';
 import { LlmTtsToggle } from '@/components/LlmTtsToggle';
-import { topicCardsQueryKey } from '@/hooks/useDeckData';
+import { useTopicCardQueriesForSubjectFilter } from '@/hooks/useTopicCardQueries';
 import { toast } from 'sonner';
 
 // Dynamic import for Scene to avoid SSR issues with Three.js.
@@ -120,24 +118,11 @@ const HomeContent: React.FC = () => {
 
   const activeTopicIds = useMemo(() => Array.from(new Set(activeCrystals.map((crystal) => crystal.topicId))), [activeCrystals]);
   const allTopicMetadata = useTopicMetadata(activeTopicIds);
-  const subjectFilteredTopicIds = useMemo(() => {
-    if (!currentSubjectId) {
-      return activeTopicIds;
-    }
-
-    return activeTopicIds.filter((topicId) => allTopicMetadata[topicId]?.subjectId === currentSubjectId);
-  }, [activeTopicIds, allTopicMetadata, currentSubjectId]);
-  const topicCardQueries = useQueries({
-    queries: subjectFilteredTopicIds.map((topicId) => {
-      const subjectId = allTopicMetadata[topicId]?.subjectId || '';
-      return {
-        queryKey: topicCardsQueryKey(subjectId, topicId),
-        queryFn: () => deckRepository.getTopicCards(subjectId, topicId),
-        enabled: Boolean(subjectId),
-        staleTime: Infinity,
-      };
-    }),
-  });
+  const { topicCardQueries, topicCardsById } = useTopicCardQueriesForSubjectFilter(
+    activeTopicIds,
+    currentSubjectId,
+    allTopicMetadata,
+  );
   const allTopicsCardCounts = useMemo(() => {
     let due = 0;
     let total = 0;
@@ -153,17 +138,6 @@ const HomeContent: React.FC = () => {
   }, [getDueCardsCount, sm2Data, topicCardQueries]);
   const dueCards = allTopicsCardCounts.due;
   const totalCards = allTopicsCardCounts.total;
-
-  const topicCardsById = useMemo(() => {
-    const map = new Map<string, Card[]>();
-    subjectFilteredTopicIds.forEach((topicId, index) => {
-      const cards = topicCardQueries[index]?.data;
-      if (cards) {
-        map.set(topicId, cards);
-      }
-    });
-    return map;
-  }, [subjectFilteredTopicIds, topicCardQueries]);
 
   // Get store actions - stable references
   const initialize = useStudyStore(s => s.initialize);

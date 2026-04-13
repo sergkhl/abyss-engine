@@ -5,7 +5,7 @@ import { deckRepository } from '../infrastructure/di';
 
 const DEFAULT_STALE_TIME = Number.POSITIVE_INFINITY;
 
-/** Canonical TanStack Query key for topic deck cards (shared with useQueries in Scene, page, etc.). */
+/** Canonical TanStack Query key for topic deck cards (see `useTopicCardQueries`). */
 export function topicCardsQueryKey(subjectId: string, topicId: string) {
   return ['content', 'topic-cards', subjectId, topicId] as const;
 }
