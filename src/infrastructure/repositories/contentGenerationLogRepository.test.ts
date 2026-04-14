@@ -26,6 +26,8 @@ function terminalJob(id: string, finishedAt: number, pipelineId: string | null =
     reasoningText: null,
     error: null,
     parseError: null,
+    retryOf: null,
+    metadata: null,
   };
 }
 
@@ -46,7 +48,7 @@ describe('contentGenerationLogRepository', () => {
   });
 
   it('loadPersistedLogs returns pipelines referenced by jobs', async () => {
-    const p = { id: 'pipe1', label: 'Unlock', createdAt: 1 };
+    const p = { id: 'pipe1', label: 'Unlock', createdAt: 1, retryOf: null };
     await persistPipeline(p);
     await persistTerminalJob(terminalJob('j1', 2000, 'pipe1'));
     const { jobs, pipelines } = await loadPersistedLogs();

@@ -27,10 +27,13 @@ function telemetryEvent<T extends TelemetryEventType>(
   } as TelemetryEvent;
 }
 
+const activeRoots: Array<ReturnType<typeof createRoot>> = [];
+
 function renderTimelineModal(props: Parameters<typeof StudyTimelineModal>[0]) {
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
+  activeRoots.push(root);
   flushSync(() => {
     root.render(createElement(StudyTimelineModal, props));
   });
@@ -46,6 +49,12 @@ function drillIntoFirstBucket() {
 }
 
 afterEach(() => {
+  for (const r of [...activeRoots]) {
+    act(() => {
+      r.unmount();
+    });
+  }
+  activeRoots.length = 0;
   document.body.innerHTML = '';
   vi.clearAllMocks();
 });

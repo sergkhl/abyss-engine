@@ -30,6 +30,8 @@ function baseJob(overrides: Partial<ContentGenerationJob>): ContentGenerationJob
     reasoningText: null,
     error: null,
     parseError: null,
+    retryOf: null,
+    metadata: null,
     ...overrides,
   };
 }
@@ -49,7 +51,7 @@ describe('contentGenerationStore', () => {
     const job = baseJob({ id: 'a', finishedAt: 10 });
     useContentGenerationStore.getState().hydrateFromPersisted(
       [job],
-      [{ id: 'p1', label: 'P', createdAt: 1 }],
+      [{ id: 'p1', label: 'P', createdAt: 1, retryOf: null }],
     );
     expect(useContentGenerationStore.getState().jobs.a).toEqual(job);
     expect(useContentGenerationStore.getState().pipelines.p1?.label).toBe('P');

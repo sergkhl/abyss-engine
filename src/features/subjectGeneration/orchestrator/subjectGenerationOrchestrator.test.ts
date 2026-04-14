@@ -5,17 +5,14 @@ import type { SubjectGraph } from '@/types/core';
 import type { IChatCompletionsRepository } from '@/types/llm';
 import type { IDeckContentWriter } from '@/types/repository';
 
-import { runContentGenerationJob, useContentGenerationStore } from '@/features/contentGeneration';
+import { useContentGenerationStore } from '@/features/contentGeneration';
+import { runContentGenerationJob } from '@/features/contentGeneration/runContentGenerationJob';
 
 import { createSubjectGenerationOrchestrator } from './subjectGenerationOrchestrator';
 
-vi.mock('@/features/contentGeneration', async (importOriginal) => {
-  const mod = await importOriginal<typeof import('@/features/contentGeneration')>();
-  return {
-    ...mod,
-    runContentGenerationJob: vi.fn(),
-  };
-});
+vi.mock('@/features/contentGeneration/runContentGenerationJob', () => ({
+  runContentGenerationJob: vi.fn(),
+}));
 
 function validFifteenNodeGraphJson(subjectId: string): string {
   const nodes: SubjectGraph['nodes'] = [];
