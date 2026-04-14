@@ -12,7 +12,11 @@ import {
   DialogTitle,
 } from '@/components/ui/abyss-dialog';
 import type { TieredTopic, TopicUnlockStatus } from '@/features/progression/progressionUtils';
-import { triggerTopicUnlockPipeline, useContentGenerationStore } from '@/features/contentGeneration';
+import {
+  activeTopicGenerationLabel,
+  triggerTopicGenerationPipeline,
+  useContentGenerationStore,
+} from '@/features/contentGeneration';
 import { useTopicDetails } from '@/hooks/useDeckData';
 
 /**
@@ -43,18 +47,7 @@ export function TopicDetailsPopup({
   const isContentAvailable = topic.isContentAvailable;
   const activeJobLabel = useContentGenerationStore((s) => {
     if (!isOpen) return null;
-    for (const j of Object.values(s.jobs)) {
-      if (
-        j.topicId === topic.id &&
-        (j.status === 'pending' ||
-          j.status === 'streaming' ||
-          j.status === 'parsing' ||
-          j.status === 'saving')
-      ) {
-        return j.label;
-      }
-    }
-    return null;
+    return activeTopicGenerationLabel(s, topic.subjectId, topic.id);
   });
   const detailsQuery = useTopicDetails(topic.subjectId, topic.id);
   const syllabus = detailsQuery.data?.coreQuestionsByDifficulty;
@@ -65,7 +58,7 @@ export function TopicDetailsPopup({
     if (isGenerating) {
       return;
     }
-    void triggerTopicUnlockPipeline(topic.subjectId, topic.id);
+    void triggerTopicGenerationPipeline(topic.subjectId, topic.id);
   };
 
   return (

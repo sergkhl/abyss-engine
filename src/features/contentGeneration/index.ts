@@ -4,14 +4,15 @@ export type { ContentGenerationState } from './contentGenerationStore';
 export { runContentGenerationJob } from './runContentGenerationJob';
 export type { ContentGenerationJobParams } from './runContentGenerationJob';
 
-export { runTopicUnlockPipeline } from './pipelines/runTopicUnlockPipeline';
-export type { RunTopicUnlockPipelineParams } from './pipelines/runTopicUnlockPipeline';
-export { triggerTopicUnlockPipeline } from './pipelines/triggerTopicUnlockPipeline';
+export { runTopicGenerationPipeline } from './pipelines/runTopicGenerationPipeline';
+export type { RunTopicGenerationPipelineParams } from './pipelines/runTopicGenerationPipeline';
+export { triggerTopicGenerationPipeline } from './pipelines/triggerTopicGenerationPipeline';
 
 export { runExpansionJob } from './jobs/runExpansionJob';
 export type { RunExpansionJobParams } from './jobs/runExpansionJob';
 
 export { topicStudyContentReady } from './topicStudyContentReady';
+export { activeTopicGenerationLabel } from './activeTopicGenerationLabel';
 
 export { buildTopicTheoryMessages } from './messages/buildTopicTheoryMessages';
 export type { TopicTheoryPromptParams } from './messages/buildTopicTheoryMessages';

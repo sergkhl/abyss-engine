@@ -6,7 +6,7 @@ import { crystalCeremonyStore } from '@/features/progression/crystalCeremonyStor
 import { deckRepository, deckWriter } from './di';
 import { getChatCompletionsRepositoryForSurface } from './llmInferenceRegistry';
 import { runExpansionJob } from '@/features/contentGeneration/jobs/runExpansionJob';
-import { runTopicUnlockPipeline } from '@/features/contentGeneration/pipelines/runTopicUnlockPipeline';
+import { runTopicGenerationPipeline } from '@/features/contentGeneration/pipelines/runTopicGenerationPipeline';
 import { createSubjectGenerationOrchestrator } from '@/features/subjectGeneration';
 import { resolveModelForSurface } from './llmInferenceSurfaceProviders';
 
@@ -69,8 +69,8 @@ if (!g.__abyssEventBusHandlersRegistered) {
     );
   });
 
-  appEventBus.on('topic:unlock-pipeline', (e) => {
-    void runTopicUnlockPipeline({
+  appEventBus.on('topic:generation-pipeline', (e) => {
+    void runTopicGenerationPipeline({
       chat: getChatCompletionsRepositoryForSurface('topicContent'),
       deckRepository,
       writer: deckWriter,

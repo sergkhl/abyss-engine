@@ -56,7 +56,7 @@ export type AppEventMap = {
     undoCount: number;
     redoCount: number;
   };
-  'topic:unlock-pipeline': {
+  'topic:generation-pipeline': {
     subjectId: string;
     topicId: string;
     enableThinking?: boolean;

@@ -13,10 +13,88 @@ import {
 import { ParticlesAnimation, RITUAL_PARTICLE_ANIMATION } from './ui/particles-animation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { triggerTopicUnlockPipeline } from '@/features/contentGeneration';
+import {
+  activeTopicGenerationLabel,
+  triggerTopicGenerationPipeline,
+  useContentGenerationStore,
+} from '@/features/contentGeneration';
 import { useTopicContentAvailabilityMap } from '@/hooks/useTopicContentAvailabilityMap';
 import { scheduleTopicDetailsDismiss, TopicDetailsPopup } from './TopicDetailsPopup';
 import { IncrementalSubjectModal } from './IncrementalSubjectModal';
+
+function DiscoveryTopicCard({
+  topic,
+  onOpenDetails,
+}: {
+  topic: TieredTopic;
+  onOpenDetails: () => void;
+}) {
+  const activeJobLabel = useContentGenerationStore((s) =>
+    activeTopicGenerationLabel(s, topic.subjectId, topic.id),
+  );
+  const isGenerating = activeJobLabel !== null;
+  const showGenerate = topic.isLocked && !topic.isContentAvailable;
+
+  const handleGenerate = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    if (isGenerating) {
+      return;
+    }
+    void triggerTopicGenerationPipeline(topic.subjectId, topic.id);
+  };
+
+  return (
+    <div
+      className={`rounded-lg border p-4 transition-all ${
+        topic.isLocked
+          ? 'border-border bg-muted/60 hover:border-muted-foreground/60'
+          : 'border-border/70 bg-secondary/30 hover:border-secondary'
+      }`}
+    >
+      <button
+        type="button"
+        onClick={onOpenDetails}
+        className="w-full rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <div className="flex w-full items-start justify-between">
+          <div className="min-w-0 flex-1">
+            <h4
+              className={`truncate text-sm font-semibold ${
+                topic.isLocked ? 'text-muted-foreground' : 'text-primary'
+              }`}
+            >
+              {topic.name}
+            </h4>
+            <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">{topic.description}</p>
+            <Badge
+              variant="outline"
+              className="mt-1.5 max-w-full truncate border-border/80 text-[0.6875rem] leading-tight font-normal text-muted-foreground"
+              title={topic.subjectName}
+            >
+              {topic.subjectName}
+            </Badge>
+            {!topic.isContentAvailable && (
+              <p className="text-accent-foreground mt-2 text-xs">📦 Content not available yet</p>
+            )}
+          </div>
+          {topic.isLocked && <span className="text-muted-foreground ml-2 text-lg">🔒</span>}
+          {topic.isUnlocked && <span className="text-accent-foreground ml-2 text-lg">✅</span>}
+        </div>
+      </button>
+      {showGenerate ? (
+        <Button
+          type="button"
+          variant="secondary"
+          className="mt-3 w-full min-h-11"
+          disabled={isGenerating}
+          onClick={handleGenerate}
+        >
+          {isGenerating ? activeJobLabel || 'Generating…' : 'Generate study content'}
+        </Button>
+      ) : null}
+    </div>
+  );
+}
 
 interface DiscoveryModalProps {
   isOpen: boolean;
@@ -119,10 +197,7 @@ export function DiscoveryModal({
       return;
     }
 
-    const position = unlockTopic({ subjectId: selectedTopic.subjectId, topicId: selectedTopic.id }, allGraphs);
-    if (position) {
-      void triggerTopicUnlockPipeline(selectedTopic.subjectId, selectedTopic.id);
-    }
+    unlockTopic({ subjectId: selectedTopic.subjectId, topicId: selectedTopic.id }, allGraphs);
 
     scheduleTopicDetailsDismiss(() => {
       setSelectedTopicKey(null);
@@ -217,51 +292,14 @@ export function DiscoveryModal({
                     {tierData.topics
                       .filter((topic) => topic.isCurriculumVisible)
                       .map((topic) => (
-                      <Button
-                        key={`${topic.subjectId}:${topic.id}`}
-                        onClick={() => setSelectedTopicKey({ subjectId: topic.subjectId, topicId: topic.id })}
-                        multiline
-                        variant="ghost"
-                        className={`rounded-lg border p-4 text-left transition-all ${
-                          topic.isLocked
-                            ? 'border-border bg-muted/60 hover:border-muted-foreground/60'
-                            : 'border-border/70 bg-secondary/30 hover:border-secondary'
-                        }`}
-                      >
-                        <div className="flex w-full items-start justify-between">
-                          <div className="min-w-0 flex-1">
-                            <h4
-                              className={`truncate text-sm font-semibold ${
-                                topic.isLocked ? 'text-muted-foreground' : 'text-primary'
-                              }`}
-                            >
-                              {topic.name}
-                            </h4>
-                            <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">
-                              {topic.description}
-                            </p>
-                            <Badge
-                              variant="outline"
-                              className="mt-1.5 max-w-full truncate border-border/80 text-[0.6875rem] leading-tight font-normal text-muted-foreground"
-                              title={topic.subjectName}
-                            >
-                              {topic.subjectName}
-                            </Badge>
-                            {!topic.isContentAvailable && (
-                              <p className="text-accent-foreground mt-2 text-xs">
-                                📦 Content not available yet
-                              </p>
-                            )}
-                          </div>
-                          {topic.isLocked && (
-                            <span className="text-muted-foreground ml-2 text-lg">🔒</span>
-                          )}
-                          {topic.isUnlocked && (
-                            <span className="text-accent-foreground ml-2 text-lg">✅</span>
-                          )}
-                        </div>
-                      </Button>
-                    ))}
+                        <DiscoveryTopicCard
+                          key={`${topic.subjectId}:${topic.id}`}
+                          topic={topic}
+                          onOpenDetails={() =>
+                            setSelectedTopicKey({ subjectId: topic.subjectId, topicId: topic.id })
+                          }
+                        />
+                      ))}
                   </div>
                 </div>
               ))}

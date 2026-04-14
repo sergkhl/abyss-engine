@@ -11,8 +11,9 @@ import { parseTopicCardsPayload } from '../parsers/parseTopicCardsPayload';
 import { parseTopicTheoryPayload, type ParsedTopicTheoryPayload } from '../parsers/parseTopicTheoryPayload';
 import { runContentGenerationJob } from '../runContentGenerationJob';
 import { useContentGenerationStore } from '../contentGenerationStore';
+import { topicStudyContentReady } from '../topicStudyContentReady';
 
-export interface RunTopicUnlockPipelineParams {
+export interface RunTopicGenerationPipelineParams {
   chat: IChatCompletionsRepository;
   deckRepository: IDeckRepository;
   writer: IDeckContentWriter;
@@ -22,9 +23,9 @@ export interface RunTopicUnlockPipelineParams {
   signal?: AbortSignal;
 }
 
-export async function runTopicUnlockPipeline(
-  params: RunTopicUnlockPipelineParams,
-): Promise<{ ok: boolean; pipelineId: string; error?: string }> {
+export async function runTopicGenerationPipeline(
+  params: RunTopicGenerationPipelineParams,
+): Promise<{ ok: boolean; pipelineId: string; error?: string; skipped?: boolean }> {
   const { chat, deckRepository, writer, subjectId, topicId, enableThinking, signal } = params;
   const model = resolveModelForSurface('topicContent');
   const store = useContentGenerationStore.getState();
@@ -41,6 +42,14 @@ export async function runTopicUnlockPipeline(
     return { ok: false, pipelineId, error: `Topic "${topicId}" not found in subject graph` };
   }
 
+  const [details, cards] = await Promise.all([
+    deckRepository.getTopicDetails(subjectId, topicId),
+    deckRepository.getTopicCards(subjectId, topicId),
+  ]);
+  if (topicStudyContentReady(details, cards)) {
+    return { ok: true, pipelineId: '', skipped: true };
+  }
+
   const manifest = await deckRepository.getManifest();
   const subject = manifest.subjects.find((s) => s.id === subjectId);
   const subjectTitle = subject?.name ?? graph.title;
@@ -49,7 +58,7 @@ export async function runTopicUnlockPipeline(
   store.registerPipeline(
     {
       id: pipelineId,
-      label: `Unlock: ${node.title}`,
+      label: `Generate: ${node.title}`,
       createdAt: Date.now(),
     },
     pipelineAc,

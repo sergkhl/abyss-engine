@@ -5,7 +5,7 @@
 import { cardRefKey } from '@/lib/topicRef';
 import { uiStore } from '../store/uiStore';
 import { SM2Data } from '../features/progression';
-import { triggerTopicUnlockPipeline } from '../features/contentGeneration';
+import { triggerTopicGenerationPipeline } from '../features/contentGeneration';
 import { deckRepository } from '../infrastructure/di';
 import { useProgressionStore as useStudyStore } from '../features/progression';
 import { SubjectGraph, Card } from '../types/core';
@@ -163,7 +163,7 @@ const abyssDev: AbyssDev = {
       return;
     }
 
-    void triggerTopicUnlockPipeline(subjectId, topicId);
+    void triggerTopicGenerationPipeline(subjectId, topicId);
 
     console.log(`[AbyssDev] Spawned crystal for "${topicId}" at position [${position[0]}, ${position[1]}]`);
   },

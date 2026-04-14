@@ -5,7 +5,11 @@ import { Layers } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { useAllGraphs, useSubjects } from '@/features/content';
-import { triggerTopicUnlockPipeline } from '@/features/contentGeneration';
+import {
+  activeTopicGenerationLabel,
+  triggerTopicGenerationPipeline,
+  useContentGenerationStore,
+} from '@/features/contentGeneration';
 import { useTopicContentAvailabilityMap } from '@/hooks/useTopicContentAvailabilityMap';
 import { useProgressionStore as useStudyStore } from '@/features/progression';
 import type { TopicMetadata } from '@/features/content';
@@ -39,7 +43,6 @@ export default function TopicSelectionBar({
   const isSelectionMode = selectedTopic !== null;
   const getDueCardsCount = useStudyStore((state) => state.getDueCardsCount);
   const getTopicsByTier = useStudyStore((state) => state.getTopicsByTier);
-  const unlockPoints = useStudyStore((state) => state.unlockPoints);
   const getTopicUnlockStatus = useStudyStore((state) => state.getTopicUnlockStatus);
   const unlockTopic = useStudyStore((state) => state.unlockTopic);
 
@@ -104,16 +107,31 @@ export default function TopicSelectionBar({
     [],
   );
 
+  const barGenLabel = useContentGenerationStore((s) =>
+    selectedTopic
+      ? activeTopicGenerationLabel(s, selectedTopic.subjectId, selectedTopic.topicId)
+      : null,
+  );
+  const isGeneratingTopic = barGenLabel !== null;
+
   const handleUnlockFromBar = useCallback(() => {
     if (!selectedTopic || !selectedTieredTopic || !barUnlockStatus?.canUnlock) {
       return;
     }
-    const position = unlockTopic(selectedTopic, allGraphs);
-    if (position) {
-      void triggerTopicUnlockPipeline(selectedTieredTopic.subjectId, selectedTopic.topicId);
-    }
+    unlockTopic(selectedTopic, allGraphs);
     scheduleTopicDetailsDismiss(() => setDetailsOpen(false));
   }, [allGraphs, barUnlockStatus?.canUnlock, selectedTieredTopic, selectedTopic, unlockTopic]);
+
+  const handleGenerateFromBar = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.stopPropagation();
+      if (!selectedTopic || !selectedTieredTopic || isGeneratingTopic) {
+        return;
+      }
+      void triggerTopicGenerationPipeline(selectedTieredTopic.subjectId, selectedTopic.topicId);
+    },
+    [isGeneratingTopic, selectedTieredTopic, selectedTopic],
+  );
 
   if (!isSelectionMode || !selectedTopic) {
     return null;
@@ -139,6 +157,7 @@ export default function TopicSelectionBar({
   };
 
   const showUnlockButton = Boolean(selectedTieredTopic?.isLocked);
+  const showGenerateBarButton = Boolean(selectedTieredTopic?.isLocked && !selectedTieredTopic.isContentAvailable);
 
   const containerClass = 'fixed z-50 flex justify-center px-2 sm:px-3';
   const containerStyle: React.CSSProperties = {
@@ -167,6 +186,23 @@ export default function TopicSelectionBar({
           </div>
 
           <div className="h-6 w-px shrink-0 bg-border/60" />
+
+          {showGenerateBarButton ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleGenerateFromBar}
+              onPointerDown={stopPropagation}
+              onMouseDown={stopPropagation}
+              onTouchStart={stopPropagation}
+              disabled={isGeneratingTopic}
+              className="h-8 min-h-11 shrink-0 px-3 text-xs sm:min-h-8"
+              title={isGeneratingTopic ? barGenLabel ?? undefined : 'Generate study content for this topic'}
+            >
+              {isGeneratingTopic ? barGenLabel || 'Generating…' : 'Generate'}
+            </Button>
+          ) : null}
 
           {showUnlockButton ? (
             <Button
