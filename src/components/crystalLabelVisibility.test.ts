@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 
+import { topicRefKey } from '@/lib/topicRef';
 import { ActiveCrystal } from '../types';
 import {
   getLabelOcclusionFactor,
@@ -19,11 +20,12 @@ describe('crystal label visibility helpers', () => {
 
   it('filters by max distance and applies nearest-first visibility cap', () => {
     const cameraPosition = new THREE.Vector3(0, 0, 0);
+    const sub = 'test-subject';
     const crystals: ActiveCrystal[] = [
-      { topicId: 'farther', gridPosition: [10, 0], xp: 0, spawnedAt: 0 },
-      { topicId: 'closest', gridPosition: [1, 0], xp: 0, spawnedAt: 0 },
-      { topicId: 'mid', gridPosition: [3, 0], xp: 0, spawnedAt: 0 },
-      { topicId: 'hidden', gridPosition: [20, 0], xp: 0, spawnedAt: 0 },
+      { subjectId: sub, topicId: 'farther', gridPosition: [10, 0], xp: 0, spawnedAt: 0 },
+      { subjectId: sub, topicId: 'closest', gridPosition: [1, 0], xp: 0, spawnedAt: 0 },
+      { subjectId: sub, topicId: 'mid', gridPosition: [3, 0], xp: 0, spawnedAt: 0 },
+      { subjectId: sub, topicId: 'hidden', gridPosition: [20, 0], xp: 0, spawnedAt: 0 },
     ];
 
     const candidates = getVisibleLabelCandidates(
@@ -35,7 +37,10 @@ describe('crystal label visibility helpers', () => {
     );
 
     expect(candidates).toHaveLength(2);
-    expect(candidates.map((item) => item.topicId)).toEqual(['closest', 'mid']);
+    expect(candidates.map((item) => item.topicKey)).toEqual([
+      topicRefKey({ subjectId: sub, topicId: 'closest' }),
+      topicRefKey({ subjectId: sub, topicId: 'mid' }),
+    ]);
     expect(candidates.every((item) => item.distance < 18)).toBe(true);
   });
 

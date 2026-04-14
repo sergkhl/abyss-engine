@@ -16,7 +16,7 @@ import { LevelProgressCompact } from './LevelProgressCompact';
 import { scheduleTopicDetailsDismiss, TopicDetailsPopup } from './TopicDetailsPopup';
 
 interface TopicSelectionBarProps {
-  onStartTopicStudySession?: (topicId: string, cards: Card[]) => void;
+  onStartTopicStudySession?: (ref: { subjectId: string; topicId: string }, cards: Card[]) => void;
   selectedMetadata?: TopicMetadata;
   selectedCards?: Card[];
   selectedXp?: number;
@@ -34,11 +34,10 @@ export default function TopicSelectionBar({
   selectedCards = [],
   selectedXp = 0,
 }: TopicSelectionBarProps) {
-  const selectedTopicId = useUIStore((state) => state.selectedTopicId);
+  const selectedTopic = useUIStore((state) => state.selectedTopic);
   const selectTopic = useUIStore((state) => state.selectTopic);
-  const isSelectionMode = selectedTopicId !== null;
+  const isSelectionMode = selectedTopic !== null;
   const getDueCardsCount = useStudyStore((state) => state.getDueCardsCount);
-  const sm2Data = useStudyStore((state) => state.sm2Data);
   const getTopicsByTier = useStudyStore((state) => state.getTopicsByTier);
   const unlockPoints = useStudyStore((state) => state.unlockPoints);
   const getTopicUnlockStatus = useStudyStore((state) => state.getTopicUnlockStatus);
@@ -51,49 +50,51 @@ export default function TopicSelectionBar({
     [subjects],
   );
 
-  const contentAvailabilityByTopicId = useTopicContentAvailabilityMap();
+  const contentAvailabilityByTopicKey = useTopicContentAvailabilityMap();
 
   const topicsByTier = useMemo(
-    () => getTopicsByTier(allGraphs, subjectList, undefined, contentAvailabilityByTopicId),
-    [getTopicsByTier, allGraphs, subjectList, contentAvailabilityByTopicId],
+    () => getTopicsByTier(allGraphs, subjectList, undefined, contentAvailabilityByTopicKey),
+    [getTopicsByTier, allGraphs, subjectList, contentAvailabilityByTopicKey],
   );
 
   const selectedTieredTopic = useMemo(() => {
-    if (!selectedTopicId) {
+    if (!selectedTopic) {
       return null;
     }
     for (const tier of topicsByTier) {
-      const found = tier.topics.find((t) => t.id === selectedTopicId);
+      const found = tier.topics.find(
+        (t) => t.id === selectedTopic.topicId && t.subjectId === selectedTopic.subjectId,
+      );
       if (found) {
         return found;
       }
     }
     return null;
-  }, [selectedTopicId, topicsByTier]);
+  }, [selectedTopic, topicsByTier]);
 
   const barUnlockStatus = useMemo(() => {
-    if (!selectedTopicId) {
+    if (!selectedTopic) {
       return null;
     }
-    return getTopicUnlockStatus(selectedTopicId, allGraphs);
-  }, [allGraphs, getTopicUnlockStatus, selectedTopicId]);
+    return getTopicUnlockStatus(selectedTopic, allGraphs);
+  }, [allGraphs, getTopicUnlockStatus, selectedTopic]);
 
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   useEffect(() => {
-    if (!selectedTopicId) {
+    if (!selectedTopic) {
       setDetailsOpen(false);
     }
-  }, [selectedTopicId]);
+  }, [selectedTopic]);
 
   const topicName = selectedMetadata?.topicName || 'Selected topic';
   const selectedDueCards = React.useMemo(() => {
-    if (!selectedCards.length) {
+    if (!selectedCards.length || !selectedTopic) {
       return 0;
     }
     const refs = selectedCards.map((card) => ({ id: card.id }));
-    return getDueCardsCount ? getDueCardsCount(refs) : refs.length;
-  }, [getDueCardsCount, sm2Data, selectedCards]);
+    return getDueCardsCount(selectedTopic, refs);
+  }, [getDueCardsCount, selectedTopic, selectedCards]);
 
   const handleOpenDetails = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -104,17 +105,17 @@ export default function TopicSelectionBar({
   );
 
   const handleUnlockFromBar = useCallback(() => {
-    if (!selectedTopicId || !selectedTieredTopic || !barUnlockStatus?.canUnlock) {
+    if (!selectedTopic || !selectedTieredTopic || !barUnlockStatus?.canUnlock) {
       return;
     }
-    const position = unlockTopic(selectedTopicId, allGraphs);
+    const position = unlockTopic(selectedTopic, allGraphs);
     if (position) {
-      void triggerTopicUnlockPipeline(selectedTieredTopic.subjectId, selectedTopicId);
+      void triggerTopicUnlockPipeline(selectedTieredTopic.subjectId, selectedTopic.topicId);
     }
     scheduleTopicDetailsDismiss(() => setDetailsOpen(false));
-  }, [allGraphs, barUnlockStatus?.canUnlock, selectedTieredTopic, selectedTopicId, unlockTopic]);
+  }, [allGraphs, barUnlockStatus?.canUnlock, selectedTieredTopic, selectedTopic, unlockTopic]);
 
-  if (!isSelectionMode || !selectedTopicId) {
+  if (!isSelectionMode || !selectedTopic) {
     return null;
   }
 
@@ -125,10 +126,10 @@ export default function TopicSelectionBar({
   const handleBegin: React.MouseEventHandler<HTMLButtonElement> = (event) => {
     stopPropagation(event);
     if (!selectedCards?.length) {
-      console.warn(`[TopicSelectionBar] No cards available for topic ${selectedTopicId}`);
+      console.warn(`[TopicSelectionBar] No cards available for topic ${selectedTopic.topicId}`);
       return;
     }
-    onStartTopicStudySession?.(selectedTopicId, selectedCards);
+    onStartTopicStudySession?.(selectedTopic, selectedCards);
     selectTopic(null);
   };
 

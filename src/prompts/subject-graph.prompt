@@ -9,7 +9,7 @@ Requirements:
 3. Create exactly {{topicCount}} topics divided evenly across {{maxTier}} tiers (exactly {{topicsPerTier}} topics per tier).
 4. Tier 1 topics must be foundational and have empty `prerequisites` arrays `[]`.
 5. Tier 2 topics must list relevant Tier 1 `topicId` values as prerequisites only (no other tiers).
-6. Tier 3 topics must list relevant Tier 2 `topicId` values as prerequisites (and optionally Tier 1). For tiers above 3, each topic's prerequisites must reference only strictly lower tiers.
+6. Tier 3 topics must list relevant Tier 2 `topicId` values as prerequisites (and optionally Tier 1).
 7. The `topicId` must be lowercase kebab-case (e.g., "core-architectural-patterns", "multi-robot-systems").
 8. The `title` field at the root is the full human-readable curriculum title (may match or refine: {{subjectTitle}}).
 9. Target audience and pedagogy: {{audience}}
@@ -18,6 +18,7 @@ Requirements:
 
 Each prerequisite may be either a topic id string (minimum parent crystal level defaults to 1) or an object:
 `{ "topicId": "parent-id", "minLevel": 2 }` when mastery level 2+ is required on the parent.
+Prerequisites topics NEVER reference topics from the same tier or higher tiers.
 
 Output valid JSON matching this schema:
 

@@ -4,7 +4,15 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber/webgpu';
 import { Html } from '@react-three/drei/webgpu';
 import * as THREE from 'three/webgpu';
-import { ActiveCrystal, CrystalBaseShape, CRYSTAL_BASE_SHAPES, DEFAULT_CRYSTAL_BASE_SHAPE, Subject } from '../types';
+import { parseTopicRefKey, topicRefKey } from '@/lib/topicRef';
+import {
+  ActiveCrystal,
+  CrystalBaseShape,
+  CRYSTAL_BASE_SHAPES,
+  DEFAULT_CRYSTAL_BASE_SHAPE,
+  Subject,
+  type TopicRef,
+} from '../types';
 import {
   calculateLevelFromXP,
   crystalCeremonyStore,
@@ -47,7 +55,7 @@ interface TopicMetadata {
 
 interface CrystalsProps {
   crystals: ActiveCrystal[];
-  onStartTopicStudySession?: (topicId: string) => void;
+  onStartTopicStudySession?: (ref: TopicRef) => void;
   isStudyPanelOpen?: boolean;
 }
 
@@ -65,11 +73,11 @@ const scaleScratch = new THREE.Vector3();
 const yAxis = new THREE.Vector3(0, 1, 0);
 
 function resolveCrystalBaseShape(
-  topicId: string,
+  topicKey: string,
   metadataLookup: Record<string, TopicMetadata | undefined>,
   subjects: Subject[],
 ): CrystalBaseShape {
-  const meta = metadataLookup[topicId];
+  const meta = metadataLookup[topicKey];
   if (!meta?.subjectId) return DEFAULT_CRYSTAL_BASE_SHAPE;
   const subject = subjects.find((s) => s.id === meta.subjectId);
   return subject?.crystalBaseShape ?? DEFAULT_CRYSTAL_BASE_SHAPE;
@@ -80,11 +88,13 @@ export const Crystals: React.FC<CrystalsProps> = ({
   onStartTopicStudySession,
   isStudyPanelOpen = false,
 }) => {
-  const metadataLookup = useTopicMetadata(crystals.map((crystal) => crystal.topicId));
+  const metadataLookup = useTopicMetadata(
+    crystals.map((crystal) => ({ subjectId: crystal.subjectId, topicId: crystal.topicId })),
+  );
   const manifestQuery = useManifest();
   const subjects = manifestQuery.data?.subjects ?? [];
 
-  const selectedTopicId = useUIStore((state) => state.selectedTopicId);
+  const selectedTopic = useUIStore((state) => state.selectedTopic);
   const selectTopic = useUIStore((state) => state.selectTopic);
 
   const meshRefs = useRef<Record<CrystalBaseShape, THREE.InstancedMesh | null>>({
@@ -138,7 +148,10 @@ export const Crystals: React.FC<CrystalsProps> = ({
   const crystalBoundsKey = useMemo(
     () =>
       crystals
-        .map((c) => `${c.topicId}:${c.gridPosition[0]},${c.gridPosition[1]}:${c.xp}`)
+        .map(
+          (c) =>
+            `${topicRefKey(c)}:${c.gridPosition[0]},${c.gridPosition[1]}:${c.xp}`,
+        )
         .join('|'),
     [crystals],
   );
@@ -172,14 +185,14 @@ export const Crystals: React.FC<CrystalsProps> = ({
     const ceremonyApi = crystalCeremonyStore.getState();
     ceremonyApi.syncCeremonyClock(now);
     const ceremonyKey =
-      ceremonyApi.ceremonyTopicId != null && ceremonyApi.ceremonyStartedAt != null
-        ? `${ceremonyApi.ceremonyTopicId}:${ceremonyApi.ceremonyStartedAt}`
+      ceremonyApi.ceremonyTopicKey != null && ceremonyApi.ceremonyStartedAt != null
+        ? `${ceremonyApi.ceremonyTopicKey}:${ceremonyApi.ceremonyStartedAt}`
         : null;
     if (ceremonyKey && ceremonyKey !== lastCeremonyKey.current) {
       lastCeremonyKey.current = ceremonyKey;
       playLevelUpSound();
-      if (ceremonyApi.ceremonyTopicId) {
-        setParticleTopicId(ceremonyApi.ceremonyTopicId);
+      if (ceremonyApi.ceremonyTopicKey) {
+        setParticleTopicId(ceremonyApi.ceremonyTopicKey);
         window.setTimeout(() => setParticleTopicId(null), 1200);
       }
     }
@@ -207,8 +220,9 @@ export const Crystals: React.FC<CrystalsProps> = ({
 
     for (let i = 0; i < count; i++) {
       const crystal = crystals[i];
-      const topicMeta = metadataLookup[crystal.topicId] as TopicMetadata | undefined;
-      const shape = resolveCrystalBaseShape(crystal.topicId, metadataLookup, subjects);
+      const topicKey = topicRefKey(crystal);
+      const topicMeta = metadataLookup[topicKey] as TopicMetadata | undefined;
+      const shape = resolveCrystalBaseShape(topicKey, metadataLookup, subjects);
       const group = shapeGroups[shape];
       const localIdx = shapeCounts[shape]++;
 
@@ -216,7 +230,7 @@ export const Crystals: React.FC<CrystalsProps> = ({
       const [gx, gz] = crystal.gridPosition;
       const bob = Math.sin(elapsedTime * 2 + gx * 0.5) * 0.03;
       const py = 0.3 + bob;
-      const isSelected = selectedTopicId === crystal.topicId;
+      const isSelected = selectedTopic !== null && topicRefKey(selectedTopic) === topicKey;
       const rotY = isSelected ? elapsedTime * 0.4 : 0;
       const scale = getCrystalScale(level);
 
@@ -228,11 +242,17 @@ export const Crystals: React.FC<CrystalsProps> = ({
       const mesh = meshRefs.current[shape];
       if (mesh) {
         mesh.setMatrixAt(localIdx, matrixScratch);
-        topicMap.get(mesh)![localIdx] = crystal.topicId;
+        topicMap.get(mesh)![localIdx] = topicKey;
       }
 
-      const morphProgress = ceremonyApi.getCeremonyMorphProgress(crystal.topicId, now);
-      const linear = ceremonyApi.getCeremonyLinearProgress(crystal.topicId, now);
+      const morphProgress = ceremonyApi.getCeremonyMorphProgress(
+        { subjectId: crystal.subjectId, topicId: crystal.topicId },
+        now,
+      );
+      const linear = ceremonyApi.getCeremonyLinearProgress(
+        { subjectId: crystal.subjectId, topicId: crystal.topicId },
+        now,
+      );
       const ceremonyPhase = linear * (1 - linear) * 4;
 
       const colorHex = getSubjectColor(topicMeta?.subjectId ?? null, subjects);
@@ -254,11 +274,11 @@ export const Crystals: React.FC<CrystalsProps> = ({
 
       const labelEl = labelOpacityRefs.current[i];
       if (labelEl && topicMeta?.topicName) {
-        const isLabelVisible = labelVisibility.current.visibleIds.has(crystal.topicId);
+        const isLabelVisible = labelVisibility.current.visibleIds.has(topicKey);
         const distance = isLabelVisible
-          ? labelVisibility.current.distances.get(crystal.topicId) ?? Infinity
+          ? labelVisibility.current.distances.get(topicKey) ?? Infinity
           : Infinity;
-        const occlusionFactor = labelVisibility.current.occlusion.get(crystal.topicId) ?? 1;
+        const occlusionFactor = labelVisibility.current.occlusion.get(topicKey) ?? 1;
         const opacity = getLabelOpacity(distance) * occlusionFactor;
         labelEl.style.opacity = `${opacity}`;
         labelEl.style.display = opacity === 0 ? 'none' : 'block';
@@ -312,8 +332,8 @@ export const Crystals: React.FC<CrystalsProps> = ({
     }
 
     candidates.forEach((candidate) => {
-      visibleIds.add(candidate.topicId);
-      distances.set(candidate.topicId, candidate.distance);
+      visibleIds.add(candidate.topicKey);
+      distances.set(candidate.topicKey, candidate.distance);
 
       const occlusionFactor = getLabelOcclusionFactor(
         cam.position,
@@ -324,7 +344,7 @@ export const Crystals: React.FC<CrystalsProps> = ({
         LABEL_SECONDARY_OFFSET_Y,
         undefined,
       );
-      labelVisibility.current.occlusion.set(candidate.topicId, occlusionFactor);
+      labelVisibility.current.occlusion.set(candidate.topicKey, occlusionFactor);
     });
   });
 
@@ -348,13 +368,14 @@ export const Crystals: React.FC<CrystalsProps> = ({
     if (id === undefined || id < 0) return;
     const mesh = e.object as THREE.InstancedMesh;
     const topics = instanceToTopicRef.current.get(mesh);
-    const topicId = topics?.[id];
-    if (!topicId) return;
+    const topicKey = topics?.[id];
+    if (!topicKey) return;
 
-    if (selectedTopicId === topicId) {
-      onStartTopicStudySession?.(topicId);
+    const ref = parseTopicRefKey(topicKey);
+    if (selectedTopic && topicRefKey(selectedTopic) === topicKey) {
+      onStartTopicStudySession?.(ref);
     } else {
-      selectTopic(topicId);
+      selectTopic(ref);
     }
   };
 
@@ -363,7 +384,7 @@ export const Crystals: React.FC<CrystalsProps> = ({
   }
 
   const particleCrystal = particleTopicId
-    ? crystals.find((c) => c.topicId === particleTopicId)
+    ? crystals.find((c) => topicRefKey(c) === particleTopicId)
     : undefined;
   const [px, pz] = particleCrystal?.gridPosition ?? [0, 0];
   const particleY = 0.3;
@@ -384,11 +405,16 @@ export const Crystals: React.FC<CrystalsProps> = ({
       ))}
 
       {crystals.map((crystal, index) => {
-        const topicMeta = metadataLookup[crystal.topicId] as TopicMetadata | undefined;
-        const labelLayerRange = isStudyPanelOpen ? [0, 10] : selectedTopicId === crystal.topicId ? [50, 100] : [0, 10];
+        const topicKey = topicRefKey(crystal);
+        const topicMeta = metadataLookup[topicKey] as TopicMetadata | undefined;
+        const labelLayerRange = isStudyPanelOpen
+          ? [0, 10]
+          : selectedTopic && topicRefKey(selectedTopic) === topicKey
+            ? [50, 100]
+            : [0, 10];
         return (
           <group
-            key={crystal.topicId}
+            key={topicKey}
             ref={(el: THREE.Group | null) => {
               labelAnchorRefs.current[index] = el;
             }}

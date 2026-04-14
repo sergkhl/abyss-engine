@@ -1,85 +1,89 @@
 import { useMemo } from 'react';
 import { useQueries, type UseQueryResult } from '@tanstack/react-query';
 
+import { topicRefKey } from '@/lib/topicRef';
 import type { TopicMetadata } from '../features/content';
-import type { Card } from '../types/core';
+import type { Card, TopicRef } from '../types/core';
 import { deckRepository } from '../infrastructure/di';
 import { topicCardsQueryKey } from './useDeckData';
 
 export type TopicCardQueryRow = UseQueryResult<Card[], Error>;
 
 export interface TopicCardQueriesResult {
-  /** Topic IDs aligned with `topicCardQueries` indices (subject-filtered or full active set). */
-  queriedTopicIds: readonly string[];
+  /** Topic refs aligned with `topicCardQueries` indices. */
+  queriedTopicRefs: readonly TopicRef[];
   topicCardQueries: TopicCardQueryRow[];
-  topicCardsById: Map<string, Card[]>;
+  /** Cards keyed by `topicRefKey`. */
+  topicCardsByKey: Map<string, Card[]>;
 }
 
 /**
- * Pure filter: same rule as legacy `page.tsx` / `Scene` subject scoping — one place so call sites cannot drift.
+ * Pure filter: same rule as legacy subject scoping — one place so call sites cannot drift.
  */
-export function getSubjectFilteredTopicIds(
-  activeTopicIds: readonly string[],
+export function getSubjectFilteredTopicRefs(
+  topicRefs: readonly TopicRef[],
   currentSubjectId: string | null,
   allTopicMetadata: Readonly<Record<string, TopicMetadata>>,
-): string[] {
+): TopicRef[] {
   if (!currentSubjectId) {
-    return [...activeTopicIds];
+    return [...topicRefs];
   }
 
-  return activeTopicIds.filter(
-    (topicId) => allTopicMetadata[topicId]?.subjectId === currentSubjectId,
-  );
+  return topicRefs.filter((ref) => {
+    const k = topicRefKey(ref);
+    return allTopicMetadata[k]?.subjectId === currentSubjectId;
+  });
 }
 
-function useTopicCardQueriesFromTopicIds(
-  topicIds: readonly string[],
+function useTopicCardQueriesFromRefs(
+  topicRefs: readonly TopicRef[],
   allTopicMetadata: Readonly<Record<string, TopicMetadata>>,
 ): TopicCardQueriesResult {
   const topicCardQueries = useQueries({
-    queries: topicIds.map((topicId) => {
-      const subjectId = allTopicMetadata[topicId]?.subjectId || '';
+    queries: topicRefs.map((ref) => {
+      const k = topicRefKey(ref);
+      const subjectId = allTopicMetadata[k]?.subjectId || ref.subjectId;
       return {
-        queryKey: topicCardsQueryKey(subjectId, topicId),
-        queryFn: () => deckRepository.getTopicCards(subjectId, topicId),
+        queryKey: topicCardsQueryKey(subjectId, ref.topicId),
+        queryFn: () => deckRepository.getTopicCards(subjectId, ref.topicId),
         enabled: Boolean(subjectId),
         staleTime: Infinity,
       };
     }),
   });
 
-  const topicCardsById = useMemo(() => {
+  const topicCardsByKey = useMemo(() => {
     const map = new Map<string, Card[]>();
-    topicIds.forEach((topicId, index) => {
+    topicRefs.forEach((ref, index) => {
       const cards = topicCardQueries[index]?.data;
       if (cards) {
-        map.set(topicId, cards);
+        map.set(topicRefKey(ref), cards);
       }
     });
     return map;
-  }, [topicIds, topicCardQueries]);
+  }, [topicRefs, topicCardQueries]);
 
-  return { queriedTopicIds: topicIds, topicCardQueries, topicCardsById };
+  return { queriedTopicRefs: topicRefs, topicCardQueries, topicCardsByKey };
 }
 
 /** Fetch deck cards for every active crystal topic (Scene: all visible crystals need card payloads). */
 export function useTopicCardQueriesForActiveTopics(
-  activeTopicIds: readonly string[],
+  topicRefs: readonly TopicRef[],
   allTopicMetadata: Readonly<Record<string, TopicMetadata>>,
 ): TopicCardQueriesResult {
-  return useTopicCardQueriesFromTopicIds(activeTopicIds, allTopicMetadata);
+  return useTopicCardQueriesFromRefs(topicRefs, allTopicMetadata);
 }
 
 /** Fetch deck cards only for topics in the current subject (or all topics when no subject is selected). */
 export function useTopicCardQueriesForSubjectFilter(
-  activeTopicIds: readonly string[],
+  topicRefs: readonly TopicRef[],
   currentSubjectId: string | null,
   allTopicMetadata: Readonly<Record<string, TopicMetadata>>,
 ): TopicCardQueriesResult {
-  const subjectFilteredTopicIds = useMemo(
-    () => getSubjectFilteredTopicIds(activeTopicIds, currentSubjectId, allTopicMetadata),
-    [activeTopicIds, currentSubjectId, allTopicMetadata],
+  const subjectFilteredTopicRefs = useMemo(
+    () => getSubjectFilteredTopicRefs(topicRefs, currentSubjectId, allTopicMetadata),
+    [topicRefs, currentSubjectId, allTopicMetadata],
   );
 
-  return useTopicCardQueriesFromTopicIds(subjectFilteredTopicIds, allTopicMetadata);
+  return useTopicCardQueriesFromRefs(subjectFilteredTopicRefs, allTopicMetadata);
 }

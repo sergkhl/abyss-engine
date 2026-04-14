@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { motion } from 'motion/react';
+import type { TopicRef } from '@/types/core';
 import {
   AttunementRitualPayload,
   AttunementRitualResult,
@@ -48,6 +49,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/abyss-dialog';
+import { parseTopicRefKey, topicRefKey } from '@/lib/topicRef';
 import { useTopicMetadata } from '../features/content';
 import { deckRepository } from '../infrastructure/di';
 import { topicCardsQueryKey } from '../hooks/useDeckData';
@@ -77,44 +79,61 @@ export function AttunementRitualModal({
   const [microGoal, setMicroGoal] = useState('');
   const [remainingCooldownMs, setRemainingCooldownMs] = useState<number>(cooldownRemainingMs);
   const activeCrystals = useProgressionStore((state) => state.activeCrystals);
-  const activeCrystalTopicIds = useMemo(() => activeCrystals.map((item) => item.topicId), [activeCrystals]);
-  const activeTopicIds = useMemo(() => Array.from(new Set(activeCrystalTopicIds)), [activeCrystalTopicIds]);
-  const allTopicMetadata = useTopicMetadata(activeTopicIds);
+  const activeTopicRefs = useMemo(() => {
+    const seen = new Set<string>();
+    const out: TopicRef[] = [];
+    for (const c of activeCrystals) {
+      const ref = { subjectId: c.subjectId, topicId: c.topicId };
+      const k = topicRefKey(ref);
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(ref);
+    }
+    return out;
+  }, [activeCrystals]);
+  const allTopicMetadata = useTopicMetadata(activeTopicRefs);
   const topicCardQueries = useQueries({
-    queries: activeTopicIds.map((topicId) => {
-      const subjectId = allTopicMetadata[topicId]?.subjectId || '';
+    queries: activeTopicRefs.map((ref) => {
+      const k = topicRefKey(ref);
+      const subjectId = allTopicMetadata[k]?.subjectId || ref.subjectId;
       return {
-        queryKey: topicCardsQueryKey(subjectId, topicId),
-        queryFn: () => deckRepository.getTopicCards(subjectId, topicId),
+        queryKey: topicCardsQueryKey(subjectId, ref.topicId),
+        queryFn: () => deckRepository.getTopicCards(subjectId, ref.topicId),
         enabled: Boolean(subjectId),
         staleTime: Infinity,
       };
     }),
   });
-  const topicCardsById = useMemo(() => {
+  const topicCardsByKey = useMemo(() => {
     const map = new Map<string, Card[]>();
-    activeTopicIds.forEach((topicId, index) => {
+    activeTopicRefs.forEach((ref, index) => {
       const cards = topicCardQueries[index]?.data;
       if (cards) {
-        map.set(topicId, cards);
+        map.set(topicRefKey(ref), cards);
       }
     });
     return map;
-  }, [activeTopicIds, topicCardQueries]);
-  const selectedTopicCards = useMemo(() => (targetCrystal ? topicCardsById.get(targetCrystal) ?? [] : []), [targetCrystal, topicCardsById]);
+  }, [activeTopicRefs, topicCardQueries]);
+  const selectedTopicCards = useMemo(
+    () => (targetCrystal ? topicCardsByKey.get(targetCrystal) ?? [] : []),
+    [targetCrystal, topicCardsByKey],
+  );
   const sectionBuffs = useMemo(() => ({
     biological: getCategoryBuffs('biological').map((definition) => BuffEngine.get().grantBuff(definition.id, 'biological')),
     cognitive: getCategoryBuffs('cognitive').map((definition) => BuffEngine.get().grantBuff(definition.id, 'cognitive')),
     quest: getCategoryBuffs('quest').map((definition) => BuffEngine.get().grantBuff(definition.id, 'quest')),
   }), []);
   const targetCrystalOptions = useMemo(() => {
-    return activeTopicIds
-      .filter((topicId) => topicId.trim().length > 0)
-      .map((topicId) => ({
-        value: topicId,
-        label: allTopicMetadata[topicId]?.topicName || topicId,
-      }));
-  }, [activeTopicIds, allTopicMetadata]);
+    return activeTopicRefs
+      .filter((ref) => ref.topicId.trim().length > 0)
+      .map((ref) => {
+        const k = topicRefKey(ref);
+        return {
+          value: k,
+          label: allTopicMetadata[k]?.topicName || ref.topicId,
+        };
+      });
+  }, [activeTopicRefs, allTopicMetadata]);
 
   const cooldownHours = Math.max(0, Math.floor(remainingCooldownMs / (60 * 60 * 1000)));
   const cooldownMinutes = Math.max(
@@ -189,8 +208,10 @@ export function AttunementRitualModal({
     if (!targetCrystal || !canStartWithSelection) {
       return;
     }
+    const { subjectId, topicId } = parseTopicRefKey(targetCrystal);
     const result = onSubmit({
-      topicId: targetCrystal,
+      subjectId,
+      topicId,
       checklist: sanitizedChecklist,
     });
 

@@ -22,6 +22,7 @@ function telemetryEvent<T extends TelemetryEventType>(
     timestamp: overrides.timestamp ?? now,
     sessionId: overrides.sessionId ?? `session-${type}`,
     topicId: overrides.topicId ?? 'topic-a',
+    subjectId: overrides.subjectId ?? null,
     payload,
   } as TelemetryEvent;
 }
@@ -480,6 +481,7 @@ describe('StudyTimelineModal', () => {
         }, {
           topicId: 'topic-b',
           sessionId: 'study-1',
+          subjectId: 'sub-b',
           timestamp: now - 2 * 60 * 60 * 1000,
         }),
       ],
@@ -507,6 +509,7 @@ describe('StudyTimelineModal', () => {
     });
 
     expect(onOpenEntryStudy).toHaveBeenCalledWith({
+      subjectId: 'sub-b',
       topicId: 'topic-b',
       cardId: 'card-7',
     });

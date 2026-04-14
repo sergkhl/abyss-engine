@@ -183,7 +183,7 @@ export function AbyssCommandPalette({
   onOpenSubjectCurriculum,
   onStartStudyWithCardTypes,
 }: AbyssCommandPaletteProps) {
-  const selectedTopicId = useUIStore((s) => s.selectedTopicId);
+  const selectedTopic = useUIStore((s) => s.selectedTopic);
   const devXpBuffActive = useProgressionStore((s) => s.activeBuffs.some(matchesDevXpBuff));
   const [studyCardFilter, setStudyCardFilter] = useState(createDefaultStudyCardFilter);
   const skipNextCardFilterSaveRef = useRef(true);
@@ -219,7 +219,7 @@ export function AbyssCommandPalette({
   );
 
   const canStartFilteredStudy =
-    Boolean(selectedTopicId) &&
+    Boolean(selectedTopic) &&
     (enabledBaseTypes.length > 0 || enabledMiniGameTypes.length > 0) &&
     Boolean(onStartStudyWithCardTypes);
 
@@ -256,17 +256,18 @@ export function AbyssCommandPalette({
   };
 
   const handleDevAddXp = () => {
-    const topicId = uiStore.getState().selectedTopicId;
-    if (!topicId) {
+    const ref = uiStore.getState().selectedTopic;
+    if (!ref) {
       return;
     }
     const progression = useProgressionStore.getState();
-    const nextXp = progression.addXP(topicId, DEV_XP_AMOUNT, { sessionId: 'dev-command-palette' });
+    const nextXp = progression.addXP(ref, DEV_XP_AMOUNT, { sessionId: 'dev-command-palette' });
     if (nextXp <= 0) {
       return;
     }
     appEventBus.emit('xp:gained', {
-      topicId,
+      subjectId: ref.subjectId,
+      topicId: ref.topicId,
       amount: DEV_XP_AMOUNT,
       sessionId: 'dev-command-palette',
       cardId: 'dev-command-palette',
@@ -275,18 +276,21 @@ export function AbyssCommandPalette({
   };
 
   const handleDevSubtractXp = () => {
-    const topicId = uiStore.getState().selectedTopicId;
-    if (!topicId) {
+    const ref = uiStore.getState().selectedTopic;
+    if (!ref) {
       return;
     }
     const progression = useProgressionStore.getState();
-    const crystal = progression.activeCrystals.find((c) => c.topicId === topicId);
+    const crystal = progression.activeCrystals.find(
+      (c) => c.subjectId === ref.subjectId && c.topicId === ref.topicId,
+    );
     if (!crystal) {
       return;
     }
-    progression.addXP(topicId, -DEV_XP_AMOUNT);
+    progression.addXP(ref, -DEV_XP_AMOUNT);
     appEventBus.emit('xp:gained', {
-      topicId,
+      subjectId: ref.subjectId,
+      topicId: ref.topicId,
       amount: -DEV_XP_AMOUNT,
       sessionId: 'dev-command-palette',
       cardId: 'dev-command-palette',
@@ -299,7 +303,7 @@ export function AbyssCommandPalette({
     onOpenChange(false);
   };
 
-  const canDevAddXp = Boolean(selectedTopicId);
+  const canDevAddXp = Boolean(selectedTopic);
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange} showCloseButton={false}>

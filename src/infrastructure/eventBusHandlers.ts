@@ -1,3 +1,4 @@
+import { topicRefKey } from '@/lib/topicRef';
 import type { AppEventMap } from './eventBus';
 import { appEventBus } from './eventBus';
 import { telemetry } from '@/features/telemetry';
@@ -15,10 +16,10 @@ const g = globalThis as typeof globalThis & {
 
 function assertStudyPanelHistoryContext(
   e: AppEventMap['study-panel:history'],
-): asserts e is AppEventMap['study-panel:history'] & { topicId: string; sessionId: string } {
-  if (!e.topicId?.trim() || !e.sessionId?.trim()) {
+): asserts e is AppEventMap['study-panel:history'] & { subjectId: string; topicId: string; sessionId: string } {
+  if (!e.subjectId?.trim() || !e.topicId?.trim() || !e.sessionId?.trim()) {
     throw new Error(
-      `study-panel:history (${e.action}) requires non-empty topicId and sessionId`,
+      `study-panel:history (${e.action}) requires non-empty subjectId, topicId and sessionId`,
     );
   }
 }
@@ -39,17 +40,18 @@ if (!g.__abyssEventBusHandlersRegistered) {
         timeTakenMs: e.timeTakenMs,
         buffMultiplier: e.buffMultiplier,
       },
-      { topicId: e.topicId, sessionId: e.sessionId },
+      { subjectId: e.subjectId, topicId: e.topicId, sessionId: e.sessionId },
     );
     telemetry.log(
       'xp_gained',
       {
         amount: e.buffedReward,
+        subjectId: e.subjectId,
         topicId: e.topicId,
         sessionId: e.sessionId,
         cardId: e.cardId,
       },
-      { topicId: e.topicId, sessionId: e.sessionId },
+      { subjectId: e.subjectId, topicId: e.topicId, sessionId: e.sessionId },
     );
   });
 
@@ -58,11 +60,12 @@ if (!g.__abyssEventBusHandlersRegistered) {
       'xp_gained',
       {
         amount: e.amount,
+        subjectId: e.subjectId,
         topicId: e.topicId,
         sessionId: e.sessionId,
         cardId: e.cardId,
       },
-      { topicId: e.topicId, sessionId: e.sessionId },
+      { subjectId: e.subjectId, topicId: e.topicId, sessionId: e.sessionId },
     );
   });
 
@@ -90,29 +93,36 @@ if (!g.__abyssEventBusHandlersRegistered) {
   appEventBus.on('crystal:leveled', (e) => {
     telemetry.log(
       'level_up',
-      { topicId: e.topicId, fromLevel: e.from, toLevel: e.to },
-      { topicId: e.topicId },
+      {
+        subjectId: e.subjectId,
+        topicId: e.topicId,
+        fromLevel: e.from,
+        toLevel: e.to,
+      },
+      { subjectId: e.subjectId, topicId: e.topicId },
     );
 
     crystalCeremonyStore
       .getState()
-      .notifyLevelUp(e.topicId, e.isStudyPanelOpen);
+      .notifyLevelUp({ subjectId: e.subjectId, topicId: e.topicId }, e.isStudyPanelOpen);
 
+    const expansionKey = topicRefKey({ subjectId: e.subjectId, topicId: e.topicId });
     if (e.to >= 2 && e.to <= 3) {
-      const prev = activeExpansionJobs.get(e.topicId);
+      const prev = activeExpansionJobs.get(expansionKey);
       prev?.abort();
       const ac = new AbortController();
-      activeExpansionJobs.set(e.topicId, ac);
+      activeExpansionJobs.set(expansionKey, ac);
       void runExpansionJob({
         chat: getChatCompletionsRepositoryForSurface('topicContent'),
         deckRepository,
         writer: deckWriter,
+        subjectId: e.subjectId,
         topicId: e.topicId,
         nextLevel: e.to,
         enableThinking: false,
         signal: ac.signal,
       }).finally(() => {
-        activeExpansionJobs.delete(e.topicId);
+        activeExpansionJobs.delete(expansionKey);
       });
     }
   });
@@ -122,12 +132,13 @@ if (!g.__abyssEventBusHandlersRegistered) {
       'study_session_complete',
       {
         sessionId: e.sessionId,
+        subjectId: e.subjectId,
         topicId: e.topicId,
         totalAttempts: e.totalAttempts,
         correctRate: e.correctRate,
         sessionDurationMs: e.sessionDurationMs,
       },
-      { topicId: e.topicId, sessionId: e.sessionId },
+      { subjectId: e.subjectId, topicId: e.topicId, sessionId: e.sessionId },
     );
   });
 
@@ -140,7 +151,7 @@ if (!g.__abyssEventBusHandlersRegistered) {
         checklistKeys: e.checklistKeys,
         buffsGranted: e.buffsGranted.map((b) => b.buffId),
       },
-      { topicId: e.topicId },
+      { subjectId: e.subjectId, topicId: e.topicId },
     );
   });
 
@@ -152,33 +163,36 @@ if (!g.__abyssEventBusHandlersRegistered) {
         'study_session_start',
         {
           sessionId: e.sessionId,
+          subjectId: e.subjectId,
           topicId: e.topicId,
         },
-        { sessionId: e.sessionId, topicId: e.topicId },
+        { sessionId: e.sessionId, subjectId: e.subjectId, topicId: e.topicId },
       );
     }
     if (e.action === 'undo') {
       telemetry.log(
         'study_undo',
         {
+          subjectId: e.subjectId,
           topicId: e.topicId,
           sessionId: e.sessionId,
           undoCount: e.undoCount,
           redoCount: e.redoCount,
         },
-        { sessionId: e.sessionId, topicId: e.topicId },
+        { sessionId: e.sessionId, subjectId: e.subjectId, topicId: e.topicId },
       );
     }
     if (e.action === 'redo') {
       telemetry.log(
         'study_redo',
         {
+          subjectId: e.subjectId,
           topicId: e.topicId,
           sessionId: e.sessionId,
           undoCount: e.undoCount,
           redoCount: e.redoCount,
         },
-        { sessionId: e.sessionId, topicId: e.topicId },
+        { sessionId: e.sessionId, subjectId: e.subjectId, topicId: e.topicId },
       );
     }
   });

@@ -42,11 +42,13 @@ export type AttunementRitualSubmittedPayload = z.infer<
 
 export const StudySessionStartPayloadSchema = z.object({
   sessionId: z.string(),
+  subjectId: z.string(),
   topicId: z.string(),
 });
 export type StudySessionStartPayload = z.infer<typeof StudySessionStartPayloadSchema>;
 
 export const StudyUndoPayloadSchema = z.object({
+  subjectId: z.string(),
   topicId: z.string(),
   sessionId: z.string(),
   undoCount: z.number().int().min(0),
@@ -55,6 +57,7 @@ export const StudyUndoPayloadSchema = z.object({
 export type StudyUndoPayload = z.infer<typeof StudyUndoPayloadSchema>;
 
 export const StudyRedoPayloadSchema = z.object({
+  subjectId: z.string(),
   topicId: z.string(),
   sessionId: z.string(),
   undoCount: z.number().int().min(0),
@@ -64,6 +67,7 @@ export type StudyRedoPayload = z.infer<typeof StudyRedoPayloadSchema>;
 
 export const StudySessionCompletePayloadSchema = z.object({
   sessionId: z.string(),
+  subjectId: z.string(),
   topicId: z.string(),
   totalAttempts: z.number().int().min(0),
   correctRate: z.number().min(0).max(1),
@@ -86,6 +90,7 @@ export type CrystalUnlockedPayload = z.infer<typeof CrystalUnlockedPayloadSchema
 
 export const XpGainedPayloadSchema = z.object({
   amount: z.number(),
+  subjectId: z.string(),
   topicId: z.string(),
   sessionId: z.string(),
   cardId: z.string(),
@@ -93,6 +98,7 @@ export const XpGainedPayloadSchema = z.object({
 export type XpGainedPayload = z.infer<typeof XpGainedPayloadSchema>;
 
 export const LevelUpPayloadSchema = z.object({
+  subjectId: z.string(),
   topicId: z.string(),
   fromLevel: z.number().int().nonnegative(),
   toLevel: z.number().int().nonnegative(),
@@ -115,6 +121,7 @@ export const ModalOpenedPayloadSchema = z.object({
   action: z.literal('opened'),
   sessionId: z.string().nullable(),
   topicId: z.string().nullable(),
+  subjectId: z.string().nullable(),
 });
 export type ModalOpenedPayload = z.infer<typeof ModalOpenedPayloadSchema>;
 
@@ -130,6 +137,7 @@ export const TelemetryEventPayloadSchema = z.object({
   timestamp: z.number(),
   sessionId: z.string().nullable(),
   topicId: z.string().nullable(),
+  subjectId: z.string().nullable().optional().default(null),
   type: TelemetryEventTypeSchema,
   payload: z.record(z.string(), z.unknown()),
 });

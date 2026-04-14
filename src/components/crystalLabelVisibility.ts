@@ -1,8 +1,11 @@
 import * as THREE from 'three';
+
+import { topicRefKey } from '@/lib/topicRef';
 import { ActiveCrystal } from '../types';
 
 export interface LabelCandidate {
-  topicId: string;
+  /** `topicRefKey` — unique per subject + topic node. */
+  topicKey: string;
   distance: number;
   worldPosition: THREE.Vector3;
 }
@@ -48,7 +51,7 @@ export function buildLabelCandidates(
         crystal.gridPosition[1],
       );
       return {
-        topicId: crystal.topicId,
+        topicKey: topicRefKey(crystal),
         distance: cameraPosition.distanceTo(worldPosition),
         worldPosition,
       };

@@ -15,6 +15,7 @@ describe('appEventBus', () => {
     const handler = vi.fn();
     const unsub = appEventBus.on('xp:gained', handler);
     appEventBus.emit('xp:gained', {
+      subjectId: 'sub',
       topicId: 't',
       amount: 1,
       sessionId: 's',
@@ -23,6 +24,7 @@ describe('appEventBus', () => {
     expect(handler).toHaveBeenCalledTimes(1);
     unsub();
     appEventBus.emit('xp:gained', {
+      subjectId: 'sub',
       topicId: 't',
       amount: 2,
       sessionId: 's',
@@ -38,6 +40,7 @@ describe('appEventBus', () => {
     appEventBus.emit('card:reviewed', {
       cardId: 'c',
       rating: 3,
+      subjectId: 'sub',
       topicId: 't',
       sessionId: 's',
       timeTakenMs: 0,

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import type { SubjectGraph } from '@/types/core';
+import type { SubjectGraph, TopicRef } from '@/types/core';
 import { useProgressionStore as useStudyStore } from '../features/progression';
 import { useAllGraphs, useSubjects } from '../features/content';
 import type { TieredTopic, TopicUnlockStatus } from '../features/progression/progressionUtils';
@@ -24,7 +24,7 @@ interface DiscoveryModalProps {
   /** Deck due/total for active subject scope; shown inline with locked-topic summary. */
   dueCards?: number;
   totalCards?: number;
-  getTopicUnlockStatus?: (topicId: string, allGraphs?: SubjectGraph[]) => TopicUnlockStatus;
+  getTopicUnlockStatus?: (ref: TopicRef, allGraphs?: SubjectGraph[]) => TopicUnlockStatus;
   onOpenRitual?: () => void;
   ritualCooldownRemainingMs?: number;
   onClose: () => void;
@@ -58,19 +58,19 @@ export function DiscoveryModal({
   const allGraphs = useAllGraphs();
   const { data: subjects = [] } = useSubjects();
   const topicUnlockStatusGetter = useMemo(() => {
-    return (topicId: string) =>
+    return (ref: TopicRef) =>
       getTopicUnlockStatus
-        ? getTopicUnlockStatus(topicId, allGraphs)
-        : storeGetTopicUnlockStatus(topicId, allGraphs);
+        ? getTopicUnlockStatus(ref, allGraphs)
+        : storeGetTopicUnlockStatus(ref, allGraphs);
   }, [allGraphs, getTopicUnlockStatus, storeGetTopicUnlockStatus]);
 
   const subjectList = useMemo(() => subjects.map((subject) => ({ id: subject.id, name: subject.name })), [subjects]);
 
-  const contentAvailabilityByTopicId = useTopicContentAvailabilityMap();
+  const contentAvailabilityByTopicKey = useTopicContentAvailabilityMap();
 
   const topicsByTier = useMemo(() => {
-    return getTopicsByTier(allGraphs, subjectList, undefined, contentAvailabilityByTopicId);
-  }, [getTopicsByTier, allGraphs, subjectList, contentAvailabilityByTopicId]);
+    return getTopicsByTier(allGraphs, subjectList, undefined, contentAvailabilityByTopicKey);
+  }, [getTopicsByTier, allGraphs, subjectList, contentAvailabilityByTopicKey]);
 
   const tiersWithVisibleTopics = useMemo(
     () => topicsByTier.filter((tierData) => tierData.topics.some((t) => t.isCurriculumVisible)),
@@ -111,7 +111,7 @@ export function DiscoveryModal({
     if (!selectedTopic) {
       return null;
     }
-    return topicUnlockStatusGetter(selectedTopic.id);
+    return topicUnlockStatusGetter({ subjectId: selectedTopic.subjectId, topicId: selectedTopic.id });
   }, [selectedTopic, topicUnlockStatusGetter]);
 
   const handleUnlock = () => {
@@ -119,7 +119,7 @@ export function DiscoveryModal({
       return;
     }
 
-    const position = unlockTopic(selectedTopic.id, allGraphs);
+    const position = unlockTopic({ subjectId: selectedTopic.subjectId, topicId: selectedTopic.id }, allGraphs);
     if (position) {
       void triggerTopicUnlockPipeline(selectedTopic.subjectId, selectedTopic.id);
     }
@@ -218,7 +218,7 @@ export function DiscoveryModal({
                       .filter((topic) => topic.isCurriculumVisible)
                       .map((topic) => (
                       <Button
-                        key={topic.id}
+                        key={`${topic.subjectId}:${topic.id}`}
                         onClick={() => setSelectedTopicKey({ subjectId: topic.subjectId, topicId: topic.id })}
                         multiline
                         variant="ghost"

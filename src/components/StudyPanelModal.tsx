@@ -32,11 +32,13 @@ import { useThinkingToggle } from '../hooks/useThinkingToggle';
 import { StudyPanelTab } from './studyPanel/types';
 import { MiniGameView } from './miniGames/MiniGameView';
 import type { MiniGameContent } from '../types/core';
+import { cardRefKey } from '@/lib/topicRef';
 
 interface StudyPanelModalProps {
   isOpen: boolean;
   currentCardId: string | null;
   currentTopicId: string | null;
+  currentSubjectId: string | null;
   isCardFlipped: boolean;
   totalCards: number;
   onClose: () => void;
@@ -50,6 +52,7 @@ export function StudyPanelModal({
   isOpen,
   currentCardId,
   currentTopicId,
+  currentSubjectId,
   isCardFlipped,
   totalCards,
   onClose,
@@ -74,6 +77,7 @@ export function StudyPanelModal({
   const model = useStudyPanelModel({
     currentCardId,
     currentTopicId,
+    currentSubjectId,
     totalCards,
   });
   const explainThinking = useThinkingToggle('studyQuestionExplain');
@@ -200,21 +204,38 @@ export function StudyPanelModal({
     setIsAnswerSubmitted(true);
   };
 
-  const handleChoiceContinue = () => {
-    const cardId = model.activeCard?.id || currentCardId || currentSession?.currentCardId || null;
-    if (!cardId) return;
+  /** Must match `progressionStore` queue keys — composite `cardRefKey`, not raw deck `Card.id`. */
+  const resolveSubmitCardKey = (): string | null => {
+    if (currentSession?.currentCardId) {
+      return currentSession.currentCardId;
+    }
+    if (currentCardId) {
+      return currentCardId;
+    }
+    const subjectId = currentSubjectId ?? currentSession?.subjectId ?? null;
+    const topicId = currentTopicId ?? currentSession?.topicId ?? null;
+    const rawId = model.activeCard?.id;
+    if (subjectId && topicId && rawId) {
+      return cardRefKey({ subjectId, topicId, cardId: rawId });
+    }
+    return null;
+  };
 
-    onSubmitResult(cardId, isCorrect);
+  const handleChoiceContinue = () => {
+    const cardKey = resolveSubmitCardKey();
+    if (!cardKey) return;
+
+    onSubmitResult(cardKey, isCorrect);
     setSelectedAnswers([]);
     setIsAnswerSubmitted(false);
     setIsCorrect(false);
   };
 
   const handleRating = (rating: Rating) => {
-    const cardId = model.activeCard?.id || currentCardId || currentSession?.currentCardId || null;
-    if (!cardId) return;
+    const cardKey = resolveSubmitCardKey();
+    if (!cardKey) return;
 
-    onSubmitResult(cardId, undefined, rating);
+    onSubmitResult(cardKey, undefined, rating);
   };
 
   const handleMiniGameComplete = (miniGameIsCorrect: boolean) => {
@@ -222,10 +243,10 @@ export function StudyPanelModal({
   };
 
   const handleMiniGameContinue = () => {
-    const cardId = model.activeCard?.id || currentCardId || currentSession?.currentCardId || null;
-    if (!cardId) return;
+    const cardKey = resolveSubmitCardKey();
+    if (!cardKey) return;
 
-    onSubmitResult(cardId, isCorrect);
+    onSubmitResult(cardKey, isCorrect);
   };
 
   if (!isOpen) return null;

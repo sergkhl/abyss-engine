@@ -1,12 +1,19 @@
 import { create } from 'zustand';
+
+import type { TopicRef } from '@/types/core';
 import { telemetry } from '../features/telemetry';
 
-function emitModalOpened(modalId: string, topicId: string | null = null, sessionId: string | null = null) {
+function emitModalOpened(
+  modalId: string,
+  topic: TopicRef | null = null,
+  sessionId: string | null = null,
+) {
   telemetry.log('modal_opened', {
     modalId,
     action: 'opened',
     sessionId,
-    topicId,
+    topicId: topic?.topicId ?? null,
+    subjectId: topic?.subjectId ?? null,
   });
 }
 
@@ -19,7 +26,7 @@ export interface UIStore {
   isStudyPanelOpen: boolean;
   isRitualModalOpen: boolean;
   isStudyTimelineOpen: boolean;
-  selectedTopicId: string | null;
+  selectedTopic: TopicRef | null;
   isCurrentCardFlipped: boolean;
 
   // Computed
@@ -34,7 +41,7 @@ export interface UIStore {
   closeRitualModal: () => void;
   openStudyTimeline: () => void;
   closeStudyTimeline: () => void;
-  selectTopic: (topicId: string | null) => void;
+  selectTopic: (topic: TopicRef | null) => void;
   flipCurrentCard: () => void;
   resetCardFlip: () => void;
 }
@@ -54,12 +61,12 @@ const createUIStore = () =>
     isStudyPanelOpen: false,
     isRitualModalOpen: false,
     isStudyTimelineOpen: false,
-    selectedTopicId: null,
+    selectedTopic: null,
     isCurrentCardFlipped: false,
 
-    // Computed state - derived from selectedTopicId
+    // Computed state - derived from selectedTopic
     get isSelectionMode() {
-      return get().selectedTopicId !== null;
+      return get().selectedTopic !== null;
     },
 
     // Actions
@@ -86,7 +93,7 @@ const createUIStore = () =>
       set({
         isStudyPanelOpen: true,
       });
-      emitModalOpened('study_panel', state.selectedTopicId);
+      emitModalOpened('study_panel', state.selectedTopic);
     },
     closeStudyPanel: () => {
       set({
@@ -101,7 +108,7 @@ const createUIStore = () =>
       set({
         isRitualModalOpen: true,
       });
-      emitModalOpened('attunement_ritual', state.selectedTopicId);
+      emitModalOpened('attunement_ritual', state.selectedTopic);
     },
     closeRitualModal: () => {
       set({
@@ -116,7 +123,7 @@ const createUIStore = () =>
       set({
         isStudyTimelineOpen: true,
       });
-      emitModalOpened('study_timeline', state.selectedTopicId);
+      emitModalOpened('study_timeline', state.selectedTopic);
     },
     closeStudyTimeline: () => {
       set({
@@ -125,7 +132,7 @@ const createUIStore = () =>
     },
 
     // Select a topic (or clear selection if null)
-    selectTopic: (topicId: string | null) => set({ selectedTopicId: topicId }),
+    selectTopic: (topic) => set({ selectedTopic: topic }),
 
     flipCurrentCard: () => set((s) => ({ isCurrentCardFlipped: !s.isCurrentCardFlipped })),
     resetCardFlip: () => set({ isCurrentCardFlipped: false }),

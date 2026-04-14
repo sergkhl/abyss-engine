@@ -1,9 +1,10 @@
 import Dexie, { type Table } from 'dexie';
 
+import { topicRefKey } from '@/lib/topicRef';
 import type { Card, Subject, SubjectGraph, TopicDetails } from '../../types/core';
 
 export function topicCompositeKey(subjectId: string, topicId: string): string {
-  return `${subjectId}::${topicId}`;
+  return topicRefKey({ subjectId, topicId });
 }
 
 /** Manifest row; may include themeId from JSON beyond core Subject fields. */

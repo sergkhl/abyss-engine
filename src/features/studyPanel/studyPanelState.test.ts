@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { topicRefKey } from '@/lib/topicRef';
 import { ActiveCrystal } from '../../types/core';
 import { Card } from '../../types/core';
 import { TopicMetadata } from '../content/selectors';
@@ -6,16 +7,29 @@ import { resolveActiveCard, buildPriorKnowledgeLines } from './studyPanelState';
 
 describe('studyPanelState helpers', () => {
   it('builds prioritized prior knowledge lines from active crystals', () => {
+    const sub = 'sub';
     const crystals: ActiveCrystal[] = [
-      { topicId: 'topic-c', xp: 190, gridPosition: [0, 0], spawnedAt: Date.now() },
-      { topicId: 'topic-a', xp: 120, gridPosition: [1, 1], spawnedAt: Date.now() },
-      { topicId: 'topic-b', xp: 140, gridPosition: [2, 2], spawnedAt: Date.now() },
+      { subjectId: sub, topicId: 'topic-c', xp: 190, gridPosition: [0, 0], spawnedAt: Date.now() },
+      { subjectId: sub, topicId: 'topic-a', xp: 120, gridPosition: [1, 1], spawnedAt: Date.now() },
+      { subjectId: sub, topicId: 'topic-b', xp: 140, gridPosition: [2, 2], spawnedAt: Date.now() },
     ];
 
     const metadata: Record<string, TopicMetadata> = {
-      'topic-a': { subjectId: 'sub', subjectName: 'Subject A', topicName: 'Topic A' },
-      'topic-b': { subjectId: 'sub', subjectName: 'Subject A', topicName: 'Topic B' },
-      'topic-c': { subjectId: 'sub', subjectName: 'Subject A', topicName: 'Topic C' },
+      [topicRefKey({ subjectId: sub, topicId: 'topic-a' })]: {
+        subjectId: sub,
+        subjectName: 'Subject A',
+        topicName: 'Topic A',
+      },
+      [topicRefKey({ subjectId: sub, topicId: 'topic-b' })]: {
+        subjectId: sub,
+        subjectName: 'Subject A',
+        topicName: 'Topic B',
+      },
+      [topicRefKey({ subjectId: sub, topicId: 'topic-c' })]: {
+        subjectId: sub,
+        subjectName: 'Subject A',
+        topicName: 'Topic C',
+      },
     };
 
     expect(buildPriorKnowledgeLines(crystals, metadata)).toBe(

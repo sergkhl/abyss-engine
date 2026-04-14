@@ -1,3 +1,5 @@
+import { parseCardRefKey } from '@/lib/topicRef';
+
 import { type TelemetryEvent } from './types';
 
 export type TimelineEntryType = 'study_session_complete' | 'attunement_ritual_submitted' | 'study_card_reviewed';
@@ -16,6 +18,8 @@ export interface TimelineTopicMetadata {
 export interface StudyTimelineEntry {
   id: string;
   type: TimelineEntryType;
+  /** Present when derived from a composite `cardRefKey` on card review events. */
+  subjectId?: string;
   topicId: string;
   topicName: string;
   sessionId: string;
@@ -120,12 +124,24 @@ function buildStudyCardReviewedEntry(
     timeTakenMs: number;
     buffMultiplier: number;
   };
-  const topicId = event.topicId || 'unassigned-topic';
+  let subjectId: string | undefined;
+  let topicId = event.topicId || 'unassigned-topic';
+  try {
+    const parsed = parseCardRefKey(payload.cardId);
+    subjectId = parsed.subjectId;
+    topicId = parsed.topicId;
+  } catch {
+    // legacy or non-composite card id
+  }
+  if (!subjectId && event.subjectId) {
+    subjectId = event.subjectId;
+  }
   const sessionId = event.sessionId || event.id;
 
   return {
     id: `study-card-reviewed-${event.id}`,
     type: 'study_card_reviewed',
+    subjectId,
     topicId,
     topicName: getTopicName(topicId, topicMetadata),
     sessionId,

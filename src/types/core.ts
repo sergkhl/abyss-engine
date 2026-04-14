@@ -131,7 +131,21 @@ export interface TopicCardGroup {
   cards: Card[];
 }
 
+/** Stable identity for a topic within the deck (subject + topic node id). */
+export interface TopicRef {
+  subjectId: string;
+  topicId: string;
+}
+
+/** Stable identity for a card within the deck (topic + per-file card id). */
+export interface CardRef {
+  subjectId: string;
+  topicId: string;
+  cardId: string;
+}
+
 export interface ActiveCrystal {
+  subjectId: string;
   topicId: string;
   gridPosition: [number, number];
   xp: number;

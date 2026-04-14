@@ -39,6 +39,7 @@ import { useContentGenerationLifecycle } from '@/hooks/useContentGenerationLifec
 import { useThinkingToggle } from '@/hooks/useThinkingToggle';
 import { LlmThinkingToggle } from '@/components/LlmThinkingToggle';
 import { LlmTtsToggle } from '@/components/LlmTtsToggle';
+import { topicRefKey } from '@/lib/topicRef';
 import { useTopicCardQueriesForSubjectFilter } from '@/hooks/useTopicCardQueries';
 import { toast } from 'sonner';
 
@@ -116,10 +117,13 @@ const HomeContent: React.FC = () => {
   const focusStudyCard = useStudyStore((state) => state.focusStudyCard);
   const startTopicStudySession = useStudyStore((state) => state.startTopicStudySession);
 
-  const activeTopicIds = useMemo(() => Array.from(new Set(activeCrystals.map((crystal) => crystal.topicId))), [activeCrystals]);
-  const allTopicMetadata = useTopicMetadata(activeTopicIds);
-  const { topicCardQueries, topicCardsById } = useTopicCardQueriesForSubjectFilter(
-    activeTopicIds,
+  const activeTopicRefs = useMemo(
+    () => activeCrystals.map((c) => ({ subjectId: c.subjectId, topicId: c.topicId })),
+    [activeCrystals],
+  );
+  const allTopicMetadata = useTopicMetadata(activeTopicRefs);
+  const { topicCardQueries, topicCardsByKey, queriedTopicRefs } = useTopicCardQueriesForSubjectFilter(
+    activeTopicRefs,
     currentSubjectId,
     allTopicMetadata,
   );
@@ -127,15 +131,18 @@ const HomeContent: React.FC = () => {
     let due = 0;
     let total = 0;
 
-    topicCardQueries.forEach((query) => {
+    topicCardQueries.forEach((query, index) => {
       const cards = query?.data ?? [];
-      const refs = cards.map((card) => ({ id: card.id }));
-      due += getDueCardsCount ? getDueCardsCount(refs) : refs.length;
-      total += refs.length;
+      const ref = queriedTopicRefs[index];
+      if (!ref) {
+        return;
+      }
+      due += getDueCardsCount(ref, cards);
+      total += cards.length;
     });
 
     return { due, total };
-  }, [getDueCardsCount, sm2Data, topicCardQueries]);
+  }, [getDueCardsCount, topicCardQueries, queriedTopicRefs]);
   const dueCards = allTopicsCardCounts.due;
   const totalCards = allTopicsCardCounts.total;
 
@@ -166,6 +173,7 @@ const HomeContent: React.FC = () => {
   const ritualCooldownRemainingMs = getRemainingRitualCooldownMs(Date.now());
 
   const currentTopicId = currentSession?.topicId || null;
+  const currentSubjectIdSession = currentSession?.subjectId ?? null;
 
   useEffect(() => {
     syncDeckIndexedDbDebugFromApp(isDebugMode);
@@ -230,27 +238,28 @@ const HomeContent: React.FC = () => {
   };
 
   const handleTimelineOpenStudy = useCallback(
-    (payload: { topicId: string; cardId?: string }) => {
-      const cards = topicCardsById.get(payload.topicId);
+    (payload: { subjectId: string; topicId: string; cardId?: string }) => {
+      const ref = { subjectId: payload.subjectId, topicId: payload.topicId };
+      const cards = topicCardsByKey.get(topicRefKey(ref));
       if (!cards?.length) {
         return;
       }
-      focusStudyCard(payload.topicId, cards, payload.cardId ?? null);
-      selectTopic(payload.topicId);
+      focusStudyCard(ref, cards, payload.cardId ?? null);
+      selectTopic(ref);
       closeStudyTimeline();
       openStudyPanel();
     },
-    [topicCardsById, focusStudyCard, selectTopic, closeStudyTimeline, openStudyPanel],
+    [topicCardsByKey, focusStudyCard, selectTopic, closeStudyTimeline, openStudyPanel],
   );
 
   const handleStartStudyWithCardTypes = useCallback(
     (selection: StudyCardFilterSelection) => {
-      const topicId = useUIStore.getState().selectedTopicId;
-      if (!topicId) {
+      const topic = useUIStore.getState().selectedTopic;
+      if (!topic) {
         toast.error('Select a topic crystal first.');
         return;
       }
-      const cards = topicCardsById.get(topicId) ?? [];
+      const cards = topicCardsByKey.get(topicRefKey(topic)) ?? [];
       const filtered = filterCardsForStudy(
         cards,
         new Set(selection.enabledBaseTypes),
@@ -260,11 +269,11 @@ const HomeContent: React.FC = () => {
         toast.error('No cards match the selected types.');
         return;
       }
-      selectTopic(topicId);
-      startTopicStudySession(topicId, filtered);
+      selectTopic(topic);
+      startTopicStudySession(topic, filtered);
       openStudyPanel();
     },
-    [topicCardsById, selectTopic, startTopicStudySession, openStudyPanel],
+    [topicCardsByKey, selectTopic, startTopicStudySession, openStudyPanel],
   );
 
   return (
@@ -401,6 +410,7 @@ const HomeContent: React.FC = () => {
         isOpen={isStudyPanelOpen}
         currentCardId={currentSession?.currentCardId || null}
         currentTopicId={currentTopicId}
+        currentSubjectId={currentSubjectIdSession}
         isCardFlipped={isCurrentCardFlipped}
         totalCards={currentSession?.totalCards ?? totalCards}
         onClose={handleCloseStudyPanel}

@@ -16,8 +16,10 @@ import { Label } from '@/components/ui/label';
 import { useSubjects, useSubjectGraphs, useTopicCards, useTopicMetadata } from '@/features/content';
 import { useProgressionStore } from '@/features/progression';
 import { undoManager } from '@/features/progression/undoManager';
+import { topicRefKey } from '@/lib/topicRef';
 import {
   buildSubjectGraphsForceGraphData,
+  compositeTopicNodeId,
   computeTopicGraphBfsDistances,
   getSelectableMaxHop,
   resolveEffectiveTopicGraphDistances,
@@ -39,12 +41,12 @@ export function StudyGraphPageClient() {
   const activeCrystals = useProgressionStore((s) => s.activeCrystals);
   const unlockPoints = useProgressionStore((s) => s.unlockPoints);
 
-  const unlockedTopicIds = useMemo(
-    () => activeCrystals.map((c) => c.topicId),
+  const unlockedNodeIds = useMemo(
+    () => activeCrystals.map((c) => compositeTopicNodeId(c.subjectId, c.topicId)),
     [activeCrystals],
   );
 
-  const selectedTopicId = useUIStore((s) => s.selectedTopicId);
+  const selectedTopic = useUIStore((s) => s.selectedTopic);
   const selectTopic = useUIStore((s) => s.selectTopic);
   const openStudyPanel = useUIStore((s) => s.openStudyPanel);
   const isStudyPanelOpen = useUIStore((s) => s.isStudyPanelOpen);
@@ -83,10 +85,10 @@ export function StudyGraphPageClient() {
       return 2;
     }
     const full = buildSubjectGraphsForceGraphData(visibleGraphsForStudy);
-    const { distances } = computeTopicGraphBfsDistances(full, unlockedTopicIds);
-    const effective = resolveEffectiveTopicGraphDistances(full, unlockedTopicIds, distances);
+    const { distances } = computeTopicGraphBfsDistances(full, unlockedNodeIds);
+    const effective = resolveEffectiveTopicGraphDistances(full, unlockedNodeIds, distances);
     return getSelectableMaxHop(effective);
-  }, [visibleGraphsForStudy, unlockedTopicIds]);
+  }, [visibleGraphsForStudy, unlockedNodeIds]);
 
   useEffect(() => {
     setMaxHop((h) => (h === null ? h : Math.min(h, selectableMaxHop)));
@@ -95,25 +97,30 @@ export function StudyGraphPageClient() {
   const isLoading = subjectsQuery.isLoading || (subjectIds.length > 0 && graphsQuery.isLoading);
   const error = subjectsQuery.error ?? graphsQuery.error;
 
-  const topicMetaById = useTopicMetadata(selectedTopicId ? [selectedTopicId] : []);
-  const selectedMetadata = selectedTopicId ? topicMetaById[selectedTopicId] : undefined;
+  const topicMetaById = useTopicMetadata(selectedTopic ? [selectedTopic] : []);
+  const selectedTopicKey = selectedTopic ? topicRefKey(selectedTopic) : '';
+  const selectedMetadata = selectedTopic ? topicMetaById[selectedTopicKey] : undefined;
   const subjectIdForSelection = selectedMetadata?.subjectId ?? '';
-  const topicCardsQuery = useTopicCards(subjectIdForSelection, selectedTopicId ?? '');
+  const topicCardsQuery = useTopicCards(subjectIdForSelection, selectedTopic?.topicId ?? '');
   const selectedTopicCards = topicCardsQuery.data ?? [];
 
   const selectedTopicXp = useMemo(() => {
-    if (!selectedTopicId) {
+    if (!selectedTopic) {
       return 0;
     }
-    return activeCrystals.find((c) => c.topicId === selectedTopicId)?.xp ?? 0;
-  }, [activeCrystals, selectedTopicId]);
+    return (
+      activeCrystals.find(
+        (c) => c.subjectId === selectedTopic.subjectId && c.topicId === selectedTopic.topicId,
+      )?.xp ?? 0
+    );
+  }, [activeCrystals, selectedTopic]);
 
   const handleStartTopicFromBar = useCallback(
-    (topicId: string, cards: Card[]) => {
+    (ref: { subjectId: string; topicId: string }, cards: Card[]) => {
       if (!cards.length) {
         return;
       }
-      startTopicStudySession(topicId, cards);
+      startTopicStudySession(ref, cards);
       openStudyPanel();
     },
     [openStudyPanel, startTopicStudySession],
@@ -202,11 +209,11 @@ export function StudyGraphPageClient() {
             </div>
             <StudyForceGraph
               allGraphs={graphsQuery.data}
-              unlockedTopicIds={unlockedTopicIds}
+              unlockedNodeIds={unlockedNodeIds}
               activeCrystals={activeCrystals}
               unlockPoints={unlockPoints}
-              selectedTopicId={selectedTopicId}
-              onSelectTopic={(topicId) => selectTopic(topicId)}
+              selectedTopicKey={selectedTopic ? topicRefKey(selectedTopic) : null}
+              onSelectTopic={(ref) => selectTopic(ref)}
               onClearSelection={() => selectTopic(null)}
               maxHop={maxHop}
               className="h-full w-full min-h-0"
@@ -226,6 +233,7 @@ export function StudyGraphPageClient() {
         isOpen={isStudyPanelOpen}
         currentCardId={currentSession?.currentCardId ?? null}
         currentTopicId={currentTopicId}
+        currentSubjectId={currentSession?.subjectId ?? null}
         isCardFlipped={isCurrentCardFlipped}
         totalCards={currentSession?.totalCards ?? 0}
         onClose={handleCloseStudyPanel}

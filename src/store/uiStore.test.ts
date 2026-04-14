@@ -16,7 +16,7 @@ describe('uiStore timeline modal state', () => {
       isStudyPanelOpen: false,
       isRitualModalOpen: false,
       isStudyTimelineOpen: false,
-      selectedTopicId: null,
+      selectedTopic: null,
       isCurrentCardFlipped: false,
     });
   });

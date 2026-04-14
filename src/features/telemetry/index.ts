@@ -24,7 +24,7 @@ export const telemetry = {
   log: <TPayload extends Record<string, unknown>>(
     type: TelemetryEventType,
     payload: TPayload,
-    context?: { topicId?: string | null; sessionId?: string | null },
+    context?: { topicId?: string | null; sessionId?: string | null; subjectId?: string | null },
   ) => {
     const parsedPayload = TelemetryEventMap[type].safeParse(payload);
     if (!parsedPayload.success) {
@@ -36,6 +36,7 @@ export const telemetry = {
       timestamp: Date.now(),
       sessionId: context?.sessionId ?? null,
       topicId: context?.topicId ?? null,
+      subjectId: context?.subjectId ?? null,
       type,
       payload: parsedPayload.data as Record<string, unknown>,
     };

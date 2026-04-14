@@ -23,6 +23,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { parseCardRefKey } from '@/lib/topicRef';
 import {
   type StudyTimelineEntry,
   type StudyTimelineSessionGroup,
@@ -37,6 +38,7 @@ import {
 } from '@/features/telemetry';
 
 export interface StudyTimelineOpenStudyPayload {
+  subjectId: string;
   topicId: string;
   cardId?: string;
 }
@@ -104,6 +106,21 @@ function formatBucketDateLabel(dayStartMs: number): string {
     month: 'short',
     day: 'numeric',
   });
+}
+
+function timelineEntryCanOpenInStudy(entry: StudyTimelineEntry): boolean {
+  if (entry.subjectId && entry.topicId) {
+    return true;
+  }
+  if (entry.cardId) {
+    try {
+      parseCardRefKey(entry.cardId);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  return false;
 }
 
 const sessionClockOptions: Intl.DateTimeFormatOptions = {
@@ -209,16 +226,33 @@ function TimelineReviewBlock({
                 <span>Buff x {buffValue}</span>
               </div>
             </div>
-            {onOpenEntryStudy && entry.topicId ? (
+            {onOpenEntryStudy && timelineEntryCanOpenInStudy(entry) ? (
               <Button
                 type="button"
                 size="sm"
                 className="w-full"
                 data-testid="study-timeline-open-study"
                 onClick={() => {
+                  let subjectId = entry.subjectId;
+                  let topicId = entry.topicId;
+                  let cardId = entry.cardId;
+                  if (entry.cardId) {
+                    try {
+                      const parsed = parseCardRefKey(entry.cardId);
+                      subjectId = parsed.subjectId;
+                      topicId = parsed.topicId;
+                      cardId = parsed.cardId;
+                    } catch {
+                      // legacy card id — keep entry.topicId / subjectId when present
+                    }
+                  }
+                  if (!subjectId) {
+                    return;
+                  }
                   onOpenEntryStudy({
-                    topicId: entry.topicId,
-                    cardId: entry.cardId,
+                    subjectId,
+                    topicId,
+                    cardId,
                   });
                 }}
               >

@@ -15,8 +15,9 @@ import { SceneDebugStats } from './debug/SceneDebugStats'
 import TopicSelectionBar from './TopicSelectionBar'
 import { useProgressionStore as useStudyStore } from '../features/progression'
 import { useUIStore } from '../store/uiStore'
+import { topicRefKey } from '@/lib/topicRef'
 import { useTopicMetadata, type TopicMetadata } from '../features/content'
-import { Card } from '../types/core'
+import { Card, type TopicRef } from '../types/core'
 import { useTopicCardQueriesForActiveTopics } from '../hooks/useTopicCardQueries'
 import { useSceneInvalidator } from '../hooks/useSceneInvalidator'
 import { useSelectedCrystalSpotlight } from '../hooks/useSelectedCrystalSpotlight'
@@ -42,7 +43,7 @@ interface SceneProps {
 interface SceneRenderInvalidatorProps {
   activeCrystals: readonly unknown[]
   filteredCrystals: readonly unknown[]
-  selectedTopicId: string | null
+  selectedTopicKey: string | null
   selectedTopicXp: number
   currentSubjectId: string | null
   selectedTopicCardsCount: number
@@ -129,7 +130,7 @@ const SceneFrameLimiter: React.FC = () => {
 const SceneRenderInvalidator: React.FC<SceneRenderInvalidatorProps> = ({
   activeCrystals,
   filteredCrystals,
-  selectedTopicId,
+  selectedTopicKey,
   selectedTopicXp,
   currentSubjectId,
   selectedTopicCardsCount,
@@ -147,7 +148,7 @@ const SceneRenderInvalidator: React.FC<SceneRenderInvalidatorProps> = ({
     isPaused,
     activeCrystals,
     filteredCrystals,
-    selectedTopicId,
+    selectedTopicKey,
     selectedTopicXp,
     currentSubjectId,
     selectedTopicCardsCount,
@@ -201,45 +202,51 @@ export const Scene: React.FC<SceneProps> = ({
   const sunDirectionRef = useRef(new THREE.Vector3(0, 1, 0))
   const activeCrystals = useStudyStore((state) => state.activeCrystals)
   const currentSubjectId = useStudyStore((state) => state.currentSubjectId)
-  const selectedTopicId = useUIStore((state) => state.selectedTopicId)
+  const selectedTopic = useUIStore((state) => state.selectedTopic)
   const isStudyPanelOpen = useUIStore((state) => state.isStudyPanelOpen)
   const startTopicStudySession = useStudyStore((state) => state.startTopicStudySession)
   const openStudyPanel = useUIStore((state) => state.openStudyPanel)
-  const allTopicMetadata = useTopicMetadata(activeCrystals.map((crystal) => crystal.topicId))
-  const activeTopicIds = useMemo(
-    () => Array.from(new Set(activeCrystals.map((crystal) => crystal.topicId))),
+  const activeTopicRefs = useMemo(
+    () => activeCrystals.map((c) => ({ subjectId: c.subjectId, topicId: c.topicId })),
     [activeCrystals],
   )
-  const { topicCardsById } = useTopicCardQueriesForActiveTopics(activeTopicIds, allTopicMetadata)
+  const allTopicMetadata = useTopicMetadata(activeTopicRefs)
+  const { topicCardsByKey } = useTopicCardQueriesForActiveTopics(activeTopicRefs, allTopicMetadata)
 
-  const selectedTopicMetadata: TopicMetadata | undefined = selectedTopicId
-    ? allTopicMetadata[selectedTopicId]
+  const selectedTopicKey = selectedTopic ? topicRefKey(selectedTopic) : null
+  const selectedTopicMetadata: TopicMetadata | undefined = selectedTopicKey
+    ? allTopicMetadata[selectedTopicKey]
     : undefined
   const selectedTopicCards = useMemo(
-    () => (selectedTopicId ? topicCardsById.get(selectedTopicId) ?? [] : []),
-    [selectedTopicId, topicCardsById],
+    () => (selectedTopicKey ? topicCardsByKey.get(selectedTopicKey) ?? [] : []),
+    [selectedTopicKey, topicCardsByKey],
   )
   const selectedTopicXp = useMemo(() => {
-    if (!selectedTopicId) return 0
-    return activeCrystals.find((crystal) => crystal.topicId === selectedTopicId)?.xp || 0
-  }, [activeCrystals, selectedTopicId])
+    if (!selectedTopic) return 0
+    return (
+      activeCrystals.find(
+        (crystal) =>
+          crystal.subjectId === selectedTopic.subjectId && crystal.topicId === selectedTopic.topicId,
+      )?.xp || 0
+    )
+  }, [activeCrystals, selectedTopic])
 
-  const startTopicStudySessionFromCards = (topicId: string, cards: Card[]) => {
+  const startTopicStudySessionFromCards = (ref: TopicRef, cards: Card[]) => {
     if (!cards.length) {
-      console.warn(`[Scene] No cards available for topic ${topicId}; unable to start study session.`)
+      console.warn(`[Scene] No cards available for topic ${ref.topicId}; unable to start study session.`)
       return
     }
-    startTopicStudySession(topicId, cards)
+    startTopicStudySession(ref, cards)
     openStudyPanel()
   }
 
-  const startTopicStudySessionFromSelection = (topicId: string) => {
-    const cards = topicCardsById.get(topicId) ?? []
+  const startTopicStudySessionFromSelection = (ref: TopicRef) => {
+    const cards = topicCardsByKey.get(topicRefKey(ref)) ?? []
     if (!cards.length) {
-      console.warn(`[Scene] No cards available for topic ${topicId}; unable to start study session.`)
+      console.warn(`[Scene] No cards available for topic ${ref.topicId}; unable to start study session.`)
       return
     }
-    startTopicStudySessionFromCards(topicId, cards)
+    startTopicStudySessionFromCards(ref, cards)
   }
 
   // Filter crystals based on current subject selection
@@ -251,7 +258,7 @@ export const Scene: React.FC<SceneProps> = ({
 
     // Get topic-subject mapping from deck
     return activeCrystals.filter((crystal) => {
-      const topicMeta = allTopicMetadata[crystal.topicId]
+      const topicMeta = allTopicMetadata[topicRefKey(crystal)]
       return topicMeta?.subjectId === currentSubjectId
     })
   }, [activeCrystals, currentSubjectId, allTopicMetadata])
@@ -263,7 +270,7 @@ export const Scene: React.FC<SceneProps> = ({
     spotlightTarget,
     spotlightOpacity,
   } = useSelectedCrystalSpotlight({
-    selectedTopicId,
+    selectedTopic,
     crystals: filteredCrystals,
   })
 
@@ -295,7 +302,7 @@ export const Scene: React.FC<SceneProps> = ({
         <SceneRenderInvalidator
           activeCrystals={activeCrystals}
           filteredCrystals={filteredCrystals}
-          selectedTopicId={selectedTopicId}
+          selectedTopicKey={selectedTopicKey}
           selectedTopicXp={selectedTopicXp}
           currentSubjectId={currentSubjectId}
           selectedTopicCardsCount={selectedTopicCards.length}

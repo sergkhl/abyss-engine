@@ -105,6 +105,7 @@ export function findNextGridPosition(existingCrystals: ActiveCrystal[]): [number
  * @returns Position where crystal should be spawned, or null if no space
  */
 export function calculateSpawnPosition(
+  subjectId: string,
   prerequisites: { topicId: string; requiredLevel: number }[],
   activeCrystals: ActiveCrystal[]
 ): [number, number] | null {
@@ -113,7 +114,9 @@ export function calculateSpawnPosition(
   if (prerequisites && prerequisites.length > 0) {
     // Find the first prerequisite's crystal position
     for (const prereq of prerequisites) {
-      const prereqCrystal = activeCrystals.find(c => c.topicId === prereq.topicId);
+      const prereqCrystal = activeCrystals.find(
+        (c) => c.subjectId === subjectId && c.topicId === prereq.topicId,
+      );
       if (prereqCrystal) {
         // Try to find adjacent position to the prerequisite crystal
         position = findAdjacentPosition(prereqCrystal.gridPosition, activeCrystals);

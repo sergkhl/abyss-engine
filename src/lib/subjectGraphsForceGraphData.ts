@@ -93,14 +93,15 @@ export interface TopicGraphBfsResult {
 }
 
 /**
- * Seeds: nodes whose `topicId` is in `unlockedTopicIds`. If none exist in `data`, seeds are indegree-0 nodes.
+ * Seeds: nodes whose composite `id` is in `unlockedNodeIds` (typically from `compositeTopicNodeId(subjectId, topicId)` for active crystals).
+ * If none exist in `data`, seeds are indegree-0 nodes.
  * BFS expands along directed links source → target.
  */
 export function computeTopicGraphBfsDistances(
   data: SubjectGraphsForceGraphData,
-  unlockedTopicIds: string[],
+  unlockedNodeIds: string[],
 ): TopicGraphBfsResult {
-  const unlocked = new Set(unlockedTopicIds);
+  const unlocked = new Set(unlockedNodeIds);
   const indegree = new Map<string, number>();
   for (const n of data.nodes) {
     indegree.set(n.id, 0);
@@ -109,7 +110,7 @@ export function computeTopicGraphBfsDistances(
     indegree.set(l.target, (indegree.get(l.target) ?? 0) + 1);
   }
 
-  const seedIds = data.nodes.filter((n) => unlocked.has(n.topicId)).map((n) => n.id);
+  const seedIds = data.nodes.filter((n) => unlocked.has(n.id)).map((n) => n.id);
   const seeds =
     seedIds.length > 0 ? seedIds : data.nodes.filter((n) => (indegree.get(n.id) ?? 0) === 0).map((n) => n.id);
 
@@ -154,10 +155,10 @@ export function computeTopicGraphBfsDistances(
  */
 export function resolveEffectiveTopicGraphDistances(
   data: SubjectGraphsForceGraphData,
-  unlockedTopicIds: string[],
+  unlockedNodeIds: string[],
   rawDistances: ReadonlyMap<string, number>,
 ): Map<string, number> {
-  const unlocked = new Set(unlockedTopicIds);
+  const unlocked = new Set(unlockedNodeIds);
   const indegree = new Map<string, number>();
   for (const n of data.nodes) {
     indegree.set(n.id, 0);
@@ -174,7 +175,7 @@ export function resolveEffectiveTopicGraphDistances(
     if ((indegree.get(n.id) ?? 0) !== 0) {
       continue;
     }
-    if (unlocked.has(n.topicId)) {
+    if (unlocked.has(n.id)) {
       continue;
     }
     out.set(n.id, 1);

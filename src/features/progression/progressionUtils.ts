@@ -1,5 +1,6 @@
 import { normalizeGraphPrerequisites } from '@/lib/graphPrerequisites';
-import { ActiveCrystal, GraphNode, SubjectGraph } from '../../types/core';
+import { topicRefKey } from '@/lib/topicRef';
+import { ActiveCrystal, SubjectGraph, TopicRef } from '../../types/core';
 import { Rating } from '../../types';
 import { BuffEngine } from './buffs/buffEngine';
 import {
@@ -137,7 +138,9 @@ export function calculateLevelFromXP(xp: number): number {
  * Graph `minLevel` is ignored here — unlock eligibility still uses minLevel via `getTopicUnlockStatus`.
  */
 export function getVisibleTopicIds(graph: SubjectGraph, activeCrystals: readonly ActiveCrystal[]): Set<string> {
-  const crystalTopicIds = new Set(activeCrystals.map((c) => c.topicId));
+  const crystalTopicIds = new Set(
+    activeCrystals.filter((c) => c.subjectId === graph.subjectId).map((c) => c.topicId),
+  );
 
   const visible = new Set<string>();
   for (const node of graph.nodes) {
@@ -177,10 +180,12 @@ export interface CrystalXpDeltaResult {
  */
 export function applyCrystalXpDelta(
   activeCrystals: ActiveCrystal[],
-  topicId: string,
+  ref: TopicRef,
   xpDelta: number,
 ): CrystalXpDeltaResult | null {
-  const crystal = activeCrystals.find((item) => item.topicId === topicId);
+  const crystal = activeCrystals.find(
+    (item) => item.subjectId === ref.subjectId && item.topicId === ref.topicId,
+  );
   if (!crystal) {
     return null;
   }
@@ -191,7 +196,7 @@ export function applyCrystalXpDelta(
   const nextLevel = calculateLevelFromXP(nextXp);
   const levelsGained = nextLevel - previousLevel;
   const nextActiveCrystals = activeCrystals.map((item) =>
-    item.topicId === topicId ? { ...item, xp: nextXp } : item,
+    item.subjectId === ref.subjectId && item.topicId === ref.topicId ? { ...item, xp: nextXp } : item,
   );
 
   return {
@@ -226,36 +231,24 @@ export function getCrystalLevelProgressToNext(xp: number): CrystalLevelProgressT
   return { level, progressPercent, isMax: false, totalXp: safeXp };
 }
 
-function findGraphNode(topicId: string, allGraphs: SubjectGraph[]): GraphNode | undefined {
-  for (const graph of allGraphs) {
-    const node = graph.nodes.find((item) => item.topicId === topicId);
-    if (node) {
-      return node;
-    }
-  }
-  return undefined;
-}
-
-function findTopicSubject(topicId: string, allGraphs: SubjectGraph[]): string | undefined {
-  for (const graph of allGraphs) {
-    if (graph.nodes.some((node) => node.topicId === topicId)) {
-      return graph.subjectId;
-    }
-  }
-  return undefined;
+function graphForSubject(subjectId: string, allGraphs: SubjectGraph[]): SubjectGraph | undefined {
+  return allGraphs.find((g) => g.subjectId === subjectId);
 }
 
 function resolveTopic(
-  topicId: string,
+  ref: TopicRef,
   allTopics: TopicData[],
   allGraphs: SubjectGraph[],
 ): TopicData | undefined {
-  const topicFromAll = allTopics.find((topic) => topic.id === topicId);
+  const topicFromAll = allTopics.find(
+    (topic) => topic.id === ref.topicId && topic.subjectId === ref.subjectId,
+  );
   if (topicFromAll) {
     return topicFromAll;
   }
 
-  const node = findGraphNode(topicId, allGraphs);
+  const graph = graphForSubject(ref.subjectId, allGraphs);
+  const node = graph?.nodes.find((item) => item.topicId === ref.topicId);
   if (!node) {
     return undefined;
   }
@@ -264,7 +257,7 @@ function resolveTopic(
     id: node.topicId,
     name: node.title,
     description: node.learningObjective,
-    subjectId: findTopicSubject(topicId, allGraphs) ?? '',
+    subjectId: ref.subjectId,
     cardIds: [],
     prerequisites: normalizeGraphPrerequisites(node.prerequisites).map((p) => ({
       topicId: p.topicId,
@@ -280,27 +273,32 @@ function toSubjectMap(subjects: SubjectLike[] = []): Record<string, SubjectLike>
   }, {});
 }
 
-export function calculateTopicTier(topicId: string, allGraphs: SubjectGraph[] = []): number {
+export function calculateTopicTier(ref: TopicRef, allGraphs: SubjectGraph[] = []): number {
+  const graph = graphForSubject(ref.subjectId, allGraphs);
+  if (!graph) {
+    return 1;
+  }
+
   const visited = new Set<string>();
 
-  const resolve = (id: string, stack: Set<string>): number => {
-    if (stack.has(id)) {
+  const resolve = (topicId: string, stack: Set<string>): number => {
+    if (stack.has(topicId)) {
       return 1;
     }
 
-    if (visited.has(id)) {
+    if (visited.has(topicId)) {
       return 1;
     }
 
-    const node = findGraphNode(id, allGraphs);
+    const node = graph.nodes.find((n) => n.topicId === topicId);
     const prereqNorm = node ? normalizeGraphPrerequisites(node.prerequisites) : [];
     if (!node || prereqNorm.length === 0) {
-      visited.add(id);
+      visited.add(topicId);
       return 1;
     }
 
     const nextStack = new Set(stack);
-    nextStack.add(id);
+    nextStack.add(topicId);
 
     let maxPrereqTier = 0;
     for (const { topicId: prereqId } of prereqNorm) {
@@ -310,21 +308,21 @@ export function calculateTopicTier(topicId: string, allGraphs: SubjectGraph[] = 
       }
     }
 
-    visited.add(id);
+    visited.add(topicId);
     return maxPrereqTier + 1;
   };
 
-  return resolve(topicId, new Set());
+  return resolve(ref.topicId, new Set());
 }
 
 export function getTopicUnlockStatus(
-  topicId: string,
+  ref: TopicRef,
   activeCrystals: ActiveCrystal[],
   unlockPoints: number,
   allGraphs: SubjectGraph[] = [],
   allTopics: TopicData[] = [],
 ): TopicUnlockStatus {
-  const topic = resolveTopic(topicId, allTopics, allGraphs);
+  const topic = resolveTopic(ref, allTopics, allGraphs);
 
   if (!topic) {
     return {
@@ -336,6 +334,7 @@ export function getTopicUnlockStatus(
     };
   }
 
+  const graph = graphForSubject(ref.subjectId, allGraphs);
   const prerequisites = topic.prerequisites || [];
   const hasEnoughPoints = unlockPoints >= 1;
 
@@ -353,14 +352,20 @@ export function getTopicUnlockStatus(
   let allPrereqsMet = true;
 
   for (const prereq of prerequisites) {
-    const prereqCrystal = activeCrystals.find((crystal) => crystal.topicId === prereq.topicId);
+    const prereqCrystal = activeCrystals.find(
+      (crystal) => crystal.subjectId === ref.subjectId && crystal.topicId === prereq.topicId,
+    );
     const prereqLevel = calculateLevelFromXP(prereqCrystal?.xp ?? 0);
 
     if (prereqLevel < prereq.requiredLevel) {
       allPrereqsMet = false;
+      const topicName =
+        graph?.nodes.find((n) => n.topicId === prereq.topicId)?.title
+        ?? allTopics.find((t) => t.id === prereq.topicId && t.subjectId === ref.subjectId)?.name
+        ?? prereq.topicId;
       missingPrereqs.push({
         topicId: prereq.topicId,
-        topicName: allTopics.find((t) => t.id === prereq.topicId)?.name || prereq.topicId,
+        topicName,
         requiredLevel: prereq.requiredLevel,
         currentLevel: prereqLevel,
       });
@@ -424,16 +429,18 @@ export function filterCardsByDifficulty<T extends { difficulty: number }>(
 
 export function getTopicsByTier(
   allGraphs: SubjectGraph[] = [],
-  unlockedTopicIds: string[] = [],
   subjects: SubjectLike[] = [],
   currentSubjectId?: string | null,
-  /** When set, `isContentAvailable` uses this map (missing topicId → false). When omitted, defaults to true. */
-  contentAvailabilityByTopicId?: Record<string, boolean>,
-  /** When set, `isCurriculumVisible` reflects prerequisite crystal levels per graph. */
+  /** Keyed by `topicRefKey` (`subjectId::topicId`). Missing key → false when map is provided. */
+  contentAvailabilityByTopicKey?: Record<string, boolean>,
+  /** When set, `isCurriculumVisible` reflects prerequisite crystal levels per graph; unlock flags use crystal list. */
   activeCrystals?: readonly ActiveCrystal[],
 ) {
   const subjectMap = toSubjectMap(subjects);
   const tierMap = new Map<number, TieredTopic[]>();
+  const unlockedKeys = new Set(
+    (activeCrystals ?? []).map((c) => topicRefKey({ subjectId: c.subjectId, topicId: c.topicId })),
+  );
 
   const graphs = currentSubjectId
     ? allGraphs.filter((graph) => graph.subjectId === currentSubjectId)
@@ -442,7 +449,9 @@ export function getTopicsByTier(
   for (const graph of graphs) {
     const visibleIds = activeCrystals ? getVisibleTopicIds(graph, activeCrystals) : null;
     for (const node of graph.nodes) {
-      const tier = node.tier || calculateTopicTier(node.topicId, allGraphs);
+      const ref: TopicRef = { subjectId: graph.subjectId, topicId: node.topicId };
+      const tKey = topicRefKey(ref);
+      const tier = node.tier || calculateTopicTier(ref, allGraphs);
       const subjectName = subjectMap[graph.subjectId]?.name || 'Unknown';
       const topicData: TieredTopic = {
         id: node.topicId,
@@ -450,11 +459,11 @@ export function getTopicsByTier(
         description: node.learningObjective,
         subjectId: graph.subjectId,
         subjectName,
-        isContentAvailable: contentAvailabilityByTopicId
-          ? Boolean(contentAvailabilityByTopicId[node.topicId])
+        isContentAvailable: contentAvailabilityByTopicKey
+          ? Boolean(contentAvailabilityByTopicKey[tKey])
           : true,
-        isLocked: !unlockedTopicIds.includes(node.topicId),
-        isUnlocked: unlockedTopicIds.includes(node.topicId),
+        isLocked: !unlockedKeys.has(tKey),
+        isUnlocked: unlockedKeys.has(tKey),
         isCurriculumVisible: visibleIds ? visibleIds.has(node.topicId) : true,
       };
 

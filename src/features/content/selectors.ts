@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { useQueries } from '@tanstack/react-query';
 
-import { Subject, SubjectGraph, TopicDetails, Card } from '../../types/core';
+import { topicRefKey } from '@/lib/topicRef';
+import { Subject, SubjectGraph, TopicDetails, Card, TopicRef } from '../../types/core';
 import { useSubjects, useSubjectGraphs } from './contentQueries';
 import { deckRepository } from '../../infrastructure/di';
 
@@ -12,8 +13,20 @@ export interface TopicMetadata {
   theory?: string;
 }
 
-export function useTopicMetadata(topicIds: string[]) {
-  const dedupedTopicIds = useMemo(() => Array.from(new Set(topicIds)), [topicIds]);
+/** Returns metadata keyed by `topicRefKey` (`subjectId::topicId`). */
+export function useTopicMetadata(refs: TopicRef[]) {
+  const deduped = useMemo(() => {
+    const seen = new Set<string>();
+    const out: TopicRef[] = [];
+    for (const ref of refs) {
+      const k = topicRefKey(ref);
+      if (seen.has(k)) continue;
+      seen.add(k);
+      out.push(ref);
+    }
+    return out;
+  }, [refs]);
+
   const { data: subjects = [] } = useSubjects();
   const subjectIds = useMemo(
     () => Array.from(new Set(subjects.map((subject) => subject.id))),
@@ -27,59 +40,47 @@ export function useTopicMetadata(topicIds: string[]) {
     return map;
   }, [subjects]);
 
-  const topicToSubject = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const graph of graphs as SubjectGraph[]) {
-      for (const node of graph.nodes) {
-        map.set(node.topicId, graph.subjectId);
-      }
-    }
-    return map;
-  }, [graphs]);
-
   const topicMetadataBase = useMemo(() => {
     const base: Record<string, TopicMetadata> = {};
-    for (const topicId of dedupedTopicIds) {
-      const subjectId = topicToSubject.get(topicId) ?? '';
-      const subjectName = subjectMap.get(subjectId) ?? '';
-      base[topicId] = {
-        subjectId,
+    for (const ref of deduped) {
+      const k = topicRefKey(ref);
+      const subjectName = subjectMap.get(ref.subjectId) ?? '';
+      base[k] = {
+        subjectId: ref.subjectId,
         subjectName,
         topicName: '',
       };
     }
     return base;
-  }, [subjectMap, dedupedTopicIds, topicToSubject]);
+  }, [subjectMap, deduped]);
 
   const topicDetailsQueries = useQueries({
-    queries: dedupedTopicIds.map((topicId) => {
-      const subjectId = topicToSubject.get(topicId) ?? '';
-      return {
-        queryKey: ['content', 'topic', subjectId, topicId, 'details'],
-        queryFn: () => deckRepository.getTopicDetails(subjectId, topicId),
-        enabled: Boolean(subjectId),
-        staleTime: Infinity,
-      };
-    }),
+    queries: deduped.map((ref) => ({
+      queryKey: ['content', 'topic', ref.subjectId, ref.topicId, 'details'],
+      queryFn: () => deckRepository.getTopicDetails(ref.subjectId, ref.topicId),
+      enabled: Boolean(ref.subjectId) && Boolean(ref.topicId),
+      staleTime: Infinity,
+    })),
   });
 
   const detailsMap = new Map<string, TopicDetails>();
-  dedupedTopicIds.forEach((topicId, index) => {
+  deduped.forEach((ref, index) => {
     const data = topicDetailsQueries[index]?.data as TopicDetails | undefined;
     if (data) {
-      detailsMap.set(topicId, data);
+      detailsMap.set(topicRefKey(ref), data);
     }
   });
 
   return useMemo(() => {
     const merged: Record<string, TopicMetadata> = { ...topicMetadataBase };
-    for (const topicId of dedupedTopicIds) {
-      const details = detailsMap.get(topicId);
+    for (const ref of deduped) {
+      const k = topicRefKey(ref);
+      const details = detailsMap.get(k);
       if (!details) {
         continue;
       }
-      const base = merged[topicId] ?? { subjectId: details.subjectId, subjectName: '', topicName: '' };
-      merged[topicId] = {
+      const base = merged[k] ?? { subjectId: details.subjectId, subjectName: '', topicName: '' };
+      merged[k] = {
         ...base,
         subjectId: details.subjectId,
         topicName: details.title,
@@ -87,7 +88,7 @@ export function useTopicMetadata(topicIds: string[]) {
       };
     }
     return merged;
-  }, [detailsMap, dedupedTopicIds, topicMetadataBase]);
+  }, [detailsMap, deduped, topicMetadataBase]);
 }
 
 export function useAllGraphs() {

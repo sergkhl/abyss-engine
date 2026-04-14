@@ -2,6 +2,7 @@
  * Developer tools for local debugging and manual game state control.
  */
 
+import { cardRefKey } from '@/lib/topicRef';
 import { uiStore } from '../store/uiStore';
 import { SM2Data } from '../features/progression';
 import { triggerTopicUnlockPipeline } from '../features/contentGeneration';
@@ -19,7 +20,13 @@ import {
 
 interface StoreStateLike {
   sm2Data: Record<string, SM2Data>;
-  activeCrystals: Array<{ topicId: string; gridPosition: [number, number]; xp: number; spawnedAt: number }>;
+  activeCrystals: Array<{
+    subjectId: string;
+    topicId: string;
+    gridPosition: [number, number];
+    xp: number;
+    spawnedAt: number;
+  }>;
   unlockPoints: number;
   currentSession: {
     queueCardIds: string[];
@@ -137,23 +144,26 @@ async function getCardByType(cardType: Card['type']): Promise<TopicCardSelection
 
 const abyssDev: AbyssDev = {
   spawnCrystal: async (topicId: string) => {
+    const allGraphs = await getAllSubjectGraphs();
+    const subjectId = collectTopicIndex(allGraphs).get(topicId);
+    if (!subjectId) {
+      console.warn(`[AbyssDev] No subject found for topic "${topicId}".`);
+      return;
+    }
+
     const { activeCrystals } = getStore();
-    if (activeCrystals.some((crystal) => crystal.topicId === topicId)) {
+    if (activeCrystals.some((crystal) => crystal.subjectId === subjectId && crystal.topicId === topicId)) {
       console.log(`[AbyssDev] Crystal already exists for "${topicId}".`);
       return;
     }
 
-    const allGraphs = await getAllSubjectGraphs();
-    const position = useStudyStore.getState().unlockTopic(topicId, allGraphs);
+    const position = useStudyStore.getState().unlockTopic({ subjectId, topicId }, allGraphs);
     if (!position) {
       console.warn(`[AbyssDev] Could not spawn crystal for "${topicId}" (locked, missing graph data, or no slots available).`);
       return;
     }
 
-    const subjectId = collectTopicIndex(allGraphs).get(topicId);
-    if (subjectId) {
-      void triggerTopicUnlockPipeline(subjectId, topicId);
-    }
+    void triggerTopicUnlockPipeline(subjectId, topicId);
 
     console.log(`[AbyssDev] Spawned crystal for "${topicId}" at position [${position[0]}, ${position[1]}]`);
   },
@@ -164,34 +174,35 @@ const abyssDev: AbyssDev = {
   },
 
   setCurrentCard: async (cardId: string) => {
-    const activeTopicIds = getStore().activeCrystals.map((crystal) => crystal.topicId);
+    const activeRefs = getStore().activeCrystals.map((crystal) => ({
+      subjectId: crystal.subjectId,
+      topicId: crystal.topicId,
+    }));
 
     try {
       const allGraphs = await getAllSubjectGraphs();
       const topicToSubject = collectTopicIndex(allGraphs);
-      const candidates = activeTopicIds.length > 0
-        ? activeTopicIds
-        : Array.from(topicToSubject.keys());
+      const candidates =
+        activeRefs.length > 0
+          ? activeRefs
+          : Array.from(topicToSubject, ([tid, sid]) => ({ subjectId: sid, topicId: tid }));
 
-      for (const topicId of candidates) {
-        const subjectId = topicToSubject.get(topicId);
-        if (!subjectId) {
-          continue;
-        }
-
+      for (const { subjectId, topicId } of candidates) {
         const cards = await deckRepository.getTopicCards(subjectId, topicId) as Card[];
         const foundCard = cards.find((card) => card.id === cardId);
         if (!foundCard) {
           continue;
         }
 
-        useStudyStore.getState().startTopicStudySession(topicId, cards);
+        const ref = { subjectId, topicId };
+        useStudyStore.getState().startTopicStudySession(ref, cards);
         const nextState = useStudyStore.getState();
+        const compositeId = cardRefKey({ subjectId, topicId, cardId });
         if (nextState.currentSession) {
           useStudyStore.setState({
             currentSession: {
               ...nextState.currentSession,
-              currentCardId: cardId,
+              currentCardId: compositeId,
             },
           });
         }

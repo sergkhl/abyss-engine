@@ -1,23 +1,31 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { cardRefKey } from '@/lib/topicRef';
 import type { ProgressionState } from '@/types/progression';
 import { BuffEngine } from '../buffs/buffEngine';
 import { defaultSM2 } from '../sm2';
 import { undoManager } from '../undoManager';
 
+const SUB = 'sub';
+
+function cardKey(cardId: string) {
+  return cardRefKey({ subjectId: SUB, topicId: 'topic-a', cardId });
+}
+
 function baseState(over: Partial<ProgressionState> = {}): ProgressionState {
   const activeBuff = BuffEngine.get().grantBuff('clarity_focus', 'quest');
   return {
-    activeCrystals: [{ topicId: 'topic-a', gridPosition: [0, 0], xp: 0, spawnedAt: 1 }],
+    activeCrystals: [{ subjectId: SUB, topicId: 'topic-a', gridPosition: [0, 0], xp: 0, spawnedAt: 1 }],
     sm2Data: {
-      'card-1': { ...defaultSM2 },
+      [cardKey('card-1')]: { ...defaultSM2 },
     },
     unlockPoints: 3,
     currentSubjectId: null,
     currentSession: {
+      subjectId: SUB,
       topicId: 'topic-a',
-      queueCardIds: ['card-1', 'card-2'],
-      currentCardId: 'card-1',
+      queueCardIds: [cardKey('card-1'), cardKey('card-2')],
+      currentCardId: cardKey('card-1'),
       totalCards: 2,
       sessionId: 'study-session-topic-a-1',
       attempts: [],
@@ -39,11 +47,11 @@ describe('undoManager', () => {
     const s0 = baseState();
     undoManager.capture(s0);
     const mutated: Partial<ProgressionState> = {
-      sm2Data: { ...s0.sm2Data, 'card-1': { interval: 9, easeFactor: 2, repetitions: 1, nextReview: 0 } },
+      sm2Data: { ...s0.sm2Data, [cardKey('card-1')]: { interval: 9, easeFactor: 2, repetitions: 1, nextReview: 0 } },
       currentSession: s0.currentSession
         ? {
             ...s0.currentSession,
-            currentCardId: 'card-2',
+            currentCardId: cardKey('card-2'),
           }
         : null,
     };
@@ -52,12 +60,12 @@ describe('undoManager', () => {
     expect(restored).not.toBeNull();
     const r = restored as NonNullable<typeof restored>;
     expect(r.sm2Data).toBeDefined();
-    const before = s0.sm2Data['card-1'];
-    const afterSm2 = r.sm2Data!['card-1'];
+    const before = s0.sm2Data[cardKey('card-1')];
+    const afterSm2 = r.sm2Data![cardKey('card-1')];
     expect(before).toBeDefined();
     expect(afterSm2).toBeDefined();
     expect(afterSm2!.interval).toBe(before!.interval);
-    expect(r.currentSession?.currentCardId).toBe('card-1');
+    expect(r.currentSession?.currentCardId).toBe(cardKey('card-1'));
   });
 
   it('redo after undo', () => {
@@ -66,14 +74,14 @@ describe('undoManager', () => {
     const after = {
       ...s0,
       currentSession: s0.currentSession
-        ? { ...s0.currentSession, currentCardId: 'card-2' as const }
+        ? { ...s0.currentSession, currentCardId: cardKey('card-2') }
         : null,
     };
     const restored = undoManager.undo(after);
     expect(restored).not.toBeNull();
     const postUndo = { ...after, ...restored! } as ProgressionState;
     const redone = undoManager.redo(postUndo);
-    expect(redone?.currentSession?.currentCardId).toBe('card-2');
+    expect(redone?.currentSession?.currentCardId).toBe(cardKey('card-2'));
   });
 
   it('reset clears both stacks', () => {
@@ -97,7 +105,7 @@ describe('undoManager', () => {
     undoManager.capture(s0);
     const s1 = {
       ...s0,
-      currentSession: s0.currentSession ? { ...s0.currentSession, currentCardId: 'card-2' as const } : null,
+      currentSession: s0.currentSession ? { ...s0.currentSession, currentCardId: cardKey('card-2') } : null,
     };
     undoManager.undo(s1);
     expect(undoManager.redoStackSize).toBe(1);

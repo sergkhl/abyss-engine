@@ -1,42 +1,56 @@
 import { describe, expect, it } from 'vitest';
 
 import type { TopicMetadata } from '../features/content';
+import { topicRefKey } from '@/lib/topicRef';
 
-import { getSubjectFilteredTopicIds } from './useTopicCardQueries';
+import { getSubjectFilteredTopicRefs } from './useTopicCardQueries';
 
-function meta(subjectId: string): TopicMetadata {
+function meta(subjectId: string, topicId: string): TopicMetadata {
   return {
     subjectId,
     subjectName: 'S',
-    topicName: 'T',
+    topicName: `T-${topicId}`,
   };
 }
 
-describe('getSubjectFilteredTopicIds', () => {
-  it('returns all active topic ids when no subject is selected', () => {
-    const active = ['a', 'b'];
+describe('getSubjectFilteredTopicRefs', () => {
+  it('returns all active topic refs when no subject is selected', () => {
+    const refs = [
+      { subjectId: 'sub-1', topicId: 'a' },
+      { subjectId: 'sub-2', topicId: 'b' },
+    ];
     const all: Record<string, TopicMetadata> = {
-      a: meta('sub-1'),
-      b: meta('sub-2'),
+      [topicRefKey(refs[0]!)]: meta('sub-1', 'a'),
+      [topicRefKey(refs[1]!)]: meta('sub-2', 'b'),
     };
-    expect(getSubjectFilteredTopicIds(active, null, all)).toEqual(['a', 'b']);
+    expect(getSubjectFilteredTopicRefs(refs, null, all)).toEqual(refs);
   });
 
   it('filters to topics whose metadata subject matches currentSubjectId', () => {
-    const active = ['a', 'b', 'c'];
+    const refs = [
+      { subjectId: 'sub-1', topicId: 'a' },
+      { subjectId: 'sub-2', topicId: 'b' },
+      { subjectId: 'sub-1', topicId: 'c' },
+    ];
     const all: Record<string, TopicMetadata> = {
-      a: meta('sub-1'),
-      b: meta('sub-2'),
-      c: meta('sub-1'),
+      [topicRefKey(refs[0]!)]: meta('sub-1', 'a'),
+      [topicRefKey(refs[1]!)]: meta('sub-2', 'b'),
+      [topicRefKey(refs[2]!)]: meta('sub-1', 'c'),
     };
-    expect(getSubjectFilteredTopicIds(active, 'sub-1', all)).toEqual(['a', 'c']);
+    expect(getSubjectFilteredTopicRefs(refs, 'sub-1', all)).toEqual([
+      { subjectId: 'sub-1', topicId: 'a' },
+      { subjectId: 'sub-1', topicId: 'c' },
+    ]);
   });
 
   it('drops topics with missing or mismatched metadata', () => {
-    const active = ['a', 'b'];
+    const refs = [
+      { subjectId: 'sub-1', topicId: 'a' },
+      { subjectId: 'sub-2', topicId: 'b' },
+    ];
     const all: Record<string, TopicMetadata> = {
-      a: meta('sub-1'),
+      [topicRefKey(refs[0]!)]: meta('sub-1', 'a'),
     };
-    expect(getSubjectFilteredTopicIds(active, 'sub-1', all)).toEqual(['a']);
+    expect(getSubjectFilteredTopicRefs(refs, 'sub-1', all)).toEqual([{ subjectId: 'sub-1', topicId: 'a' }]);
   });
 });

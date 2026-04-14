@@ -1,6 +1,7 @@
 import { useQueries } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
+import { topicRefKey } from '@/lib/topicRef';
 import { useAllGraphs } from '@/features/content';
 import { topicStudyContentReady } from '@/features/contentGeneration';
 import { deckRepository } from '@/infrastructure/di';
@@ -12,6 +13,7 @@ export function topicContentAvailabilityQueryKey(subjectId: string, topicId: str
 
 /**
  * For every node in loaded graphs, whether IndexedDB has study-ready content for that topic.
+ * Keyed by `topicRefKey` (`subjectId::topicId`).
  */
 export function useTopicContentAvailabilityMap(): Record<string, boolean> {
   const allGraphs = useAllGraphs();
@@ -44,7 +46,8 @@ export function useTopicContentAvailabilityMap(): Record<string, boolean> {
     const map: Record<string, boolean> = {};
     topicRefs.forEach((t, i) => {
       const r = results[i];
-      map[t.topicId] = r?.data ?? false;
+      const key = topicRefKey(t);
+      map[key] = r?.data ?? false;
     });
     return map;
   }, [topicRefs, results]);

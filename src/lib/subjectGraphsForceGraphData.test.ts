@@ -155,7 +155,7 @@ describe('computeTopicGraphBfsDistances', () => {
 
   it('assigns distances along a chain from unlocked seed', () => {
     const data = buildSubjectGraphsForceGraphData(chainGraph);
-    const { distances } = computeTopicGraphBfsDistances(data, ['a']);
+    const { distances } = computeTopicGraphBfsDistances(data, [compositeTopicNodeId('math', 'a')]);
     const idA = compositeTopicNodeId('math', 'a');
     const idB = compositeTopicNodeId('math', 'b');
     const idC = compositeTopicNodeId('math', 'c');
@@ -187,7 +187,7 @@ describe('computeTopicGraphBfsDistances', () => {
       },
     ];
     const data = buildSubjectGraphsForceGraphData(graphs);
-    const { distances } = computeTopicGraphBfsDistances(data, ['x']);
+    const { distances } = computeTopicGraphBfsDistances(data, [compositeTopicNodeId('s', 'x')]);
     expect(distances.has(compositeTopicNodeId('s', 'x'))).toBe(true);
     expect(distances.has(compositeTopicNodeId('s', 'y'))).toBe(false);
   });
@@ -214,10 +214,9 @@ describe('computeTopicGraphBfsDistances', () => {
       },
     ];
     const data = buildSubjectGraphsForceGraphData(graphs);
-    const { distances } = computeTopicGraphBfsDistances(data, ['shared']);
-    expect(distances.size).toBe(2);
+    const { distances } = computeTopicGraphBfsDistances(data, [compositeTopicNodeId('sub-a', 'shared')]);
+    expect(distances.size).toBe(1);
     expect(distances.get(compositeTopicNodeId('sub-a', 'shared'))).toBe(0);
-    expect(distances.get(compositeTopicNodeId('sub-b', 'shared'))).toBe(0);
   });
 });
 
@@ -238,7 +237,7 @@ describe('filterSubjectGraphsForceGraphDataByMaxHop', () => {
 
   it('keeps a,b,c and links when maxHop is 2 and seed is a', () => {
     const data = buildSubjectGraphsForceGraphData(chainGraph);
-    const { distances } = computeTopicGraphBfsDistances(data, ['a']);
+    const { distances } = computeTopicGraphBfsDistances(data, [compositeTopicNodeId('math', 'a')]);
     const filtered = filterSubjectGraphsForceGraphDataByMaxHop(data, distances, 2);
     expect(filtered.nodes).toHaveLength(3);
     expect(filtered.links).toHaveLength(2);
@@ -247,7 +246,7 @@ describe('filterSubjectGraphsForceGraphDataByMaxHop', () => {
 
   it('drops c when maxHop is 1', () => {
     const data = buildSubjectGraphsForceGraphData(chainGraph);
-    const { distances } = computeTopicGraphBfsDistances(data, ['a']);
+    const { distances } = computeTopicGraphBfsDistances(data, [compositeTopicNodeId('math', 'a')]);
     const filtered = filterSubjectGraphsForceGraphDataByMaxHop(data, distances, 1);
     expect(filtered.nodes.map((n) => n.topicId).sort()).toEqual(['a', 'b']);
     expect(filtered.links).toHaveLength(1);
@@ -281,10 +280,10 @@ describe('resolveEffectiveTopicGraphDistances', () => {
       },
     ];
     const data = buildSubjectGraphsForceGraphData(graphs);
-    const { distances } = computeTopicGraphBfsDistances(data, ['advanced']);
-    const effective = resolveEffectiveTopicGraphDistances(data, ['advanced'], distances);
-    const idIntro = compositeTopicNodeId('math', 'intro');
     const idAdv = compositeTopicNodeId('math', 'advanced');
+    const { distances } = computeTopicGraphBfsDistances(data, [idAdv]);
+    const effective = resolveEffectiveTopicGraphDistances(data, [idAdv], distances);
+    const idIntro = compositeTopicNodeId('math', 'intro');
     expect(distances.has(idIntro)).toBe(false);
     expect(effective.get(idIntro)).toBe(1);
     expect(effective.get(idAdv)).toBe(0);
@@ -348,8 +347,9 @@ describe('resolveEffectiveTopicGraphDistances', () => {
       },
     ];
     const data = buildSubjectGraphsForceGraphData(graphs);
-    const { distances } = computeTopicGraphBfsDistances(data, ['advanced']);
-    const effective = resolveEffectiveTopicGraphDistances(data, ['advanced'], distances);
+    const idAdv = compositeTopicNodeId('math', 'advanced');
+    const { distances } = computeTopicGraphBfsDistances(data, [idAdv]);
+    const effective = resolveEffectiveTopicGraphDistances(data, [idAdv], distances);
     const filtered0 = filterSubjectGraphsForceGraphDataByMaxHop(data, effective, 0);
     const filtered1 = filterSubjectGraphsForceGraphDataByMaxHop(data, effective, 1);
     expect(filtered0.nodes.map((n) => n.topicId).sort()).toEqual(['advanced']);

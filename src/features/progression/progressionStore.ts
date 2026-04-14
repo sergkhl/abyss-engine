@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+import { cardRefKey, parseCardRefKey } from '@/lib/topicRef';
 import { appEventBus } from '@/infrastructure/eventBus';
-import { readRawTelemetryEventsFromStorage } from '@/infrastructure/telemetryRawLog';
 import { useUIStore } from '@/store/uiStore';
 import {
   applyCrystalXpDelta,
@@ -14,7 +14,7 @@ import {
   getTopicsByTier as computeTopicsByTier,
 } from './progressionUtils';
 import { defaultSM2, sm2, SM2Data } from './sm2';
-import { Card, SubjectGraph } from '../../types/core';
+import { Card, SubjectGraph, TopicRef } from '../../types/core';
 import {
   AttunementRitualPayload,
   StudySessionAttempt,
@@ -35,7 +35,7 @@ import { calculateRitualHarmony, deriveRitualBuffs } from './progressionRitual';
 import { undoManager } from './undoManager';
 
 type ProgressionStore = ProgressionState & ProgressionActions;
-const PROGRESSION_STORAGE_KEY = 'abyss-progression';
+const PROGRESSION_STORAGE_KEY = 'abyss-progression-v2';
 export const ATTUNEMENT_SUBMISSION_COOLDOWN_MS = 8 * 60 * 60 * 1000;
 
 interface CardWithSm2 extends Card {
@@ -66,10 +66,10 @@ function dedupeBuffsById(buffs: Buff[]): Buff[] {
   return deduped.reverse();
 }
 
-function attachSm2(cards: Card[], sm2Map: Record<string, SM2Data>): CardWithSm2[] {
+function attachSm2(ref: TopicRef, cards: Card[], sm2Map: Record<string, SM2Data>): CardWithSm2[] {
   return cards.map((card) => ({
     ...card,
-    sm2: sm2Map[card.id] || defaultSM2,
+    sm2: sm2Map[cardRefKey({ ...ref, cardId: card.id })] || defaultSM2,
   }));
 }
 
@@ -97,12 +97,13 @@ export const useProgressionStore = create<ProgressionStore>()(
 
       setCurrentSubject: (subjectId) => set({ currentSubjectId: subjectId }),
 
-      openRitualForTopic: (topicId, cards) => {
+      openRitualForTopic: (ref, cards) => {
         set({
           pendingRitual: {
-            topicId,
+            subjectId: ref.subjectId,
+            topicId: ref.topicId,
             cards,
-            sessionId: makeRitualSessionId(topicId),
+            sessionId: makeRitualSessionId(ref),
           },
         });
       },
@@ -114,10 +115,13 @@ export const useProgressionStore = create<ProgressionStore>()(
           return null;
         }
 
-        const sessionId = state.pendingRitual?.topicId === payload.topicId
-          ? state.pendingRitual.sessionId
-          : makeRitualSessionId(payload.topicId);
+        const pending = state.pendingRitual;
+        const sessionId =
+          pending?.subjectId === payload.subjectId && pending?.topicId === payload.topicId
+            ? pending.sessionId
+            : makeRitualSessionId({ subjectId: payload.subjectId, topicId: payload.topicId });
         const nextPendingAttunement = {
+          subjectId: payload.subjectId,
           topicId: payload.topicId,
           cards: [],
           sessionId,
@@ -136,6 +140,7 @@ export const useProgressionStore = create<ProgressionStore>()(
         );
 
         appEventBus.emit('ritual:submitted', {
+          subjectId: payload.subjectId,
           topicId: payload.topicId,
           harmonyScore,
           readinessBucket,
@@ -183,18 +188,22 @@ export const useProgressionStore = create<ProgressionStore>()(
         });
       },
 
-      startTopicStudySession: (topicId, cards) => {
+      startTopicStudySession: (ref, cards) => {
         const state = get();
-        const crystal = state.activeCrystals.find((item) => item.topicId === topicId);
+        const crystal = state.activeCrystals.find(
+          (item) => item.subjectId === ref.subjectId && item.topicId === ref.topicId,
+        );
         const level = calculateLevelFromXP(crystal?.xp ?? 0);
-        const sm2Augmented = attachSm2(cards, state.sm2Data);
+        const sm2Augmented = attachSm2(ref, cards, state.sm2Data);
         const activeBuffs = state.activeBuffs.map((buff) => BuffEngine.get().hydrateBuff(buff));
         const growthBoost = BuffEngine.get().getModifierTotal('growth_speed', activeBuffs);
         const difficultyBoost = Math.max(0, Math.floor(growthBoost * 10) - 1);
         const maxDifficulty = Math.min(level + 1 + difficultyBoost, 4);
         const gatedCards = filterCardsByDifficulty(sm2Augmented, maxDifficulty);
         const dueCards = sm2.getDueCards(gatedCards);
-        const queue = (dueCards.length > 0 ? dueCards : gatedCards).map((card) => card.id);
+        const queue = (dueCards.length > 0 ? dueCards : gatedCards).map((card) =>
+          cardRefKey({ ...ref, cardId: card.id }),
+        );
         const cardDifficultyById = sm2Augmented.reduce<Record<string, number>>((acc, card) => {
           acc[card.id] = card.difficulty;
           return acc;
@@ -203,15 +212,18 @@ export const useProgressionStore = create<ProgressionStore>()(
           acc[card.id] = card.type;
           return acc;
         }, {});
-        const sessionId = state.pendingRitual?.topicId === topicId
-          ? state.pendingRitual.sessionId
-          : makeStudySessionId(topicId);
+        const pending = state.pendingRitual;
+        const sessionId =
+          pending?.subjectId === ref.subjectId && pending?.topicId === ref.topicId
+            ? pending.sessionId
+            : makeStudySessionId(ref);
         const startedAt = Date.now();
         const activeBuffIds = state.activeBuffs.map((buff) => buff.buffId);
         undoManager.reset();
         set({
           currentSession: {
-            topicId,
+            subjectId: ref.subjectId,
+            topicId: ref.topicId,
             queueCardIds: queue,
             currentCardId: queue[0] ?? null,
             totalCards: queue.length,
@@ -228,21 +240,26 @@ export const useProgressionStore = create<ProgressionStore>()(
         useUIStore.getState().resetCardFlip();
         appEventBus.emit('study-panel:history', {
           action: 'submit',
-          topicId,
+          subjectId: ref.subjectId,
+          topicId: ref.topicId,
           sessionId,
           undoCount: undoManager.undoStackSize,
           redoCount: undoManager.redoStackSize,
         });
       },
 
-      focusStudyCard: (topicId, cards, focusCardId = null) => {
-        get().startTopicStudySession(topicId, cards);
+      focusStudyCard: (ref, cards, focusCardId = null) => {
+        get().startTopicStudySession(ref, cards);
         if (!focusCardId) {
           return;
         }
 
         const session = get().currentSession;
-        if (!session || session.topicId !== topicId) {
+        if (
+          !session
+          || session.topicId !== ref.topicId
+          || session.subjectId !== ref.subjectId
+        ) {
           return;
         }
 
@@ -250,69 +267,80 @@ export const useProgressionStore = create<ProgressionStore>()(
           return;
         }
 
-        if (session.queueCardIds.includes(focusCardId)) {
+        const focusKey = cardRefKey({ ...ref, cardId: focusCardId });
+        if (session.queueCardIds.includes(focusKey)) {
           set({
             currentSession: {
               ...session,
-              currentCardId: focusCardId,
+              currentCardId: focusKey,
             },
           });
           useUIStore.getState().resetCardFlip();
           return;
         }
 
-        const queue = [focusCardId, ...session.queueCardIds.filter((id) => id !== focusCardId)];
+        const queue = [focusKey, ...session.queueCardIds.filter((id) => id !== focusKey)];
         set({
           currentSession: {
             ...session,
             queueCardIds: queue,
-            currentCardId: focusCardId,
+            currentCardId: focusKey,
             totalCards: queue.length,
           },
         });
         useUIStore.getState().resetCardFlip();
       },
 
-      submitStudyResult: (cardId, rating) => {
+      submitStudyResult: (cardRefKeyStr, rating) => {
         const state = get();
         const session = state.currentSession;
-        if (!session || session.currentCardId !== cardId) {
+        if (!session || session.currentCardId !== cardRefKeyStr) {
           return;
         }
 
-        const crystal = state.activeCrystals.find((item) => item.topicId === session.topicId);
+        const crystal = state.activeCrystals.find(
+          (item) => item.subjectId === session.subjectId && item.topicId === session.topicId,
+        );
         if (!crystal) {
           return;
         }
         const now = Date.now();
         const timeTakenMs = Math.max(0, now - (session.lastCardStart ?? now));
 
-        const previousSM2 = state.sm2Data[cardId] || defaultSM2;
+        const { cardId: rawCardId } = parseCardRefKey(cardRefKeyStr);
+        const previousSM2 = state.sm2Data[cardRefKeyStr] || defaultSM2;
         const updatedSM2 = sm2.calculateNextReview(previousSM2, rating);
-        const cardFormatType = session.cardTypeById?.[cardId];
+        const cardFormatType = session.cardTypeById?.[rawCardId];
         const reward = calculateXPReward(cardFormatType, rating);
         const activeBuffs = state.activeBuffs.map((buff) => BuffEngine.get().hydrateBuff(buff));
         const buffMultiplier = BuffEngine.get().getModifierTotal('xp_multiplier', activeBuffs);
         const buffedReward = Math.max(0, Math.round(reward * buffMultiplier));
-        const applied = applyCrystalXpDelta(state.activeCrystals, session.topicId, buffedReward);
+        const applied = applyCrystalXpDelta(
+          state.activeCrystals,
+          { subjectId: session.subjectId, topicId: session.topicId },
+          buffedReward,
+        );
         if (!applied) {
           return;
         }
 
         undoManager.capture(state);
 
-        const difficulty = session.cardDifficultyById?.[cardId] ?? 1;
+        const difficulty = session.cardDifficultyById?.[rawCardId] ?? 1;
         const isCorrect = rating >= 3;
-        const sessionId = session.sessionId ?? makeStudySessionId(session.topicId);
+        const sessionId = session.sessionId ?? makeStudySessionId({
+          subjectId: session.subjectId,
+          topicId: session.topicId,
+        });
         const attempt: StudySessionAttempt = {
-          cardId,
+          cardId: cardRefKeyStr,
           rating,
           difficulty,
           timestamp: now,
           isCorrect,
         };
         const nextAttempts = [...(session.attempts ?? []), attempt];
-        const nextQueue = session.queueCardIds.filter((id) => id !== cardId);
+        const nextQueue = session.queueCardIds.filter((id) => id !== cardRefKeyStr);
         const nextCard = nextQueue[0] ?? null;
         const buffsAfterUsage = BuffEngine.get().consumeForEvent(activeBuffs, 'card_reviewed');
         const nextBuffs = nextQueue.length > 0
@@ -320,14 +348,19 @@ export const useProgressionStore = create<ProgressionStore>()(
           : BuffEngine.get().consumeForEvent(buffsAfterUsage, 'session_ended');
         const isSessionComplete = nextQueue.length === 0;
         const sessionMetrics = isSessionComplete
-          ? buildStudySessionMetrics(sessionId, session.topicId, nextAttempts, session.startedAt ?? Date.now())
+          ? buildStudySessionMetrics(
+              sessionId,
+              session.topicId,
+              nextAttempts,
+              session.startedAt ?? Date.now(),
+            )
           : null;
 
         set({
           unlockPoints: applied.levelsGained > 0 ? state.unlockPoints + applied.levelsGained : state.unlockPoints,
           sm2Data: {
             ...state.sm2Data,
-            [cardId]: updatedSM2,
+            [cardRefKeyStr]: updatedSM2,
           },
           activeCrystals: applied.nextActiveCrystals,
           currentSession: {
@@ -351,8 +384,9 @@ export const useProgressionStore = create<ProgressionStore>()(
         useUIStore.getState().resetCardFlip();
 
         appEventBus.emit('card:reviewed', {
-          cardId,
+          cardId: cardRefKeyStr,
           rating,
+          subjectId: session.subjectId,
           topicId: session.topicId,
           sessionId,
           timeTakenMs,
@@ -364,6 +398,7 @@ export const useProgressionStore = create<ProgressionStore>()(
 
         if (applied.levelsGained > 0) {
           appEventBus.emit('crystal:leveled', {
+            subjectId: session.subjectId,
             topicId: session.topicId,
             from: applied.previousLevel,
             to: applied.nextLevel,
@@ -375,6 +410,7 @@ export const useProgressionStore = create<ProgressionStore>()(
 
         if (isSessionComplete && sessionMetrics) {
           appEventBus.emit('session:completed', {
+            subjectId: session.subjectId,
             topicId: session.topicId,
             sessionId,
             correctRate: sessionMetrics.correctRate,
@@ -391,14 +427,16 @@ export const useProgressionStore = create<ProgressionStore>()(
           return;
         }
         const topicId = restored.currentSession?.topicId;
+        const subjectId = restored.currentSession?.subjectId;
         const sessionId = restored.currentSession?.sessionId;
-        if (!topicId?.trim() || !sessionId?.trim()) {
-          throw new Error('undoLastStudyResult: restored session missing topicId or sessionId');
+        if (!topicId?.trim() || !sessionId?.trim() || !subjectId?.trim()) {
+          throw new Error('undoLastStudyResult: restored session missing subjectId, topicId or sessionId');
         }
         set(restored);
         useUIStore.getState().resetCardFlip();
         appEventBus.emit('study-panel:history', {
           action: 'undo',
+          subjectId,
           topicId,
           sessionId,
           undoCount: undoManager.undoStackSize,
@@ -413,14 +451,16 @@ export const useProgressionStore = create<ProgressionStore>()(
           return;
         }
         const topicId = restored.currentSession?.topicId;
+        const subjectId = restored.currentSession?.subjectId;
         const sessionId = restored.currentSession?.sessionId;
-        if (!topicId?.trim() || !sessionId?.trim()) {
-          throw new Error('redoLastStudyResult: restored session missing topicId or sessionId');
+        if (!topicId?.trim() || !sessionId?.trim() || !subjectId?.trim()) {
+          throw new Error('redoLastStudyResult: restored session missing subjectId, topicId or sessionId');
         }
         set(restored);
         useUIStore.getState().resetCardFlip();
         appEventBus.emit('study-panel:history', {
           action: 'redo',
+          subjectId,
           topicId,
           sessionId,
           undoCount: undoManager.undoStackSize,
@@ -428,14 +468,16 @@ export const useProgressionStore = create<ProgressionStore>()(
         });
       },
 
-      unlockTopic: (topicId, allGraphs) => {
+      unlockTopic: (ref, allGraphs) => {
         const state = get();
-        const existing = state.activeCrystals.find((item) => item.topicId === topicId);
+        const existing = state.activeCrystals.find(
+          (item) => item.subjectId === ref.subjectId && item.topicId === ref.topicId,
+        );
         if (existing) {
           return existing.gridPosition;
         }
 
-        const status = getTopicUnlockStatus(topicId, state.activeCrystals, state.unlockPoints, allGraphs);
+        const status = getTopicUnlockStatus(ref, state.activeCrystals, state.unlockPoints, allGraphs);
         if (!status.canUnlock) {
           return null;
         }
@@ -449,7 +491,8 @@ export const useProgressionStore = create<ProgressionStore>()(
           activeCrystals: [
             ...current.activeCrystals,
             {
-              topicId,
+              subjectId: ref.subjectId,
+              topicId: ref.topicId,
               gridPosition: nextPosition,
               xp: 0,
               spawnedAt: Date.now(),
@@ -461,28 +504,26 @@ export const useProgressionStore = create<ProgressionStore>()(
         return nextPosition;
       },
 
-      getTopicUnlockStatus: (topicId, allGraphs) => {
-        return getTopicUnlockStatus(topicId, get().activeCrystals, get().unlockPoints, allGraphs);
+      getTopicUnlockStatus: (ref, allGraphs) => {
+        return getTopicUnlockStatus(ref, get().activeCrystals, get().unlockPoints, allGraphs);
       },
 
-      getTopicTier: (topicId, allGraphs) => {
-        return calculateTopicTier(topicId, allGraphs);
+      getTopicTier: (ref, allGraphs) => {
+        return calculateTopicTier(ref, allGraphs);
       },
 
-      getTopicsByTier: (allGraphs, subjects, currentSubjectId, contentAvailabilityByTopicId) => {
-        const unlockedTopicIds = get().activeCrystals.map((c) => c.topicId);
+      getTopicsByTier: (allGraphs, subjects, currentSubjectId, contentAvailabilityByTopicKey) => {
         return computeTopicsByTier(
           allGraphs,
-          unlockedTopicIds,
           subjects,
           currentSubjectId,
-          contentAvailabilityByTopicId,
+          contentAvailabilityByTopicKey,
           get().activeCrystals,
         );
       },
 
-      getDueCardsCount: (cards = []) => {
-        const withSm2 = attachSm2(cards as Card[], get().sm2Data);
+      getDueCardsCount: (ref, cards = []) => {
+        const withSm2 = attachSm2(ref, cards as Card[], get().sm2Data);
         return sm2.getDueCards(withSm2).length;
       },
 
@@ -490,15 +531,15 @@ export const useProgressionStore = create<ProgressionStore>()(
         return cards.length;
       },
 
-      addXP: (topicId, xpAmount, options) => {
+      addXP: (ref, xpAmount, options) => {
         const snapshotCrystals = get().activeCrystals;
-        const xpForEvents = applyCrystalXpDelta(snapshotCrystals, topicId, xpAmount);
+        const xpForEvents = applyCrystalXpDelta(snapshotCrystals, ref, xpAmount);
         if (!xpForEvents) {
           return 0;
         }
 
         set((current) => {
-          const applied = applyCrystalXpDelta(current.activeCrystals, topicId, xpAmount);
+          const applied = applyCrystalXpDelta(current.activeCrystals, ref, xpAmount);
           if (!applied) {
             return {};
           }
@@ -511,7 +552,8 @@ export const useProgressionStore = create<ProgressionStore>()(
 
         if (xpForEvents.levelsGained > 0) {
           appEventBus.emit('crystal:leveled', {
-            topicId,
+            subjectId: ref.subjectId,
+            topicId: ref.topicId,
             from: xpForEvents.previousLevel,
             to: xpForEvents.nextLevel,
             levelsGained: xpForEvents.levelsGained,
@@ -522,41 +564,24 @@ export const useProgressionStore = create<ProgressionStore>()(
         return xpForEvents.nextXp;
       },
 
-      updateSM2: (cardId, sm2State) => {
+      updateSM2: (ref, rawCardId, sm2State) => {
+        const key = cardRefKey({ ...ref, cardId: rawCardId });
         set((s) => ({
           sm2Data: {
             ...s.sm2Data,
-            [cardId]: sm2State,
+            [key]: sm2State,
           },
         }));
       },
 
-      getSM2Data: (cardId) => {
-        return get().sm2Data[cardId];
+      getSM2Data: (ref, rawCardId) => {
+        const key = cardRefKey({ ...ref, cardId: rawCardId });
+        return get().sm2Data[key];
       },
     }),
     {
       name: PROGRESSION_STORAGE_KEY,
       version: 1,
-      migrate: (persisted, fromVersion) => {
-        const persistedRecord = persisted as Record<string, unknown>;
-        if (fromVersion < 1) {
-          delete persistedRecord.unlockedTopicIds;
-          delete persistedRecord.isCurrentCardFlipped;
-          persistedRecord.currentSession = null;
-
-          let lastRitual: number | null = null;
-          if (typeof window !== 'undefined') {
-            const events = readRawTelemetryEventsFromStorage();
-            const latest = events
-              .filter((e) => e.type === 'attunement_ritual_submitted')
-              .reduce((max, e) => Math.max(max, e.timestamp), 0);
-            lastRitual = latest > 0 ? latest : null;
-          }
-          persistedRecord.lastRitualSubmittedAt = lastRitual;
-        }
-        return persisted;
-      },
       partialize: (state) => ({
         activeCrystals: state.activeCrystals,
         sm2Data: state.sm2Data,

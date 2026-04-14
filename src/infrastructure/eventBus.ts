@@ -7,6 +7,7 @@ export type AppEventMap = {
   'card:reviewed': {
     cardId: string;
     rating: Rating;
+    subjectId: string;
     topicId: string;
     sessionId: string;
     timeTakenMs: number;
@@ -16,12 +17,14 @@ export type AppEventMap = {
     isCorrect: boolean;
   };
   'xp:gained': {
+    subjectId: string;
     topicId: string;
     amount: number;
     sessionId: string;
     cardId: string;
   };
   'crystal:leveled': {
+    subjectId: string;
     topicId: string;
     from: number;
     to: number;
@@ -30,6 +33,7 @@ export type AppEventMap = {
     isStudyPanelOpen: boolean;
   };
   'session:completed': {
+    subjectId: string;
     topicId: string;
     sessionId: string;
     correctRate: number;
@@ -37,6 +41,7 @@ export type AppEventMap = {
     totalAttempts: number;
   };
   'ritual:submitted': {
+    subjectId: string;
     topicId: string;
     harmonyScore: number;
     readinessBucket: string;
@@ -45,6 +50,7 @@ export type AppEventMap = {
   };
   'study-panel:history': {
     action: 'undo' | 'redo' | 'submit';
+    subjectId?: string;
     topicId?: string;
     sessionId?: string;
     undoCount: number;

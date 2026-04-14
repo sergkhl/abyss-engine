@@ -1,3 +1,5 @@
+import { topicRefKey } from '@/lib/topicRef';
+import type { TopicRef } from '../../types/core';
 import { StudySessionAttempt } from '../../types/progression';
 
 export interface StudySessionTelemetryMetrics {
@@ -56,10 +58,10 @@ export function extractStudyAdaptationSignals(metrics: StudySessionTelemetryMetr
 const RITUAL_SESSION_ID_PREFIX = 'attunement-session';
 const STUDY_SESSION_ID_PREFIX = 'study-session';
 
-export function makeRitualSessionId(topicId: string) {
-  return `${RITUAL_SESSION_ID_PREFIX}-${topicId}-${Date.now()}`;
+export function makeRitualSessionId(ref: TopicRef) {
+  return `${RITUAL_SESSION_ID_PREFIX}-${topicRefKey(ref)}-${Date.now()}`;
 }
 
-export function makeStudySessionId(topicId: string) {
-  return `${STUDY_SESSION_ID_PREFIX}-${topicId}-${Date.now()}`;
+export function makeStudySessionId(ref: TopicRef) {
+  return `${STUDY_SESSION_ID_PREFIX}-${topicRefKey(ref)}-${Date.now()}`;
 }

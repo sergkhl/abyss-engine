@@ -15,6 +15,7 @@ import { select } from 'd3-selection';
 import 'd3-transition';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
+import { topicRefKey } from '@/lib/topicRef';
 import { useProgressionStore } from '@/features/progression';
 import { getTopicUnlockStatus, getVisibleTopicIds } from '@/features/progression/progressionUtils';
 import type { SubjectGraphsForceGraphData, SubjectGraphForceNode } from '@/lib/subjectGraphsForceGraphData';
@@ -29,7 +30,7 @@ import {
   filterSubjectGraphsForceGraphDataByMaxHop,
   resolveEffectiveTopicGraphDistances,
 } from '@/lib/subjectGraphsForceGraphData';
-import type { ActiveCrystal, SubjectGraph } from '@/types/core';
+import type { ActiveCrystal, SubjectGraph, TopicRef } from '@/types/core';
 
 import { cn } from '@/lib/utils';
 
@@ -66,16 +67,17 @@ function linkNodeY(endpoint: string | SimNode): number {
 
 function styleForNode(
   d: SimNode,
-  unlockedTopicIds: string[],
   activeCrystals: ActiveCrystal[],
   unlockPoints: number,
   allGraphs: SubjectGraph[],
-  selectedTopicId: string | null,
+  selectedTopicKey: string | null,
 ): { fill: string; stroke: string; strokeWidth: number } {
-  const topicId = d.topicId;
-  const hasCrystal = activeCrystals.some((c) => c.topicId === topicId);
-  const unlocked = unlockedTopicIds.includes(topicId);
-  const unlockStatus = getTopicUnlockStatus(topicId, activeCrystals, unlockPoints, allGraphs, []);
+  const ref: TopicRef = { subjectId: d.subjectId, topicId: d.topicId };
+  const tKey = topicRefKey(ref);
+  const hasCrystal = activeCrystals.some(
+    (c) => c.subjectId === d.subjectId && c.topicId === d.topicId,
+  );
+  const unlockStatus = getTopicUnlockStatus(ref, activeCrystals, unlockPoints, allGraphs, []);
   const { hasPrerequisites: masteryGatesMet, canUnlock } = unlockStatus;
 
   let base: { fill: string; stroke: string; strokeWidth: number };
@@ -84,12 +86,6 @@ function styleForNode(
       fill: 'var(--chart-1)',
       stroke: 'var(--foreground)',
       strokeWidth: 3,
-    };
-  } else if (unlocked) {
-    base = {
-      fill: 'var(--chart-2)',
-      stroke: 'var(--foreground)',
-      strokeWidth: 2,
     };
   } else if (masteryGatesMet) {
     base = {
@@ -105,7 +101,7 @@ function styleForNode(
     };
   }
 
-  if (selectedTopicId && topicId === selectedTopicId) {
+  if (selectedTopicKey && tKey === selectedTopicKey) {
     return {
       ...base,
       stroke: 'var(--ring)',
@@ -118,18 +114,17 @@ function styleForNode(
 /** Updates node circle and label styles without restarting the force simulation. */
 function paintTopicNodeVisuals(
   svgRoot: SVGSVGElement,
-  unlockedTopicIds: string[],
   activeCrystals: ActiveCrystal[],
   unlockPoints: number,
   allGraphs: SubjectGraph[],
-  selectedTopicId: string | null,
+  selectedTopicKey: string | null,
   bfsDistances: ReadonlyMap<string, number>,
 ) {
   const root = select(svgRoot);
   root
     .selectAll<SVGCircleElement, SimNode>('g.plot-view g.nodes circle')
     .each(function paintCircle(d) {
-      const s = styleForNode(d, unlockedTopicIds, activeCrystals, unlockPoints, allGraphs, selectedTopicId);
+      const s = styleForNode(d, activeCrystals, unlockPoints, allGraphs, selectedTopicKey);
       const op = nodeOpacityFromBfsDist(bfsDistances.get(d.id));
       select(this)
         .attr('fill', s.fill)
@@ -140,7 +135,9 @@ function paintTopicNodeVisuals(
   root
     .selectAll<SVGTextElement, SimNode>('g.plot-view g.labels text')
     .each(function paintLabel(d) {
-      const isSelected = Boolean(selectedTopicId && d.topicId === selectedTopicId);
+      const isSelected = Boolean(
+        selectedTopicKey && topicRefKey({ subjectId: d.subjectId, topicId: d.topicId }) === selectedTopicKey,
+      );
       const op = nodeOpacityFromBfsDist(bfsDistances.get(d.id));
       select(this)
         .attr('opacity', op)
@@ -152,13 +149,14 @@ function paintTopicNodeVisuals(
 export interface StudyForceGraphProps {
   /** Full curriculum graphs from the manifest; filtered by `SubjectNavigation` floor (`currentSubjectId`). */
   allGraphs: SubjectGraph[];
-  unlockedTopicIds: string[];
+  /** Composite force-graph node ids (`compositeTopicNodeId`) for crystals — drives BFS seeds. */
+  unlockedNodeIds: string[];
   activeCrystals: ActiveCrystal[];
   unlockPoints: number;
-  /** Highlights the matching topic node (by `topicId`). */
-  selectedTopicId?: string | null;
+  /** Highlights the matching topic (`topicRefKey`). */
+  selectedTopicKey?: string | null;
   /** Invoked when the user activates a topic node (click, tap, or keyboard). */
-  onSelectTopic?: (topicId: string) => void;
+  onSelectTopic?: (ref: TopicRef) => void;
   /** Invoked when the user activates the empty graph background (tap outside nodes). */
   onClearSelection?: () => void;
   /** `null` = show full graph (all nodes); integer = max BFS hop from seeds. */
@@ -298,10 +296,10 @@ type ClusterTerritoryDatum = { subjectId: string; clusterIndex: number };
 
 export function StudyForceGraph({
   allGraphs,
-  unlockedTopicIds,
+  unlockedNodeIds,
   activeCrystals,
   unlockPoints,
-  selectedTopicId = null,
+  selectedTopicKey = null,
   onSelectTopic,
   onClearSelection,
   maxHop = null,
@@ -341,15 +339,15 @@ export function StudyForceGraph({
     if (!graphData) {
       return null;
     }
-    return computeTopicGraphBfsDistances(graphData, unlockedTopicIds);
-  }, [graphData, unlockedTopicIds]);
+    return computeTopicGraphBfsDistances(graphData, unlockedNodeIds);
+  }, [graphData, unlockedNodeIds]);
 
   const effectiveDistances = useMemo(() => {
     if (!graphData || !bfsResult) {
       return null;
     }
-    return resolveEffectiveTopicGraphDistances(graphData, unlockedTopicIds, bfsResult.distances);
-  }, [graphData, bfsResult, unlockedTopicIds]);
+    return resolveEffectiveTopicGraphDistances(graphData, unlockedNodeIds, bfsResult.distances);
+  }, [graphData, bfsResult, unlockedNodeIds]);
 
   const displayData = useMemo((): SubjectGraphsForceGraphData | null => {
     if (!graphData || !effectiveDistances) {
@@ -362,15 +360,14 @@ export function StudyForceGraph({
   }, [graphData, effectiveDistances, maxHop]);
 
   const progressionRef = useRef({
-    unlockedTopicIds,
     activeCrystals,
     unlockPoints,
   });
-  progressionRef.current = { unlockedTopicIds, activeCrystals, unlockPoints };
+  progressionRef.current = { activeCrystals, unlockPoints };
   const graphsRef = useRef(curriculumVisibleGraphs);
   graphsRef.current = curriculumVisibleGraphs;
-  const selectedTopicIdRef = useRef(selectedTopicId);
-  selectedTopicIdRef.current = selectedTopicId;
+  const selectedTopicKeyRef = useRef(selectedTopicKey);
+  selectedTopicKeyRef.current = selectedTopicKey;
   const onSelectTopicRef = useRef(onSelectTopic);
   onSelectTopicRef.current = onSelectTopic;
   const onClearSelectionRef = useRef(onClearSelection);
@@ -380,8 +377,8 @@ export function StudyForceGraph({
   const simulationRef = useRef<Simulation<SimNode, undefined> | null>(null);
   /** Stable key so progression-driven node colors repaint without waiting for simulation ticks. */
   const progressionPaintKey = useMemo(() => {
-    const unlocked = [...unlockedTopicIds].sort().join('\0');
-    const crystalTopics = [...new Set(activeCrystals.map((c) => c.topicId))].sort().join('|');
+    const unlocked = [...unlockedNodeIds].sort().join('\0');
+    const crystalTopics = [...new Set(activeCrystals.map((c) => `${c.subjectId}\u001f${c.topicId}`))].sort().join('|');
     const distKey =
       effectiveDistances == null
         ? ''
@@ -390,7 +387,7 @@ export function StudyForceGraph({
             .map(([k, v]) => `${k}:${v}`)
             .join('|');
     return `${unlocked}#${unlockPoints}#${crystalTopics}#${distKey}`;
-  }, [unlockedTopicIds, activeCrystals, unlockPoints, effectiveDistances]);
+  }, [unlockedNodeIds, activeCrystals, unlockPoints, effectiveDistances]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -666,11 +663,10 @@ export function StudyForceGraph({
       .each(function eachNode(d) {
         const s = styleForNode(
           d,
-          progressionRef.current.unlockedTopicIds,
           progressionRef.current.activeCrystals,
           progressionRef.current.unlockPoints,
           graphsRef.current,
-          selectedTopicIdRef.current,
+          selectedTopicKeyRef.current,
         );
         select(this)
           .attr('fill', s.fill)
@@ -725,7 +721,7 @@ export function StudyForceGraph({
     circleMerge.on('click', function handleCircleClick(this: SVGCircleElement, event: MouseEvent) {
       event.stopPropagation();
       const d = select(this).datum() as SimNode;
-      onSelectTopicRef.current?.(d.topicId);
+      onSelectTopicRef.current?.({ subjectId: d.subjectId, topicId: d.topicId });
     });
 
     circleMerge.on('keydown', function handleKeydown(this: SVGCircleElement, event: Event) {
@@ -736,7 +732,7 @@ export function StudyForceGraph({
       ke.preventDefault();
       ke.stopPropagation();
       const d = select(this).datum() as SimNode;
-      onSelectTopicRef.current?.(d.topicId);
+      onSelectTopicRef.current?.({ subjectId: d.subjectId, topicId: d.topicId });
     });
 
     simulation.on('tick', () => {
@@ -786,11 +782,10 @@ export function StudyForceGraph({
         .each(function eachTick(d) {
           const s = styleForNode(
             d,
-            progressionRef.current.unlockedTopicIds,
             progressionRef.current.activeCrystals,
             progressionRef.current.unlockPoints,
             graphsRef.current,
-            selectedTopicIdRef.current,
+            selectedTopicKeyRef.current,
           );
           select(this).attr('fill', s.fill).attr('stroke', s.stroke).attr('stroke-width', s.strokeWidth);
         });
@@ -801,8 +796,10 @@ export function StudyForceGraph({
         .text((d) => truncateTopicTitle(d.title))
         .attr('opacity', (d) => nodeOpacityFromBfsDist(depthDistances.get(d.id)))
         .each(function eachLabelTick(d) {
-          const sel = selectedTopicIdRef.current;
-          const isSelected = Boolean(sel && d.topicId === sel);
+          const sel = selectedTopicKeyRef.current;
+          const isSelected = Boolean(
+            sel && topicRefKey({ subjectId: d.subjectId, topicId: d.topicId }) === sel,
+          );
           select(this)
             .attr('fill-opacity', isSelected ? 0.95 : 0.78)
             .attr('font-weight', isSelected ? 600 : 500);
@@ -826,14 +823,13 @@ export function StudyForceGraph({
     }
     paintTopicNodeVisuals(
       svgEl,
-      unlockedTopicIds,
       activeCrystals,
       unlockPoints,
       visibleGraphs,
-      selectedTopicId,
+      selectedTopicKey,
       effectiveDistances,
     );
-  }, [selectedTopicId, progressionPaintKey, displayData, visibleGraphs, effectiveDistances]);
+  }, [selectedTopicKey, progressionPaintKey, displayData, visibleGraphs, effectiveDistances]);
 
   return (
     <div

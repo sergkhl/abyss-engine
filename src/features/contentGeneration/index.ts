@@ -12,7 +12,6 @@ export { runExpansionJob } from './jobs/runExpansionJob';
 export type { RunExpansionJobParams } from './jobs/runExpansionJob';
 
 export { topicStudyContentReady } from './topicStudyContentReady';
-export { findSubjectIdForTopic } from './findSubjectIdForTopic';
 
 export { buildTopicTheoryMessages } from './messages/buildTopicTheoryMessages';
 export type { TopicTheoryPromptParams } from './messages/buildTopicTheoryMessages';

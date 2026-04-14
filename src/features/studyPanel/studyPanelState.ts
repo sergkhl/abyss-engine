@@ -1,3 +1,4 @@
+import { parseCardRefKey, topicRefKey } from '@/lib/topicRef';
 import { ActiveCrystal, Card } from '../../types/core';
 import { calculateLevelFromXP } from '../progression';
 import { TopicMetadata } from '../content/selectors';
@@ -6,12 +7,11 @@ export function buildPriorKnowledgeLines(
   activeCrystals: ActiveCrystal[],
   topicMetadata: Record<string, TopicMetadata>,
 ): string {
-  const unlockedTopicIds = activeCrystals.map((c) => c.topicId);
-  const entries = unlockedTopicIds
-    .map((topicId) => {
-      const topicName = topicMetadata[topicId]?.topicName || topicId;
-      const crystal = activeCrystals.find((item) => item.topicId === topicId);
-      const level = calculateLevelFromXP(crystal?.xp ?? 0);
+  const entries = activeCrystals
+    .map((crystal) => {
+      const key = topicRefKey(crystal);
+      const topicName = topicMetadata[key]?.topicName || crystal.topicId;
+      const level = calculateLevelFromXP(crystal.xp ?? 0);
       if (level <= 0) {
         return null;
       }
@@ -37,7 +37,13 @@ export function resolveActiveCard(
   currentCardId?: string | null,
 ): Card | null {
   if (sessionCardId) {
-    const fromSession = cards.find((card) => card.id === sessionCardId);
+    let rawId = sessionCardId;
+    try {
+      rawId = parseCardRefKey(sessionCardId).cardId;
+    } catch {
+      // ignore — treat as raw per-topic id
+    }
+    const fromSession = cards.find((card) => card.id === rawId);
     if (fromSession) {
       return fromSession;
     }
@@ -49,4 +55,3 @@ export function resolveActiveCard(
 
   return null;
 }
-

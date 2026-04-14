@@ -7,6 +7,7 @@ import {
 import { calculateRitualHarmony, deriveRitualBuffs } from '../progression/progressionRitual';
 
 const highPayload: AttunementRitualPayload = {
+  subjectId: 'sub-a',
   topicId: 'topic-a',
   checklist: {
     sleepHours: 8,
@@ -23,6 +24,7 @@ const highPayload: AttunementRitualPayload = {
 };
 
 const lowPayload: AttunementRitualPayload = {
+  subjectId: 'sub-a',
   topicId: 'topic-a',
   checklist: {
     sleepHours: 3,
@@ -34,6 +36,7 @@ const lowPayload: AttunementRitualPayload = {
 };
 
 const completeBiologicalPayload: AttunementRitualPayload = {
+  subjectId: 'sub-a',
   topicId: 'topic-a',
   checklist: {
     sleepHours: 7,
@@ -44,6 +47,7 @@ const completeBiologicalPayload: AttunementRitualPayload = {
 };
 
 const incompleteBiologicalPayload: AttunementRitualPayload = {
+  subjectId: 'sub-a',
   topicId: 'topic-a',
   checklist: {
     sleepHours: 7,
