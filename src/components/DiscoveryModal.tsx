@@ -4,17 +4,17 @@ import { useProgressionStore as useStudyStore } from '../features/progression';
 import { useAllGraphs, useSubjects } from '../features/content';
 import type { TieredTopic, TopicUnlockStatus } from '../features/progression/progressionUtils';
 import {
-  AbyssDialog,
-  AbyssDialogContent,
+  Dialog,
+  DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/abyss-dialog';
+} from '@/components/ui/dialog';
 import { ParticlesAnimation, RITUAL_PARTICLE_ANIMATION } from './ui/particles-animation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useTopicContentAvailabilityMap } from '@/hooks/useTopicContentAvailabilityMap';
-import { scheduleTopicDetailsDismiss, TopicDetailsPopup } from './TopicDetailsPopup';
+import { TopicDetailsPopup } from './TopicDetailsPopup';
 import { IncrementalSubjectModal } from './IncrementalSubjectModal';
 
 interface DiscoveryModalProps {
@@ -120,10 +120,8 @@ export function DiscoveryModal({
 
     unlockTopic({ subjectId: selectedTopic.subjectId, topicId: selectedTopic.id }, allGraphs);
 
-    scheduleTopicDetailsDismiss(() => {
-      setSelectedTopicKey(null);
-      onClose();
-    });
+    setSelectedTopicKey(null);
+    onClose();
   };
 
   if (!isOpen) {
@@ -132,7 +130,7 @@ export function DiscoveryModal({
 
   return (
     <>
-      <AbyssDialog
+      <Dialog
         open={isOpen}
         onOpenChange={(open) => {
           if (!open) {
@@ -141,7 +139,7 @@ export function DiscoveryModal({
           }
         }}
       >
-        <AbyssDialogContent className="flex max-h-[95vh] flex-col">
+        <DialogContent className="flex max-h-[95vh] flex-col">
           <DialogHeader>
             <DialogTitle>🏛️ Wisdom Altar</DialogTitle>
             <DialogDescription>Unlock topic crystals to expand your knowledge</DialogDescription>
@@ -272,8 +270,8 @@ export function DiscoveryModal({
               </div>
             )}
           </div>
-        </AbyssDialogContent>
-      </AbyssDialog>
+        </DialogContent>
+      </Dialog>
 
       {selectedTopic && selectedTopicStatus && (
         <TopicDetailsPopup

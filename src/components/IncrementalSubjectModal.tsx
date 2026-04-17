@@ -5,13 +5,14 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
-  AbyssDialog,
-  AbyssDialogContent,
+  Dialog,
+  DialogClose,
+  DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/abyss-dialog';
+} from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel, FieldSet } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
@@ -94,7 +95,7 @@ export function IncrementalSubjectModal({ isOpen, onClose, onEnqueued }: Increme
   };
 
   return (
-    <AbyssDialog
+    <Dialog
       open={isOpen}
       onOpenChange={(open) => {
         if (!open) {
@@ -102,7 +103,7 @@ export function IncrementalSubjectModal({ isOpen, onClose, onEnqueued }: Increme
         }
       }}
     >
-      <AbyssDialogContent className="flex max-h-[95vh] flex-col gap-4 overflow-y-auto sm:max-w-lg">
+      <DialogContent className="flex max-h-[95vh] flex-col gap-4 overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>New subject</DialogTitle>
           <DialogDescription>
@@ -260,14 +261,14 @@ export function IncrementalSubjectModal({ isOpen, onClose, onEnqueued }: Increme
         ) : null}
 
         <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-          <Button type="button" variant="outline" onClick={onClose} disabled={submitting}>
+          <DialogClose render={<Button type="button" variant="outline" disabled={submitting} />}>
             Cancel
-          </Button>
+          </DialogClose>
           <Button type="button" onClick={() => void handleSubmit()} disabled={submitting}>
             {submitting ? 'Checking…' : 'Generate curriculum'}
           </Button>
         </DialogFooter>
-      </AbyssDialogContent>
-    </AbyssDialog>
+      </DialogContent>
+    </Dialog>
   );
 }
