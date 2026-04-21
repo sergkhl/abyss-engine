@@ -9,7 +9,8 @@ export type ContentGenerationJobKind =
   | 'topic-study-cards'
   | 'topic-mini-games'
   | 'topic-expansion-cards'
-  | 'subject-graph'
+  | 'subject-graph-topics'
+  | 'subject-graph-edges'
   | 'crystal-trial';
 
 export type ContentGenerationJobStatus =
@@ -66,6 +67,8 @@ export interface ContentGenerationJob {
  * - `model` (string) — exact model identifier used for this job.
    * - `enableThinking` (boolean) — whether thinking/reasoning was enabled for this job.
    * - `nextLevel` (number) — for expansion jobs, the crystal level that triggered expansion.
+   * - `prereqEdgesCorrection` (object) — when edges output was deterministically repaired
+   *   (`removed` / `added` entries); see `correctPrereqEdges`.
    */
   metadata: Record<string, unknown> | null;
 }

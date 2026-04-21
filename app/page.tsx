@@ -76,7 +76,7 @@ const HomeContent: React.FC = () => {
   const [isIncrementalSubjectOpen, setIsIncrementalSubjectOpen] = useState(false);
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const screenCaptureThinking = useThinkingToggle('screenCaptureSummary');
-  const screenCaptureTts = useInferenceTtsToggle('screenCaptureSummary');
+  const screenCaptureTts = useInferenceTtsToggle();
   const screenCaptureLlm = useScreenCaptureLlmSummary({
     enableThinking: screenCaptureThinking.enableThinking,
   });

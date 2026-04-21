@@ -12,10 +12,13 @@ import type { TopicGenerationStage } from './pipelines/topicGenerationStage';
 import { useContentGenerationStore } from './contentGenerationStore';
 import { deckRepository, deckWriter } from '@/infrastructure/di';
 import { getChatCompletionsRepositoryForSurface } from '@/infrastructure/llmInferenceRegistry';
-import { resolveModelForSurface } from '@/infrastructure/llmInferenceSurfaceProviders';
 import { runTopicGenerationPipeline } from './pipelines/runTopicGenerationPipeline';
 import { runExpansionJob } from './jobs/runExpansionJob';
-import { createSubjectGenerationOrchestrator } from '@/features/subjectGeneration';
+import {
+  createSubjectGenerationOrchestrator,
+  resolveSubjectGenerationStageBindings,
+} from '@/features/subjectGeneration';
+import { resolveSubjectGraphRetryContextFromJob } from './subjectGenerationPipelineContext';
 import { generateTrialQuestions } from '@/features/crystalTrial/generateTrialQuestions';
 import { toast } from '@/infrastructure/toast';
 
@@ -55,19 +58,6 @@ function getCrystalTrialCurrentLevel(job: ContentGenerationJob): number | null {
   return Number.isInteger(level) ? level : null;
 }
 
-function hasTopicName(value: unknown): value is StudyChecklist {
-  return typeof value === 'object' && value !== null && 'topicName' in value && typeof (value as { topicName: unknown }).topicName === 'string';
-}
-
-function parseChecklistFromLabel(label: string): StudyChecklist | null {
-  const match = /^Curriculum\s*—\s*(.+)$/.exec(label);
-  if (!match?.[1]) {
-    return null;
-  }
-  const topicName = match[1]?.trim();
-  return topicName ? { topicName } : null;
-}
-
 function isRetryable(status: ContentGenerationJob['status']): boolean {
   return status === 'failed' || status === 'aborted';
 }
@@ -88,6 +78,19 @@ export function canRetryPipeline(
 ): boolean {
   return allJobs.some(
     (j) => j.pipelineId === pipeline.id && isRetryable(j.status),
+  );
+}
+
+/** True when a failed pipeline includes a subject-graph job (manual pipeline retry). */
+export function canRetrySubjectGraphPipeline(
+  pipeline: ContentGenerationPipeline,
+  allJobs: ContentGenerationJob[],
+): boolean {
+  return allJobs.some(
+    (j) =>
+      j.pipelineId === pipeline.id &&
+      isRetryable(j.status) &&
+      (j.kind === 'subject-graph-topics' || j.kind === 'subject-graph-edges'),
   );
 }
 
@@ -162,28 +165,24 @@ export async function retryFailedJob(job: ContentGenerationJob): Promise<void> {
       return;
     }
 
-    // ── Subject graph ─────────────────────────────────────────────────
-    if (job.kind === 'subject-graph') {
-      const manifest = await deckRepository.getManifest();
-      const subject = manifest.subjects.find((s) => s.id === subjectId);
-      const manifestChecklist = subject?.metadata && hasTopicName(subject.metadata.checklist)
-        ? subject.metadata.checklist
-        : subject?.name
-          ? { topicName: subject.name }
-          : null;
-      const checklist = hasTopicName(job.metadata?.checklist)
-        ? job.metadata.checklist
-        : manifestChecklist || parseChecklistFromLabel(job.label);
-      if (!checklist) {
-        toast.error('Cannot retry subject generation: checklist not recoverable from retry metadata, manifest, or label');
+    // ── Subject graph (two-stage: always re-run full pipeline) ────────
+    if (job.kind === 'subject-graph-topics' || job.kind === 'subject-graph-edges') {
+      const ctx = await resolveSubjectGraphRetryContextFromJob(job);
+      if (!ctx) {
+        toast.error(
+          'Cannot retry subject generation: checklist not recoverable from retry metadata, manifest, or label',
+        );
         return;
       }
-      const chat = getChatCompletionsRepositoryForSurface('subjectGeneration');
-      const model = resolveModelForSurface('subjectGeneration');
+      const stageBindings = resolveSubjectGenerationStageBindings();
       const orchestrator = createSubjectGenerationOrchestrator();
       void orchestrator.execute(
-        { subjectId, checklist },
-        { chat, writer: deckWriter, model, enableThinking, retryOf: job.id },
+        { subjectId: ctx.subjectId, checklist: ctx.checklist },
+        {
+          stageBindings,
+          writer: deckWriter,
+          retryOf: job.id,
+        },
       );
       toast(`Retrying ${job.label}…`);
       return;
@@ -238,8 +237,8 @@ export async function retryFailedPipeline(pipelineId: string): Promise<void> {
       return;
     }
 
-    // ── Subject generation pipeline (single-job pipeline) ─────────────
-    if (failedJob.kind === 'subject-graph') {
+    // ── Subject generation pipeline (topics + edges jobs) ─────────────
+    if (failedJob.kind === 'subject-graph-topics' || failedJob.kind === 'subject-graph-edges') {
       await retryFailedJob(failedJob);
       return;
     }

@@ -7,6 +7,31 @@ import type {
   IChatCompletionsRepository,
 } from '../../types/llm';
 
+/**
+ * Bounded transient-gateway retry for OpenRouter Worker proxy failures.
+ * Do not extend the retryable status set, do not add mid-stream retries, and do
+ * not replicate this pattern in features/ or components/.
+ * See `plans/openrouter-transient-retry.md` §I-R5/R6.
+ */
+const RETRYABLE_STATUSES = [502, 503, 504] as const;
+
+const RETRY_DELAYS_MS = [500, 1_000, 2_000] as const;
+
+async function sleepAbortable(ms: number, signal: AbortSignal | undefined): Promise<void> {
+  if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+  return new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new DOMException('Aborted', 'AbortError'));
+    };
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
 type ChatCompletionResponseBody = {
   choices?: Array<{
     message?: {
@@ -62,7 +87,35 @@ export class HttpChatCompletionsRepository implements IChatCompletionsRepository
     private readonly chatUrl: string,
     private readonly defaultModel: string,
     private readonly apiKey: string | null = null,
+    private readonly isRetryEligible: boolean = false,
+    private readonly delayFn?: (ms: number, signal: AbortSignal | undefined) => Promise<void>,
   ) {}
+
+  /**
+   * Bounded transient-gateway retry. Do not extend the retryable status set,
+   * do not add mid-stream retries, and do not replicate this pattern in
+   * features/ or components/. See `plans/openrouter-transient-retry.md` §I-R5/R6.
+   */
+  private async fetchWithTransientRetry(url: string, init: RequestInit): Promise<Response> {
+    const maxRetries = this.isRetryEligible ? RETRY_DELAYS_MS.length : 0;
+    let attempt = 0;
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const response = await fetch(url, init);
+      if (response.ok) return response;
+      const status = response.status;
+      const isTransient = (RETRYABLE_STATUSES as readonly number[]).includes(status);
+      if (!isTransient || attempt >= maxRetries) return response;
+      const delay = RETRY_DELAYS_MS[attempt]!;
+      console.warn(
+        `[HttpChatCompletionsRepository] Transient ${status} from ${url}; `
+          + `retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries}).`,
+      );
+      await response.text().catch(() => '');
+      await (this.delayFn ?? sleepAbortable)(delay, init.signal ?? undefined);
+      attempt += 1;
+    }
+  }
 
   private buildHeaders(): Record<string, string> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -75,6 +128,7 @@ export class HttpChatCompletionsRepository implements IChatCompletionsRepository
     messages: ChatMessage[];
     enableThinking?: boolean;
     signal?: AbortSignal;
+    temperature?: number;
     responseFormat?: ChatResponseFormatJsonObject;
     plugins?: Array<{ id: string }>;
   }): Promise<ChatCompletionResult> {
@@ -85,10 +139,11 @@ export class HttpChatCompletionsRepository implements IChatCompletionsRepository
       stream: false,
     };
     if (input.enableThinking !== undefined) body.enable_thinking = input.enableThinking;
+    if (input.temperature !== undefined) body.temperature = input.temperature;
     if (input.responseFormat !== undefined) body.response_format = input.responseFormat;
     if (input.plugins !== undefined && input.plugins.length > 0) body.plugins = input.plugins;
 
-    const response = await fetch(this.chatUrl, {
+    const response = await this.fetchWithTransientRetry(this.chatUrl, {
       method: 'POST',
       headers: this.buildHeaders(),
       signal: input.signal,
@@ -122,6 +177,7 @@ export class HttpChatCompletionsRepository implements IChatCompletionsRepository
         messages: input.messages,
         enableThinking: input.enableThinking,
         signal: input.signal,
+        temperature: input.temperature,
         responseFormat: input.responseFormat,
         plugins: input.plugins,
       });
@@ -141,10 +197,11 @@ export class HttpChatCompletionsRepository implements IChatCompletionsRepository
       stream: true,
     };
     if (input.enableThinking !== undefined) body.enable_thinking = input.enableThinking;
+    if (input.temperature !== undefined) body.temperature = input.temperature;
     if (input.responseFormat !== undefined) body.response_format = input.responseFormat;
     if (input.plugins !== undefined && input.plugins.length > 0) body.plugins = input.plugins;
 
-    const response = await fetch(this.chatUrl, {
+    const response = await this.fetchWithTransientRetry(this.chatUrl, {
       method: 'POST',
       headers: this.buildHeaders(),
       body: JSON.stringify(body),
@@ -198,5 +255,5 @@ export function createHttpChatCompletionsRepositoryFromEnv(): HttpChatCompletion
   const chatUrl = process.env.NEXT_PUBLIC_LLM_CHAT_URL ?? 'http://localhost:8080/v1/chat/completions';
   const defaultModel = process.env.NEXT_PUBLIC_LLM_MODEL?.trim() ?? '';
   const apiKey = process.env.NEXT_PUBLIC_LLM_API_KEY?.trim() || null;
-  return new HttpChatCompletionsRepository(chatUrl, defaultModel, apiKey);
+  return new HttpChatCompletionsRepository(chatUrl, defaultModel, apiKey, false);
 }

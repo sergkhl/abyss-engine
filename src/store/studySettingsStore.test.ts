@@ -5,7 +5,11 @@ import {
   STUDY_SETTINGS_STORAGE_KEY,
   TARGET_AUDIENCE_OPTIONS,
 } from './studySettingsStore';
-import { OPENROUTER_MODEL_OPTIONS } from '../infrastructure/openRouterDefaults';
+import {
+  GENERATION_SURFACE_DEFAULT_MODEL,
+  OPENROUTER_MODEL_OPTIONS,
+  STUDY_SURFACE_DEFAULT_MODEL,
+} from '../infrastructure/openRouterDefaults';
 
 const createStorageMock = (): Storage => {
   const values = new Map<string, string>();
@@ -38,17 +42,39 @@ describe('studySettingsStore', () => {
     expect(configs[0].model).toBe(OPENROUTER_MODEL_OPTIONS[0]);
   });
 
-  it('defaults study-hook surfaces to local provider', () => {
+  it('defaults study-hook surfaces to OpenRouter → gemma-4-26b with streaming', () => {
     const store = createStudySettingsStore();
-    expect(store.getState().surfaceProviders.studyQuestionExplain.provider).toBe('local');
-    expect(store.getState().surfaceProviders.studyQuestionExplain.openRouterConfigId).toBeNull();
+    const configs = store.getState().openRouterConfigs;
+    const studySurfaces = [
+      'studyQuestionExplain',
+      'studyFormulaExplain',
+      'studyQuestionMermaid',
+      'screenCaptureSummary',
+    ] as const;
+    for (const id of studySurfaces) {
+      const binding = store.getState().surfaceProviders[id];
+      expect(binding.provider).toBe('openrouter');
+      const cfg = configs.find((c) => c.id === binding.openRouterConfigId);
+      expect(cfg?.model).toBe(STUDY_SURFACE_DEFAULT_MODEL);
+      expect(cfg?.enableStreaming).toBe(true);
+    }
   });
 
-  it('defaults content-generation surfaces to openrouter with first config', () => {
+  it('defaults generation surfaces to OpenRouter → gemma-4-31b', () => {
     const store = createStudySettingsStore();
-    const binding = store.getState().surfaceProviders.topicContent;
-    expect(binding.provider).toBe('openrouter');
-    expect(binding.openRouterConfigId).toBeTruthy();
+    const configs = store.getState().openRouterConfigs;
+    const genSurfaces = [
+      'subjectGenerationTopics',
+      'subjectGenerationEdges',
+      'topicContent',
+      'crystalTrial',
+    ] as const;
+    for (const id of genSurfaces) {
+      const binding = store.getState().surfaceProviders[id];
+      expect(binding.provider).toBe('openrouter');
+      const model = configs.find((c) => c.id === binding.openRouterConfigId)?.model;
+      expect(model).toBe(GENERATION_SURFACE_DEFAULT_MODEL);
+    }
   });
 
   it('defaults openRouterResponseHealing to true', () => {
@@ -107,11 +133,15 @@ describe('studySettingsStore', () => {
     const secondId = store.getState().openRouterConfigs[1]?.id;
     store.getState().deleteOpenRouterConfig(firstId);
     expect(store.getState().openRouterConfigs.find((c) => c.id === firstId)).toBeUndefined();
+    const studyBinding = store.getState().surfaceProviders.studyQuestionExplain;
     const topicBinding = store.getState().surfaceProviders.topicContent;
     if (secondId) {
+      expect(studyBinding.provider).toBe('openrouter');
+      expect(studyBinding.openRouterConfigId).toBe(secondId);
       expect(topicBinding.provider).toBe('openrouter');
       expect(topicBinding.openRouterConfigId).toBe(secondId);
     } else {
+      expect(studyBinding.provider).toBe('local');
       expect(topicBinding.provider).toBe('local');
     }
   });
@@ -127,28 +157,6 @@ describe('studySettingsStore', () => {
   it('setSurfaceConfigId throws for unknown config', () => {
     const store = createStudySettingsStore();
     expect(() => store.getState().setSurfaceConfigId('topicContent', 'does-not-exist')).toThrow();
-  });
-
-  it('migrates legacy persisted shape with openAiCompatibleApiKey/gemini providers', () => {
-    localStorage.setItem(
-      STUDY_SETTINGS_STORAGE_KEY,
-      JSON.stringify({
-        targetAudience: TARGET_AUDIENCE_OPTIONS[0],
-        agentPersonality: AGENT_PERSONALITY_OPTIONS[0],
-        openAiCompatibleApiKey: 'legacy-key',
-        surfaceProviders: {
-          topicContent: 'gemini',
-          studyQuestionExplain: 'openai-compatible',
-          subjectGeneration: 'openrouter',
-        },
-      }),
-    );
-    const store = createStudySettingsStore();
-    const state = store.getState();
-    expect(state.surfaceProviders.topicContent.provider).toBe('openrouter');
-    expect(state.surfaceProviders.studyQuestionExplain.provider).toBe('openrouter');
-    expect(state.surfaceProviders.subjectGeneration.provider).toBe('openrouter');
-    expect(state.openRouterConfigs.length).toBeGreaterThan(0);
   });
 
   it('setLocalModelId persists', () => {

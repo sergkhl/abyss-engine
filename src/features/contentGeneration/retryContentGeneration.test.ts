@@ -27,6 +27,20 @@ vi.mock('@/features/crystalTrial/generateTrialQuestions', () => ({
 
 vi.mock('@/features/subjectGeneration', () => ({
   createSubjectGenerationOrchestrator: () => ({ execute: mockOrchExecute }),
+  resolveSubjectGenerationStageBindings: () => ({
+    topics: {
+      chat: {},
+      model: 'topics-model',
+      enableStreaming: true,
+      enableThinking: false,
+    },
+    edges: {
+      chat: {},
+      model: 'edges-model',
+      enableStreaming: false,
+      enableThinking: false,
+    },
+  }),
 }));
 
 vi.mock('@/infrastructure/di', () => ({
@@ -35,11 +49,10 @@ vi.mock('@/infrastructure/di', () => ({
 }));
 
 vi.mock('@/infrastructure/llmInferenceRegistry', () => ({
-  getChatCompletionsRepositoryForSurface: () => ({}),
-}));
-
-vi.mock('@/infrastructure/llmInferenceSurfaceProviders', () => ({
-  resolveModelForSurface: () => 'test-model',
+  getChatCompletionsRepositoryForSurface: () => ({
+    completeChat: vi.fn(),
+    streamChat: vi.fn(),
+  }),
 }));
 
 vi.mock('@/infrastructure/toast', () => ({
@@ -171,7 +184,10 @@ describe('retryFailedJob', () => {
     expect(mockGenerateTrialQuestions).toHaveBeenCalledTimes(1);
     expect(mockGenerateTrialQuestions).toHaveBeenCalledWith(
       expect.objectContaining({
-        chat: {},
+        chat: expect.objectContaining({
+          completeChat: expect.any(Function),
+          streamChat: expect.any(Function),
+        }),
         subjectId: 'sub-1',
         topicId: 'top-1',
         currentLevel: 2,
@@ -218,7 +234,7 @@ describe('retryFailedJob', () => {
     expect(mockRunExpansionJob.mock.calls[0]?.[0]?.nextLevel).toBe(3);
   });
 
-  it('calls orchestrator.execute for subject-graph jobs', async () => {
+  it('calls orchestrator.execute for subject-graph-topics jobs', async () => {
     mockGetManifest.mockResolvedValue({
       subjects: [
         {
@@ -232,13 +248,21 @@ describe('retryFailedJob', () => {
       ],
     });
 
-    const job = makeJob({ kind: 'subject-graph', topicId: null });
+    const job = makeJob({ kind: 'subject-graph-topics', topicId: null });
     await retryFailedJob(job);
 
     expect(mockOrchExecute).toHaveBeenCalledTimes(1);
     const [req, deps] = mockOrchExecute.mock.calls[0] ?? [];
     expect(req.subjectId).toBe('sub-1');
     expect(deps.retryOf).toBe('job-1');
+    expect(deps).toEqual(
+      expect.objectContaining({
+        stageBindings: expect.objectContaining({
+          topics: expect.any(Object),
+          edges: expect.any(Object),
+        }),
+      }),
+    );
   });
 
   it('prefers job metadata checklist for subject-graph jobs without manifest checklist', async () => {
@@ -255,7 +279,7 @@ describe('retryFailedJob', () => {
     });
 
     const job = makeJob({
-      kind: 'subject-graph',
+      kind: 'subject-graph-topics',
       topicId: null,
       metadata: {
         enableThinking: false,
@@ -278,9 +302,9 @@ describe('retryFailedJob', () => {
     mockGetManifest.mockResolvedValue({ subjects: [] });
 
     const job = makeJob({
-      kind: 'subject-graph',
+      kind: 'subject-graph-edges',
       topicId: null,
-      label: 'Curriculum — Label Topic',
+      label: '[Edges] Curriculum — Label Topic',
       metadata: { enableThinking: false },
     });
     await retryFailedJob(job);
@@ -291,6 +315,27 @@ describe('retryFailedJob', () => {
       expect.objectContaining({
         subjectId: 'sub-1',
         checklist: { topicName: 'Label Topic' },
+      }),
+    );
+  });
+
+  it('parses topic name from prefixed curriculum labels', async () => {
+    mockGetManifest.mockResolvedValue({ subjects: [] });
+
+    const job = makeJob({
+      kind: 'subject-graph-topics',
+      topicId: null,
+      label: '[Topics] Curriculum — Quantum Foo',
+      metadata: { enableThinking: false },
+    });
+    await retryFailedJob(job);
+
+    expect(mockOrchExecute).toHaveBeenCalledTimes(1);
+    const [req] = mockOrchExecute.mock.calls[0] ?? [];
+    expect(req).toEqual(
+      expect.objectContaining({
+        subjectId: 'sub-1',
+        checklist: { topicName: 'Quantum Foo' },
       }),
     );
   });
@@ -358,5 +403,41 @@ describe('retryFailedPipeline', () => {
 
     await retryFailedPipeline('nonexistent');
     expect(mockRunTopicPipeline).not.toHaveBeenCalled();
+  });
+
+  it('delegates failed subject-graph-edges pipeline to orchestrator retry', async () => {
+    mockGetManifest.mockResolvedValue({
+      subjects: [
+        {
+          id: 'sub-1',
+          name: 'S',
+          description: '',
+          color: '#000',
+          geometry: { gridTile: 'box' },
+          metadata: { checklist: { topicName: 'Pipeline topic' } },
+        },
+      ],
+    });
+
+    const failedJob = makeJob({
+      id: 'j-edges',
+      pipelineId: 'p-subj',
+      kind: 'subject-graph-edges',
+      status: 'failed',
+      createdAt: 2,
+      subjectId: 'sub-1',
+      topicId: null,
+    });
+
+    useContentGenerationStore.setState({
+      jobs: { 'j-edges': failedJob },
+      pipelines: { 'p-subj': { id: 'p-subj', label: 'New subject: Pipeline topic', createdAt: 0, retryOf: null } },
+      abortControllers: {},
+      pipelineAbortControllers: {},
+    });
+
+    await retryFailedPipeline('p-subj');
+
+    expect(mockOrchExecute).toHaveBeenCalledTimes(1);
   });
 });

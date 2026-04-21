@@ -237,6 +237,9 @@ test.describe('Study Session', () => {
     await expect(discoveryDialog).toBeVisible({ timeout: 5000 });
     await expect(discoveryDialog.getByText(/Unlock topic crystals/i)).toBeVisible();
     await page.keyboard.press('Escape');
+    if (await discoveryDialog.isVisible()) {
+      await page.keyboard.press('Escape');
+    }
     await expect(discoveryDialog).not.toBeVisible({ timeout: 3000 });
 
     // If there are due cards, try to study one

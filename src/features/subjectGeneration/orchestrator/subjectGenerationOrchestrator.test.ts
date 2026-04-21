@@ -9,12 +9,13 @@ import { useContentGenerationStore } from '@/features/contentGeneration';
 import { runContentGenerationJob } from '@/features/contentGeneration/runContentGenerationJob';
 
 import { createSubjectGenerationOrchestrator } from './subjectGenerationOrchestrator';
+import type { GenerationDependencies } from './types';
 
 vi.mock('@/features/contentGeneration/runContentGenerationJob', () => ({
   runContentGenerationJob: vi.fn(),
 }));
 
-function validFifteenNodeGraphJson(subjectId: string): string {
+function validFifteenNodeGraph(subjectId: string): SubjectGraph {
   const nodes: SubjectGraph['nodes'] = [];
   for (let i = 1; i <= 5; i += 1) {
     nodes.push({
@@ -43,14 +44,32 @@ function validFifteenNodeGraphJson(subjectId: string): string {
       learningObjective: 'Objective three.',
     });
   }
-  const graph: SubjectGraph = {
+  return {
     subjectId,
     title: 'Test curriculum',
     themeId: subjectId,
     maxTier: 3,
     nodes,
   };
-  return JSON.stringify(graph);
+}
+
+function latticeJsonFromGraph(graph: SubjectGraph): string {
+  return JSON.stringify({
+    topics: graph.nodes.map(({ topicId, title, tier, learningObjective }) => ({
+      topicId,
+      title,
+      tier,
+      learningObjective,
+    })),
+  });
+}
+
+function edgesJsonFromGraph(graph: SubjectGraph): string {
+  const edges: Record<string, SubjectGraph['nodes'][0]['prerequisites']> = {};
+  for (const n of graph.nodes) {
+    if (n.tier > 1) edges[n.topicId] = n.prerequisites;
+  }
+  return JSON.stringify({ edges });
 }
 
 function resetStore(): void {
@@ -62,6 +81,35 @@ function resetStore(): void {
   });
 }
 
+function makeDeps(
+  chat: IChatCompletionsRepository,
+  writer: IDeckContentWriter,
+  options?: {
+    topicsModel?: string;
+    edgesModel?: string;
+  },
+): GenerationDependencies {
+  const topicsModel = options?.topicsModel ?? 'test-topics';
+  const edgesModel = options?.edgesModel ?? 'test-edges';
+  return {
+    stageBindings: {
+      topics: {
+        chat,
+        model: topicsModel,
+        enableStreaming: true,
+        enableThinking: false,
+      },
+      edges: {
+        chat,
+        model: edgesModel,
+        enableStreaming: false,
+        enableThinking: false,
+      },
+    },
+    writer,
+  };
+}
+
 const stubJob = {} as ContentGenerationJob;
 
 describe('createSubjectGenerationOrchestrator', () => {
@@ -70,9 +118,11 @@ describe('createSubjectGenerationOrchestrator', () => {
     vi.mocked(runContentGenerationJob).mockReset();
   });
 
-  it('registers pipeline, calls runContentGenerationJob with subject-graph, and persists on success', async () => {
+  it('registers pipeline, runs topics then edges jobs, and persists on success', async () => {
     const subjectId = 'orch-test-subject';
-    const raw = validFifteenNodeGraphJson(subjectId);
+    const graph = validFifteenNodeGraph(subjectId);
+    const rawLattice = latticeJsonFromGraph(graph);
+    const rawEdges = edgesJsonFromGraph(graph);
     const chat: IChatCompletionsRepository = {
       completeChat: vi.fn(),
       streamChat: vi.fn(),
@@ -87,12 +137,23 @@ describe('createSubjectGenerationOrchestrator', () => {
     };
 
     vi.mocked(runContentGenerationJob).mockImplementation(async (params) => {
-      const parsed = await params.parseOutput(raw, stubJob);
-      if (!parsed.ok) {
-        return { ok: false, jobId: 'j-mock', error: parsed.error };
+      if (params.kind === 'subject-graph-topics') {
+        const parsed = await params.parseOutput(rawLattice, stubJob);
+        if (!parsed.ok) {
+          return { ok: false, jobId: 'j-topics', error: parsed.error };
+        }
+        await params.persistOutput(parsed.data, stubJob);
+        return { ok: true, jobId: 'j-topics' };
       }
-      await params.persistOutput(parsed.data, stubJob);
-      return { ok: true, jobId: 'j-mock' };
+      if (params.kind === 'subject-graph-edges') {
+        const parsed = await params.parseOutput(rawEdges, stubJob);
+        if (!parsed.ok) {
+          return { ok: false, jobId: 'j-edges', error: parsed.error };
+        }
+        await params.persistOutput(parsed.data, stubJob);
+        return { ok: true, jobId: 'j-edges' };
+      }
+      return { ok: false, jobId: 'j-x', error: 'unexpected kind' };
     });
 
     const registerSpy = vi.spyOn(useContentGenerationStore.getState(), 'registerPipeline');
@@ -100,7 +161,7 @@ describe('createSubjectGenerationOrchestrator', () => {
     const orch = createSubjectGenerationOrchestrator();
     const result = await orch.execute(
       { subjectId, checklist: { topicName: 'Orch test' } },
-      { chat, writer, model: 'test-model' },
+      makeDeps(chat, writer, { topicsModel: 'test-model', edgesModel: 'test-model' }),
     );
 
     expect(result.ok).toBe(true);
@@ -115,13 +176,15 @@ describe('createSubjectGenerationOrchestrator', () => {
       expect.any(AbortController),
     );
 
-    expect(runContentGenerationJob).toHaveBeenCalledWith(
+    expect(runContentGenerationJob).toHaveBeenCalledTimes(2);
+    expect(runContentGenerationJob).toHaveBeenNthCalledWith(
+      1,
       expect.objectContaining({
-        kind: 'subject-graph',
-        label: 'Curriculum — Orch test',
+        kind: 'subject-graph-topics',
+        label: '[Topics] Curriculum — Orch test',
         subjectId,
         topicId: null,
-        llmSurfaceId: 'subjectGeneration',
+        llmSurfaceId: 'subjectGenerationTopics',
         pipelineId: expect.any(String),
         chat,
         model: 'test-model',
@@ -130,12 +193,23 @@ describe('createSubjectGenerationOrchestrator', () => {
         metadata: { checklist: { topicName: 'Orch test' } },
       }),
     );
+    expect(runContentGenerationJob).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        kind: 'subject-graph-edges',
+        label: '[Edges] Curriculum — Orch test',
+        enableStreaming: false,
+        llmSurfaceId: 'subjectGenerationEdges',
+        model: 'test-model',
+        temperature: 0.1,
+      }),
+    );
 
     expect(writer.upsertSubject).toHaveBeenCalled();
     expect(writer.upsertGraph).toHaveBeenCalled();
   });
 
-  it('returns failure when runContentGenerationJob fails', async () => {
+  it('returns failure when first-stage job fails', async () => {
     const chat: IChatCompletionsRepository = {
       completeChat: vi.fn(),
       streamChat: vi.fn(),
@@ -148,18 +222,17 @@ describe('createSubjectGenerationOrchestrator', () => {
       appendTopicCards: vi.fn(),
     };
 
-    vi.mocked(runContentGenerationJob).mockResolvedValue({ ok: false, jobId: 'j1', error: 'bad' });
+    vi.mocked(runContentGenerationJob).mockResolvedValue({ ok: false, jobId: 'j1', error: 'topics bad' });
 
     const orch = createSubjectGenerationOrchestrator();
-    const result = await orch.execute(
-      { subjectId: 'x', checklist: { topicName: 'Y' } },
-      { chat, writer, model: 'm' },
-    );
+    const result = await orch.execute({ subjectId: 'x', checklist: { topicName: 'Y' } }, makeDeps(chat, writer));
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.error).toBe('bad');
+      expect(result.error).toBe('topics bad');
+      expect(result.pipelineId).toBeDefined();
     }
     expect(writer.upsertGraph).not.toHaveBeenCalled();
+    expect(runContentGenerationJob).toHaveBeenCalledTimes(1);
   });
 });

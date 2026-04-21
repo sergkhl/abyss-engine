@@ -1,5 +1,6 @@
 import type { Buff } from '@/types/progression';
 import type { StudyChecklist } from '@/types/studyChecklist';
+import type { TopicLattice } from '@/types/topicLattice';
 
 type Rating = 1 | 2 | 3 | 4;
 
@@ -71,6 +72,34 @@ export type AppEventMap = {
   'subject:generation-pipeline': {
     subjectId: string;
     checklist: StudyChecklist;
+  };
+  /** Emitted after a two-stage subject graph is validated and persisted. */
+  'subjectGraph.generated': {
+    subjectId: string;
+    boundModel: string;
+    stageADurationMs: number;
+    stageBDurationMs: number;
+    /** Depth of the manual `retryOf` job chain for this run (0 = fresh pipeline). */
+    retryCount: number;
+    lattice: TopicLattice;
+    prereqEdgesCorrectionApplied?: boolean;
+    prereqEdgesCorrectionRemovedCount?: number;
+    prereqEdgesCorrectionAddedCount?: number;
+    prereqEdgesCorrection?: {
+      removed: Array<{ topicId: string; prereqId: string; reason: string }>;
+      added: Array<{ topicId: string; prereqId: string; kind: 'filler-tier1' | 'filler-tier2' }>;
+    };
+  };
+  /** Emitted when topic lattice or prerequisite wiring fails validation or parsing. */
+  'subjectGraph.validationFailed': {
+    subjectId: string;
+    stage: 'topics' | 'edges';
+    error: string;
+    offendingTopicIds: string[];
+    boundModel: string;
+    retryCount: number;
+    stageDurationMs: number;
+    latticeSnapshot?: TopicLattice;
   };
   /** Fired when positive crystal XP gains should trigger background trial pre-generation. */
   'crystal:trial-pregenerate': {

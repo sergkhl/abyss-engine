@@ -10,7 +10,8 @@ export const OPENROUTER_MODEL_OPTIONS = [
   'qwen/qwen3.5-flash-02-23',
 ] as const;
 
-export const DEFAULT_OPENROUTER_MODEL = OPENROUTER_MODEL_OPTIONS[0];
+export const STUDY_SURFACE_DEFAULT_MODEL = 'google/gemma-4-26b-a4b-it:free' as const;
+export const GENERATION_SURFACE_DEFAULT_MODEL = 'google/gemma-4-31b-it:free' as const;
 
 /**
  * Deterministic UUIDs for seeded configs so migrations produce the same id on
@@ -37,8 +38,18 @@ export function buildSeedOpenRouterConfigs(): OpenRouterModelConfig[] {
   }));
 }
 
-export function firstSeedOpenRouterConfigId(): string {
-  return SEEDED_CONFIG_IDS[DEFAULT_OPENROUTER_MODEL];
+export function seededConfigIdForModel(
+  configs: OpenRouterModelConfig[],
+  model: string,
+): string {
+  const found = configs.find((c) => c.model === model);
+  if (!found) {
+    throw new Error(
+      `Seeded OpenRouter config for model '${model}' is missing. ` +
+        'Check OPENROUTER_MODEL_OPTIONS and SEEDED_CONFIG_IDS.',
+    );
+  }
+  return found.id;
 }
 
 /**

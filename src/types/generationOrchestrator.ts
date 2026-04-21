@@ -8,4 +8,4 @@ export interface SubjectGenerationRequest {
 
 export type SubjectGenerationResult =
   | { ok: true; subjectId: string; graph: SubjectGraph }
-  | { ok: false; error: string };
+  | { ok: false; error: string; pipelineId?: string };

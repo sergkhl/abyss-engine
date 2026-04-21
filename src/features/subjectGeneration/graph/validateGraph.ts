@@ -1,6 +1,13 @@
 import { normalizeGraphPrerequisites } from '@/lib/graphPrerequisites';
 import type { SubjectGraph } from '@/types/core';
 
+/**
+ * Subject graph validation — STRICT terminal gate on the fully assembled graph.
+ *
+ * Prerequisite repair runs earlier in `correctPrereqEdges` / `parsePrereqWiringResponse`
+ * (see CLAUDE.md). This function validates the canonical `SubjectGraph` only.
+ */
+
 export interface GraphValidationExpectations {
   subjectId: string;
   themeId: string;
@@ -13,6 +20,11 @@ const kebabTopicId = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export type ValidateGraphResult = { ok: true } | { ok: false; error: string };
 
+/**
+ * Validates a fully assembled `SubjectGraph` (topics + prerequisites). This is the terminal
+ * gate for curriculum structure; invalid graphs must fail explicitly—do not add downstream
+ * repair or silent coercion (see `plans/plan_curriculum_two_stage_generation_20260421_114002.md`).
+ */
 export function validateGraph(graph: SubjectGraph, expectations: GraphValidationExpectations): ValidateGraphResult {
   if (graph.subjectId !== expectations.subjectId) {
     return { ok: false, error: `subjectId mismatch: expected "${expectations.subjectId}", got "${graph.subjectId}"` };

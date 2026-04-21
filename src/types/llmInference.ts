@@ -4,7 +4,8 @@ export type InferenceSurfaceId =
   | 'studyFormulaExplain'
   | 'studyQuestionMermaid'
   | 'screenCaptureSummary'
-  | 'subjectGeneration'
+  | 'subjectGenerationTopics'
+  | 'subjectGenerationEdges'
   | 'topicContent'
   | 'crystalTrial';
 
@@ -13,7 +14,8 @@ export const ALL_SURFACE_IDS: readonly InferenceSurfaceId[] = [
   'studyFormulaExplain',
   'studyQuestionMermaid',
   'screenCaptureSummary',
-  'subjectGeneration',
+  'subjectGenerationTopics',
+  'subjectGenerationEdges',
   'topicContent',
   'crystalTrial',
 ] as const;
@@ -35,7 +37,8 @@ export const SURFACE_DISPLAY_LABELS: Record<InferenceSurfaceId, string> = {
   studyFormulaExplain: 'Study Formula Explain',
   studyQuestionMermaid: 'Study Mermaid Diagrams',
   screenCaptureSummary: 'Screen Capture Summary',
-  subjectGeneration: 'Subject Generation',
+  subjectGenerationTopics: 'Curriculum — Topics',
+  subjectGenerationEdges: 'Curriculum — Edges',
   topicContent: 'Topic Content',
   crystalTrial: 'Crystal Trial',
 };

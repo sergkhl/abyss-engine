@@ -13,7 +13,9 @@ import type {
 import { ALL_SURFACE_IDS } from '../types/llmInference';
 import {
   buildSeedOpenRouterConfigs,
-  firstSeedOpenRouterConfigId,
+  GENERATION_SURFACE_DEFAULT_MODEL,
+  seededConfigIdForModel,
+  STUDY_SURFACE_DEFAULT_MODEL,
 } from '../infrastructure/openRouterDefaults';
 
 export { AGENT_PERSONALITY_OPTIONS } from '../features/studyPanel/agentPersonalityPresets';
@@ -39,19 +41,21 @@ const targetAudienceSet = new Set<string>(TARGET_AUDIENCE_OPTIONS as readonly st
 function buildDefaultSurfaceBindings(
   configs: OpenRouterModelConfig[],
 ): Record<InferenceSurfaceId, SurfaceProviderBinding> {
-  const firstConfigId = configs[0]?.id ?? null;
-  const orBind = (): SurfaceProviderBinding => ({
-    provider: firstConfigId ? 'openrouter' : 'local',
-    openRouterConfigId: firstConfigId,
+  const studyId = seededConfigIdForModel(configs, STUDY_SURFACE_DEFAULT_MODEL);
+  const genId = seededConfigIdForModel(configs, GENERATION_SURFACE_DEFAULT_MODEL);
+  const or = (configId: string): SurfaceProviderBinding => ({
+    provider: 'openrouter',
+    openRouterConfigId: configId,
   });
   return {
-    studyQuestionExplain: { provider: 'local', openRouterConfigId: null },
-    studyFormulaExplain: { provider: 'local', openRouterConfigId: null },
-    studyQuestionMermaid: { provider: 'local', openRouterConfigId: null },
-    screenCaptureSummary: { provider: 'local', openRouterConfigId: null },
-    subjectGeneration: orBind(),
-    topicContent: orBind(),
-    crystalTrial: orBind(),
+    studyQuestionExplain: or(studyId),
+    studyFormulaExplain: or(studyId),
+    studyQuestionMermaid: or(studyId),
+    screenCaptureSummary: or(studyId),
+    subjectGenerationTopics: or(genId),
+    subjectGenerationEdges: or(genId),
+    topicContent: or(genId),
+    crystalTrial: or(genId),
   };
 }
 
@@ -143,12 +147,6 @@ function parseBindings(
             ? candidateId
             : fallbackConfigId
           : null;
-      result[surfaceId] = { provider: normalizedProvider, openRouterConfigId: configId };
-    } else if (typeof entry === 'string') {
-      // Legacy v1 shape: Record<surfaceId, providerIdString>
-      const legacyProvider = entry;
-      const normalizedProvider: LlmInferenceProviderId = legacyProvider === 'local' ? 'local' : 'openrouter';
-      const configId = normalizedProvider === 'openrouter' ? fallbackConfigId : null;
       result[surfaceId] = { provider: normalizedProvider, openRouterConfigId: configId };
     }
   }
@@ -372,4 +370,3 @@ export function getLocalModelId(): string {
 
 export const useStudySettingsStore = store;
 export { store as studySettingsStore };
-export { firstSeedOpenRouterConfigId };

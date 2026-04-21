@@ -22,7 +22,8 @@ export type UseLlmAssistantSpeechResult = {
 /**
  * Speaks assistant markdown incrementally (Web Speech API). Progress is tracked in **raw**
  * `assistantText` character offsets so stripping markdown never shrinks a virtual cursor
- * (which previously restarted TTS when bold/lists completed).
+ * (which previously restarted TTS when bold/lists completed). Re-enabling TTS for a
+ * surface replays from the beginning of the currently accumulated raw text.
  */
 export function useLlmAssistantSpeech({
   isSurfaceOpen,
@@ -33,6 +34,7 @@ export function useLlmAssistantSpeech({
   const rawConsumedRef = useRef(0);
   const prevRawLenRef = useRef(0);
   const prevTtsRef = useRef(ttsEnabled);
+  const replayFromStartRef = useRef(false);
   const utteranceCountRef = useRef(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
 
@@ -60,15 +62,25 @@ export function useLlmAssistantSpeech({
     window.speechSynthesis.speak(u);
   }, []);
 
+  const cancelIfHasQueuedUtterances = useCallback(() => {
+    if (utteranceCountRef.current > 0) {
+      window.speechSynthesis.cancel();
+    }
+  }, []);
+
   useEffect(() => {
     if (ttsEnabled && !prevTtsRef.current && isSurfaceOpen && typeof window !== 'undefined' && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
+      cancelIfHasQueuedUtterances();
       resetSpeaking();
       rawConsumedRef.current = 0;
       prevRawLenRef.current = 0;
+      replayFromStartRef.current = true;
+    }
+    if (!ttsEnabled) {
+      replayFromStartRef.current = false;
     }
     prevTtsRef.current = ttsEnabled;
-  }, [resetSpeaking, ttsEnabled, isSurfaceOpen]);
+  }, [cancelIfHasQueuedUtterances, resetSpeaking, ttsEnabled, isSurfaceOpen]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.speechSynthesis === 'undefined') {
@@ -76,7 +88,7 @@ export function useLlmAssistantSpeech({
     }
 
     if (!isSurfaceOpen) {
-      window.speechSynthesis.cancel();
+      cancelIfHasQueuedUtterances();
       resetSpeaking();
       rawConsumedRef.current = 0;
       prevRawLenRef.current = 0;
@@ -84,7 +96,7 @@ export function useLlmAssistantSpeech({
     }
 
     if (!ttsEnabled) {
-      window.speechSynthesis.cancel();
+      cancelIfHasQueuedUtterances();
       resetSpeaking();
       return;
     }
@@ -92,7 +104,7 @@ export function useLlmAssistantSpeech({
     const raw = assistantText ?? '';
 
     if (raw.length < prevRawLenRef.current) {
-      window.speechSynthesis.cancel();
+      cancelIfHasQueuedUtterances();
       resetSpeaking();
       rawConsumedRef.current = 0;
     }
@@ -105,12 +117,12 @@ export function useLlmAssistantSpeech({
     const delta = raw.slice(rawConsumedRef.current);
     let { chunks, remainder } = extractCompleteSpeechChunks(delta);
 
-    if (!isPending && remainder.trim().length > 0) {
+    if ((replayFromStartRef.current || !isPending) && remainder.trim().length > 0) {
       chunks = [...chunks, remainder];
       remainder = '';
     }
 
-    const consumedInDelta = delta.length - remainder.length;
+    const consumedInDelta = replayFromStartRef.current ? delta.length : delta.length - remainder.length;
 
     for (const chunk of chunks) {
       const plain = stripLlmMarkdownForSpeech(chunk).trim();
@@ -120,7 +132,8 @@ export function useLlmAssistantSpeech({
     }
 
     rawConsumedRef.current += consumedInDelta;
-  }, [assistantText, enqueueUtterance, isPending, isSurfaceOpen, resetSpeaking, ttsEnabled]);
+    replayFromStartRef.current = false;
+  }, [assistantText, cancelIfHasQueuedUtterances, enqueueUtterance, isPending, isSurfaceOpen, resetSpeaking, ttsEnabled]);
 
   return { isSpeaking };
 }

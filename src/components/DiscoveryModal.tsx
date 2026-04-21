@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { KeyRound } from 'lucide-react';
+import { KeyRound, List, Lock, Unlock } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -48,6 +48,10 @@ const TOPIC_TIER_SORT_KINDS = new Set<ContentGenerationJobKind>([
   'topic-expansion-cards',
 ]);
 
+/** Sits beside the filter icon (no overlap) — keep compact for the toggle row. */
+const FILTER_COUNT_BADGE_CLASS =
+  'pointer-events-none inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full border border-border px-1 py-0 font-medium text-[10px] tabular-nums leading-none';
+
 type TopicListFilter = 'all' | 'locked' | 'unlocked';
 
 function makeSubjectSwatchStyle(color: string | undefined): React.CSSProperties {
@@ -61,14 +65,21 @@ function matchesTopicListFilter(topic: TieredTopic, filter: TopicListFilter): bo
   return true;
 }
 
-function sortTierTopics(
+/** Generating first, then other unlocked crystals, then locked (used for all filter modes). */
+function discoveryTopicActivityBand(topic: TieredTopic): number {
+  if (topic.contentStatus === 'generating') return 2;
+  if (topic.isUnlocked) return 1;
+  return 0;
+}
+
+function sortDiscoveryTierTopics(
   topics: TieredTopic[],
   maxFinishedAtByTopicKey: Record<string, number>,
 ): TieredTopic[] {
   return [...topics].sort((a, b) => {
-    const genA = a.contentStatus === 'generating' ? 1 : 0;
-    const genB = b.contentStatus === 'generating' ? 1 : 0;
-    if (genA !== genB) return genB - genA;
+    const bandA = discoveryTopicActivityBand(a);
+    const bandB = discoveryTopicActivityBand(b);
+    if (bandA !== bandB) return bandB - bandA;
     const ka = topicRefKey({ subjectId: a.subjectId, topicId: a.id });
     const kb = topicRefKey({ subjectId: b.subjectId, topicId: b.id });
     const fa = maxFinishedAtByTopicKey[ka] ?? 0;
@@ -78,22 +89,35 @@ function sortTierTopics(
   });
 }
 
-/** Preserves tier-wide topic order while bucketing by subject (first-seen subject order). */
-function groupTopicsBySubjectInTierOrder(
+/**
+ * Buckets tier topics by subject. Subject order follows manifest `subjects` in descending order
+ * (newest-first index); unknown subjects last, then by name descending.
+ */
+function groupTopicsBySubjectInManifestOrder(
   topics: TieredTopic[],
+  subjectOrderRank: Map<string, number>,
 ): { subjectId: string; subjectName: string; topics: TieredTopic[] }[] {
   const byId = new Map<string, { subjectId: string; subjectName: string; topics: TieredTopic[] }>();
-  const order: string[] = [];
   for (const topic of topics) {
     let group = byId.get(topic.subjectId);
     if (!group) {
       group = { subjectId: topic.subjectId, subjectName: topic.subjectName, topics: [] };
       byId.set(topic.subjectId, group);
-      order.push(topic.subjectId);
     }
     group.topics.push(topic);
   }
-  return order.map((id) => byId.get(id)!);
+  const subjectIds = [...byId.keys()];
+  subjectIds.sort((a, b) => {
+    const ra = subjectOrderRank.get(a);
+    const rb = subjectOrderRank.get(b);
+    if (ra !== undefined && rb !== undefined && ra !== rb) return rb - ra;
+    if (ra !== undefined && rb === undefined) return -1;
+    if (ra === undefined && rb !== undefined) return 1;
+    const na = byId.get(a)!.subjectName;
+    const nb = byId.get(b)!.subjectName;
+    return nb.localeCompare(na, undefined, { sensitivity: 'base' });
+  });
+  return subjectIds.map((id) => byId.get(id)!);
 }
 
 function readStoredModalSubjectId(): string {
@@ -206,6 +230,12 @@ export function DiscoveryModal({
 
   const subjectList = useMemo(() => subjects.map((subject) => ({ id: subject.id, name: subject.name })), [subjects]);
 
+  const subjectOrderRank = useMemo(() => {
+    const m = new Map<string, number>();
+    subjects.forEach((s, i) => m.set(s.id, i));
+    return m;
+  }, [subjects]);
+
   const contentStatusMap = useTopicContentStatusMap();
 
   const topicsByTier = useMemo(() => {
@@ -246,7 +276,7 @@ export function DiscoveryModal({
     const out: { tier: number; topics: TieredTopic[] }[] = [];
     for (const tierData of topicsByTier) {
       const filtered = tierData.topics.filter((t) => matchesTopicListFilter(t, topicListFilter));
-      const sorted = sortTierTopics(filtered, maxFinishedAtByTopicKey);
+      const sorted = sortDiscoveryTierTopics(filtered, maxFinishedAtByTopicKey);
       if (sorted.length > 0) {
         out.push({ tier: tierData.tier, topics: sorted });
       }
@@ -286,7 +316,7 @@ export function DiscoveryModal({
         </span>
       ),
     };
-    const subjectItems = subjects.map((subject) => {
+    const subjectItems = [...subjects].toReversed().map((subject) => {
       const swatchStyle = makeSubjectSwatchStyle(subject.color);
       return {
         value: subject.id,
@@ -391,14 +421,14 @@ export function DiscoveryModal({
             ) : null}
           </DialogHeader>
 
-          <div className="mt-3 flex shrink-0 flex-col gap-2 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-3 flex min-w-0 shrink-0 flex-row items-center gap-2 overflow-x-auto border-t border-border pt-3 [scrollbar-width:thin]">
             <Select
               modal={false}
               items={subjectSelectItems}
               value={modalSubjectId}
               onValueChange={handleSelectSubject}
             >
-              <SelectTrigger size="sm" className="h-9 w-full min-w-0 sm:max-w-xs" aria-label="Subject">
+              <SelectTrigger size="sm" className="min-w-0 max-w-xs flex-1 shrink" aria-label="Subject">
                 <SelectValue placeholder="All subjects" />
               </SelectTrigger>
               <SelectContent alignItemWithTrigger={false}>
@@ -421,16 +451,40 @@ export function DiscoveryModal({
               variant="outline"
               size="sm"
               spacing={0}
-              className="w-full shrink-0 sm:w-auto"
+              className="shrink-0"
             >
-              <ToggleGroupItem value="locked" className="min-h-9 flex-1 px-2.5 text-xs sm:flex-none">
-                Locked ({topicFilterCounts.locked})
+              <ToggleGroupItem
+                value="all"
+                className="relative h-9 min-w-10 justify-center gap-1 px-1"
+                aria-label={`All topics, ${topicFilterCounts.all}`}
+                title={`All topics (${topicFilterCounts.all})`}
+              >
+                <List className="size-4 shrink-0" aria-hidden />
+                <Badge variant="secondary" className={FILTER_COUNT_BADGE_CLASS}>
+                  {topicFilterCounts.all}
+                </Badge>
               </ToggleGroupItem>
-              <ToggleGroupItem value="unlocked" className="min-h-9 flex-1 px-2.5 text-xs sm:flex-none">
-                Unlocked ({topicFilterCounts.unlocked})
+              <ToggleGroupItem
+                value="locked"
+                className="relative h-9 min-w-10 justify-center gap-1.5 px-2"
+                aria-label={`Locked topics, ${topicFilterCounts.locked}`}
+                title={`Locked topics (${topicFilterCounts.locked})`}
+              >
+                <Lock className="size-4 shrink-0" aria-hidden />
+                <Badge variant="secondary" className={FILTER_COUNT_BADGE_CLASS}>
+                  {topicFilterCounts.locked}
+                </Badge>
               </ToggleGroupItem>
-              <ToggleGroupItem value="all" className="min-h-9 flex-1 px-2.5 text-xs sm:flex-none">
-                All ({topicFilterCounts.all})
+              <ToggleGroupItem
+                value="unlocked"
+                className="relative h-9 min-w-10 justify-center gap-1.5 px-2"
+                aria-label={`Unlocked topics, ${topicFilterCounts.unlocked}`}
+                title={`Unlocked topics (${topicFilterCounts.unlocked})`}
+              >
+                <Unlock className="size-4 shrink-0" aria-hidden />
+                <Badge variant="secondary" className={FILTER_COUNT_BADGE_CLASS}>
+                  {topicFilterCounts.unlocked}
+                </Badge>
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
@@ -462,7 +516,7 @@ export function DiscoveryModal({
 
                     {showSubjectGroups ? (
                       <div className="space-y-5">
-                        {groupTopicsBySubjectInTierOrder(tierData.topics).map((subjectGroup) => {
+                        {groupTopicsBySubjectInManifestOrder(tierData.topics, subjectOrderRank).map((subjectGroup) => {
                           const headingId = `tier-${tierData.tier}-subject-${subjectGroup.subjectId}`;
                           return (
                             <section

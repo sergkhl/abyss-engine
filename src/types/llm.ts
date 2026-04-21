@@ -34,6 +34,8 @@ export interface ChatCompletionStreamInput {
   enableThinking?: boolean;
   /** Send `false` to force non-streamed completion; defaults to `true`. */
   enableStreaming?: boolean;
+  /** When set, forwarded as `temperature` in the chat-completions JSON body. Omit for provider default. */
+  temperature?: number;
   /** When set, included in the chat-completions JSON body (OpenRouter / compatible servers). */
   responseFormat?: ChatResponseFormatJsonObject;
   /** OpenRouter plugins array, e.g. `[{ id: 'response-healing' }]`. */
@@ -46,6 +48,8 @@ export interface IChatCompletionsRepository {
     messages: ChatMessage[];
     enableThinking?: boolean;
     signal?: AbortSignal;
+    /** When set, forwarded as `temperature` in the chat-completions JSON body. Omit for provider default. */
+    temperature?: number;
     responseFormat?: ChatResponseFormatJsonObject;
     plugins?: Array<{ id: string }>;
   }): Promise<ChatCompletionResult>;

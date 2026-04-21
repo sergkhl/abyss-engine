@@ -1,0 +1,27 @@
+Act as an expert curriculum designer. Your task is to propose the topic list and tier placement for a multi-tier curriculum. You are **not** defining prerequisite links in this step—only topics, titles, tiers, and learning objectives.
+
+Generate JSON (you may wrap it in a single markdown code block if needed, but the JSON must be valid).
+
+Requirements:
+
+1. Produce exactly {{topicCount}} topics divided evenly across {{maxTier}} tiers (exactly {{topicsPerTier}} topics per tier).
+2. Each topic has: `topicId` (lowercase kebab-case), `title`, `tier` (integer 1..{{maxTier}}), `learningObjective` (one non-empty learner-facing sentence, specific—not a repeat of the title).
+3. Do **not** include a `prerequisites` field. Edges are generated in a later step.
+4. Pedagogy context — audience: {{audience}}
+5. Domain / scope: {{domainDescription}}
+6. The subject identifier for downstream assembly is: {{subjectId}} (theme id matches: {{themeId}}).
+
+Output valid JSON matching this shape:
+
+{
+  "topics": [
+    {
+      "topicId": "example-foundations",
+      "title": "Example Foundations",
+      "tier": 1,
+      "learningObjective": "Learners can explain the core idea in one sentence."
+    }
+  ]
+}
+
+There must be exactly {{topicCount}} objects in `topics`, with tiers ranging from 1 through {{maxTier}} and counts per tier exactly {{topicsPerTier}} each.

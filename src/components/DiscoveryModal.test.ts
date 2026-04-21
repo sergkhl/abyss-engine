@@ -194,9 +194,9 @@ describe('DiscoveryModal', () => {
       onClose: vi.fn(),
     });
 
-    expect(document.body.textContent).toContain('Locked (1)');
-    expect(document.body.textContent).toContain('Unlocked (1)');
-    expect(document.body.textContent).toContain('All (2)');
+    expect(document.body.querySelector('[aria-label="Locked topics, 1"]')).not.toBeNull();
+    expect(document.body.querySelector('[aria-label="Unlocked topics, 1"]')).not.toBeNull();
+    expect(document.body.querySelector('[aria-label="All topics, 2"]')).not.toBeNull();
     root.unmount();
   });
 
@@ -206,22 +206,22 @@ describe('DiscoveryModal', () => {
         tier: 1,
         topics: [
           {
-            id: 'topic-a',
-            name: 'Alpha Topic',
-            description: 'Description text',
-            subjectId: 'sub-x',
-            subjectName: 'Quantum Physics',
+            id: 'topic-b',
+            name: 'Beta Topic',
+            description: 'Other',
+            subjectId: 'sub-y',
+            subjectName: 'Organic Chemistry',
             contentStatus: 'ready' as const,
             isLocked: true,
             isUnlocked: false,
             isCurriculumVisible: true,
           },
           {
-            id: 'topic-b',
-            name: 'Beta Topic',
-            description: 'Other',
-            subjectId: 'sub-y',
-            subjectName: 'Organic Chemistry',
+            id: 'topic-a',
+            name: 'Alpha Topic',
+            description: 'Description text',
+            subjectId: 'sub-x',
+            subjectName: 'Quantum Physics',
             contentStatus: 'ready' as const,
             isLocked: true,
             isUnlocked: false,
@@ -239,8 +239,8 @@ describe('DiscoveryModal', () => {
 
     const headings = document.body.querySelectorAll('h3');
     const labels = [...headings].map((h) => h.textContent?.trim()).filter(Boolean);
-    expect(labels).toContain('Quantum Physics');
-    expect(labels).toContain('Organic Chemistry');
+    // Descending manifest order: sub-y before sub-x — not tier topic iteration order.
+    expect(labels).toEqual(['Organic Chemistry', 'Quantum Physics']);
     expect(document.body.textContent).toContain('Alpha Topic');
     expect(document.body.textContent).toContain('Beta Topic');
     root.unmount();

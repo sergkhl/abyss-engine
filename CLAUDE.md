@@ -55,6 +55,10 @@ Core systems: SM-2 progression, ritual-based attunement, buff engine, procedural
     - Root Cause over Symptom: If a component (e.g., an external API, a module, or a model) produces invalid or unexpected output, do not write 'defensive' fallback logic or multiple parsers to 'clean' the data.
     - Explicit Failure: Instead of masking errors with soft-handling, write code that throws a hard, descriptive error at the boundary.
     - Upstream Mitigation: Your primary solution must address the source of the failure (e.g., fixing configuration, adjusting parameters, or correcting the upstream logic) rather than accommodating the failure downstream.
+  - **Prefer deterministic execution over probabilistic "recovery."** Treat ambiguity, flakiness, and non-reproducibility as defects to eliminate at the source—not as signals to add more branches, retries, or heuristics.
+
+- **Curriculum prerequisite edges (narrow exception):** For subject-graph Stage B (`subject-graph-edges`), invalid prerequisite entries from the model may be **removed** and missing tier requirements **filled deterministically** (lattice topic order: first tier-1 / first tier-2 as needed) before Zod validation. This is **not** a second parser or probabilistic recovery: a single documented repair pass (`correctPrereqEdges`), logged to console, job `metadata.prereqEdgesCorrection`, and telemetry when applied. Upstream mitigation remains choosing a capable **subjectGenerationEdges** model; repair only prevents hard-fail on fixable structural mistakes (for example same-tier prerequisite edges).
+
 - **Data-Driven Execution**: No magic strings. No manual state mapping.
 - **No Legacy Burden**: Deprecated behavior must be refactored or removed. Do not preserve dead code.
 - **WebGPU Strictness**: Any pull request or code generation that introduces a legacy WebGL material, `WebGLRenderer`, `state.gl`, `THREE.Clock`, or non-TSL shader string into the codebase will be rejected.

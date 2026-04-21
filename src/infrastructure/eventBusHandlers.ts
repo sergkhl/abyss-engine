@@ -8,11 +8,10 @@ import { deckRepository, deckWriter } from './di';
 import { getChatCompletionsRepositoryForSurface } from './llmInferenceRegistry';
 import { runExpansionJob } from '@/features/contentGeneration/jobs/runExpansionJob';
 import { runTopicGenerationPipeline } from '@/features/contentGeneration/pipelines/runTopicGenerationPipeline';
-import { createSubjectGenerationOrchestrator } from '@/features/subjectGeneration';
 import {
-  resolveEnableStreamingForSurface,
-  resolveModelForSurface,
-} from './llmInferenceSurfaceProviders';
+  createSubjectGenerationOrchestrator,
+  resolveSubjectGenerationStageBindings,
+} from '@/features/subjectGeneration';
 import { useCrystalTrialStore } from '@/features/crystalTrial/crystalTrialStore';
 import { generateTrialQuestions } from '@/features/crystalTrial/generateTrialQuestions';
 import {
@@ -22,10 +21,21 @@ import {
 import { useProgressionStore } from '@/features/progression/progressionStore';
 import { calculateLevelFromXP } from '@/features/progression/progressionUtils';
 import { pubSubClient } from './pubsub';
+import { toast } from '@/infrastructure/toast';
 
 const g = globalThis as typeof globalThis & {
   __abyssEventBusHandlersRegistered?: boolean;
 };
+
+async function resolveSubjectDisplayName(subjectId: string): Promise<string> {
+  try {
+    const manifest = await deckRepository.getManifest();
+    const subject = manifest.subjects.find((s) => s.id === subjectId);
+    return subject?.name?.trim() || subjectId;
+  } catch {
+    return subjectId;
+  }
+}
 
 function assertStudyPanelHistoryContext(
   e: AppEventMap['study-panel:history'],
@@ -123,18 +133,66 @@ if (!g.__abyssEventBusHandlersRegistered) {
   });
 
   appEventBus.on('subject:generation-pipeline', (e) => {
-    const chat = getChatCompletionsRepositoryForSurface('subjectGeneration');
-    const model = resolveModelForSurface('subjectGeneration');
+    const stageBindings = resolveSubjectGenerationStageBindings();
     const orchestrator = createSubjectGenerationOrchestrator();
-    void orchestrator.execute(
-      { subjectId: e.subjectId, checklist: e.checklist },
+    void orchestrator
+      .execute({ subjectId: e.subjectId, checklist: e.checklist }, { stageBindings, writer: deckWriter })
+      .then((result) => {
+        if (result.ok) return;
+        toast.error(result.error);
+      });
+  });
+
+  appEventBus.on('subjectGraph.generated', (e) => {
+    void (async () => {
+      const subjectName = await resolveSubjectDisplayName(e.subjectId);
+      toast.success(`Curriculum generated: ${subjectName}`);
+    })();
+
+    telemetry.log(
+      'subject_graph_generated',
       {
-        chat,
-        writer: deckWriter,
-        model,
-        enableThinking: false,
-        enableStreaming: resolveEnableStreamingForSurface('subjectGeneration'),
+        subjectId: e.subjectId,
+        boundModel: e.boundModel,
+        stageADurationMs: e.stageADurationMs,
+        stageBDurationMs: e.stageBDurationMs,
+        retryCount: e.retryCount,
+        topicCount: e.lattice.topics.length,
+        ...(e.prereqEdgesCorrectionApplied
+          ? {
+              prereqEdgesCorrectionApplied: true,
+              prereqEdgesCorrectionRemovedCount: e.prereqEdgesCorrectionRemovedCount,
+              prereqEdgesCorrectionAddedCount: e.prereqEdgesCorrectionAddedCount,
+              prereqEdgesCorrection: e.prereqEdgesCorrection,
+            }
+          : {}),
       },
+      { subjectId: e.subjectId },
+    );
+  });
+
+  appEventBus.on('subjectGraph.validationFailed', (e) => {
+    console.error(
+      `[subjectGraph.validationFailed] subject=${e.subjectId} stage=${e.stage} ` +
+        `model=${e.boundModel} retryCount=${e.retryCount}: ${e.error}`,
+    );
+    console.groupCollapsed(`[subjectGraph.validationFailed] details (${e.subjectId})`);
+    console.error(e);
+    console.groupEnd();
+
+    telemetry.log(
+      'subject_graph_validation_failed',
+      {
+        subjectId: e.subjectId,
+        stage: e.stage,
+        error: e.error,
+        offendingTopicIds: e.offendingTopicIds,
+        boundModel: e.boundModel,
+        retryCount: e.retryCount,
+        stageDurationMs: e.stageDurationMs,
+        hasLatticeSnapshot: Boolean(e.latticeSnapshot),
+      },
+      { subjectId: e.subjectId },
     );
   });
 

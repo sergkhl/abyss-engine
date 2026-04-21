@@ -61,6 +61,36 @@ function renderHook(props: UseLlmAssistantSpeechParams) {
   };
 }
 
+function DualHookHost(props: {
+  openSurface: UseLlmAssistantSpeechParams;
+  closedSurface: UseLlmAssistantSpeechParams;
+}) {
+  useLlmAssistantSpeech(props.openSurface);
+  useLlmAssistantSpeech(props.closedSurface);
+  return null;
+}
+
+function renderDualHooks(props: { openSurface: UseLlmAssistantSpeechParams; closedSurface: UseLlmAssistantSpeechParams }) {
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  const render = (next: { openSurface: UseLlmAssistantSpeechParams; closedSurface: UseLlmAssistantSpeechParams }) => {
+    act(() => {
+      flushSync(() => {
+        root.render(createElement(DualHookHost, next));
+      });
+    });
+  };
+  render(props);
+  return {
+    rerender: render,
+    unmount: () => {
+      act(() => {
+        root.unmount();
+      });
+    },
+  };
+}
+
 afterEach(() => {
   const mockWindow = window as unknown as Record<string, unknown>;
   if ('speechSynthesis' in mockWindow) {
@@ -82,7 +112,44 @@ describe('useLlmAssistantSpeech', () => {
       isPending: false,
     });
     expect(mockSpeak).not.toHaveBeenCalled();
-    expect(mockCancel).toHaveBeenCalled();
+    expect(mockCancel).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  it('does not cancel from a closed sibling when global TTS turns on', () => {
+    const { mockCancel, mockSpeak } = setupSpeechSynthesisMock();
+    const { rerender, unmount } = renderDualHooks({
+      openSurface: {
+        isSurfaceOpen: true,
+        ttsEnabled: false,
+        assistantText: 'Open surface sentence.',
+        isPending: false,
+      },
+      closedSurface: {
+        isSurfaceOpen: false,
+        ttsEnabled: false,
+        assistantText: 'Closed surface sentence.',
+        isPending: false,
+      },
+    });
+    expect(mockSpeak).not.toHaveBeenCalled();
+
+    rerender({
+      openSurface: {
+        isSurfaceOpen: true,
+        ttsEnabled: true,
+        assistantText: 'Open surface sentence.',
+        isPending: false,
+      },
+      closedSurface: {
+        isSurfaceOpen: false,
+        ttsEnabled: true,
+        assistantText: 'Closed surface sentence.',
+        isPending: false,
+      },
+    });
+    expect(mockSpeak).toHaveBeenCalledTimes(1);
+    expect(mockCancel).not.toHaveBeenCalled();
     unmount();
   });
 
@@ -148,6 +215,53 @@ describe('useLlmAssistantSpeech', () => {
       isPending: false,
     });
     expect(mockCancel).toHaveBeenCalled();
+    unmount();
+  });
+
+  it('replays accumulated text from the start when TTS is enabled during streaming', () => {
+    const { mockSpeak, utteranceTexts } = setupSpeechSynthesisMock();
+    const { rerender, unmount } = renderHook({
+      isSurfaceOpen: true,
+      ttsEnabled: false,
+      assistantText: 'Streaming text without punctuation',
+      isPending: true,
+    });
+    rerender({
+      isSurfaceOpen: true,
+      ttsEnabled: true,
+      assistantText: 'Streaming text without punctuation',
+      isPending: true,
+    });
+    expect(mockSpeak).toHaveBeenCalledTimes(1);
+    expect(utteranceTexts[0]).toContain('Streaming text without punctuation');
+    unmount();
+  });
+
+  it('replays the full message again after a disable/re-enable cycle', () => {
+    const { mockSpeak, mockCancel, utteranceTexts } = setupSpeechSynthesisMock();
+    const { rerender, unmount } = renderHook({
+      isSurfaceOpen: true,
+      ttsEnabled: true,
+      assistantText: 'Replay this message.',
+      isPending: false,
+    });
+    expect(mockSpeak).toHaveBeenCalledTimes(1);
+    rerender({
+      isSurfaceOpen: true,
+      ttsEnabled: false,
+      assistantText: 'Replay this message.',
+      isPending: false,
+    });
+    expect(mockCancel).toHaveBeenCalled();
+    rerender({
+      isSurfaceOpen: true,
+      ttsEnabled: true,
+      assistantText: 'Replay this message.',
+      isPending: false,
+    });
+    expect(mockSpeak).toHaveBeenCalledTimes(2);
+    expect(utteranceTexts[0]).toBe('Replay this message.');
+    expect(utteranceTexts[1]).toBe('Replay this message.');
     unmount();
   });
 

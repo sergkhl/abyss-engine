@@ -17,7 +17,18 @@ export {
   activeTopicContentGenerationLabel,
 } from './activeTopicGenerationLabel';
 
-export { canRetryJob, canRetryPipeline, retryFailedJob, retryFailedPipeline } from './retryContentGeneration';
+export {
+  canRetryJob,
+  canRetryPipeline,
+  canRetrySubjectGraphPipeline,
+  retryFailedJob,
+  retryFailedPipeline,
+} from './retryContentGeneration';
+
+export {
+  resolveSubjectGraphRetryContextFromJob,
+  resolveSubjectGraphRetryContextFromPipelineId,
+} from './subjectGenerationPipelineContext';
 
 export { buildTopicTheoryMessages } from './messages/buildTopicTheoryMessages';
 export type { TopicTheoryPromptParams } from './messages/buildTopicTheoryMessages';

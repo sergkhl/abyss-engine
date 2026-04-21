@@ -65,9 +65,7 @@ export function StudyPanelModal({
   const explainThinking = useThinkingToggle('studyQuestionExplain');
   const formulaThinking = useThinkingToggle('studyFormulaExplain');
   const mermaidThinking = useThinkingToggle('studyQuestionMermaid');
-  const explainTts = useInferenceTtsToggle('studyQuestionExplain');
-  const formulaTts = useInferenceTtsToggle('studyFormulaExplain');
-  const mermaidTts = useInferenceTtsToggle('studyQuestionMermaid');
+  const ttsEnabled = useInferenceTtsToggle();
   const llmExplain = useStudyQuestionLlmExplain({
     topicLabel: model.resolvedTopic,
     questionText: model.currentQuestion,
@@ -320,12 +318,12 @@ export function StudyPanelModal({
                   onToggleExplainThinking={explainThinking.toggleThinking}
                   onToggleFormulaThinking={formulaThinking.toggleThinking}
                   onToggleMermaidThinking={mermaidThinking.toggleThinking}
-                  explainTtsEnabled={explainTts.enableTts}
-                  formulaTtsEnabled={formulaTts.enableTts}
-                  mermaidTtsEnabled={mermaidTts.enableTts}
-                  onToggleExplainTts={explainTts.toggleTts}
-                  onToggleFormulaTts={formulaTts.toggleTts}
-                  onToggleMermaidTts={mermaidTts.toggleTts}
+                  explainTtsEnabled={ttsEnabled.enableTts}
+                  formulaTtsEnabled={ttsEnabled.enableTts}
+                  mermaidTtsEnabled={ttsEnabled.enableTts}
+                  onToggleExplainTts={ttsEnabled.toggleTts}
+                  onToggleFormulaTts={ttsEnabled.toggleTts}
+                  onToggleMermaidTts={ttsEnabled.toggleTts}
                 />
               )}
             </div>

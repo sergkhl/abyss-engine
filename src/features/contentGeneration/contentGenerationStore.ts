@@ -63,6 +63,7 @@ export interface ContentGenerationState {
   setJobInputMessages: (jobId: string, input: string) => void;
   setJobError: (jobId: string, error: string) => void;
   setJobParseError: (jobId: string, parseError: string) => void;
+  mergeJobMetadata: (jobId: string, patch: Record<string, unknown>) => void;
   finishJob: (jobId: string, status: 'completed' | 'failed' | 'aborted') => void;
   abortJob: (jobId: string) => void;
   abortPipeline: (pipelineId: string) => void;
@@ -138,6 +139,14 @@ export const useContentGenerationStore = create<ContentGenerationState>((set, ge
       const j = s.jobs[jobId];
       if (!j) return s;
       return { jobs: { ...s.jobs, [jobId]: { ...j, parseError } } };
+    }),
+
+  mergeJobMetadata: (jobId, patch) =>
+    set((s) => {
+      const j = s.jobs[jobId];
+      if (!j) return s;
+      const meta = { ...(j.metadata ?? {}), ...patch };
+      return { jobs: { ...s.jobs, [jobId]: { ...j, metadata: meta } } };
     }),
 
   finishJob: (jobId, terminalStatus) => {

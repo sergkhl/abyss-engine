@@ -29,6 +29,12 @@ import {
   SURFACE_DISPLAY_LABELS,
 } from '@/types/llmInference';
 import type { InferenceSurfaceId, LlmInferenceProviderId } from '@/types/llmInference';
+import { useInferenceTtsToggle } from '@/hooks/useInferenceTtsToggle';
+
+const CURRICULUM_SURFACE_IDS = [
+  'subjectGenerationTopics',
+  'subjectGenerationEdges',
+] as const satisfies readonly InferenceSurfaceId[];
 
 const CONTENT_SHEET_CLASSNAME = '!w-full sm:max-w-xl overflow-y-auto';
 const SECTION_SPACING = 'pt-5';
@@ -202,11 +208,25 @@ function PreferencesSection() {
   const setPomodoroVisible = useFeatureFlagsStore((s) => s.setPomodoroVisible);
   const setRitualVisible = useFeatureFlagsStore((s) => s.setRitualVisible);
   const setSfxEnabled = useFeatureFlagsStore((s) => s.setSfxEnabled);
+  const tts = useInferenceTtsToggle();
 
   return (
     <section className={SECTION_SPACING}>
       <Badge variant="outline">⚙️ Preferences</Badge>
       <div className="pt-3 space-y-3">
+        <div className={ROW_CLASSNAME}>
+          <div className="min-w-0">
+            <span className="text-sm text-foreground">Text-to-speech</span>
+            <p className="text-xs text-muted-foreground pt-0.5">
+              Master switch for narration across all AI surfaces.
+            </p>
+          </div>
+          <Switch
+            checked={tts.enableTts}
+            onCheckedChange={() => tts.toggleTts()}
+            aria-label="Enable text-to-speech"
+          />
+        </div>
         <div className={ROW_CLASSNAME}>
           <div className="min-w-0">
             <span className="text-sm text-foreground">Pomodoro timer</span>
@@ -237,7 +257,7 @@ function PreferencesSection() {
           <div className="min-w-0">
             <span className="text-sm text-foreground">Sound effects</span>
             <p className="text-xs text-muted-foreground pt-0.5">
-              Global master for feedback chimes, coin pickups, and level-up cues. TTS voice playback is controlled separately on each surface.
+              Global master for feedback chimes, coin pickups, and level-up cues.
             </p>
           </div>
           <Switch
@@ -313,9 +333,24 @@ export function GlobalSettingsSheet() {
           <section className={SECTION_SPACING}>
             <Badge variant="outline">🔀 Provider routing</Badge>
             <div className="pt-3 space-y-1">
-              {ALL_SURFACE_IDS.map((surfaceId) => (
-                <SurfaceBindingRow key={surfaceId} surfaceId={surfaceId} />
-              ))}
+              {ALL_SURFACE_IDS.map((surfaceId) => {
+                if (surfaceId === 'subjectGenerationTopics') {
+                  return (
+                    <div key="curriculum-generation" className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground pt-2">
+                        Curriculum Generation
+                      </p>
+                      {CURRICULUM_SURFACE_IDS.map((id) => (
+                        <SurfaceBindingRow key={id} surfaceId={id} />
+                      ))}
+                    </div>
+                  );
+                }
+                if (surfaceId === 'subjectGenerationEdges') {
+                  return null;
+                }
+                return <SurfaceBindingRow key={surfaceId} surfaceId={surfaceId} />;
+              })}
             </div>
           </section>
 

@@ -21,6 +21,8 @@ export interface ContentGenerationJobParams<TParsed = unknown> {
   messages: ChatMessage[];
   enableThinking: boolean;
   enableStreaming?: boolean;
+  /** Forwarded to the chat-completions request when set (e.g. low temperature for structured edges). */
+  temperature?: number;
 
   parseOutput: (
     raw: string,
@@ -97,6 +99,7 @@ export async function runContentGenerationJob<TParsed>(
       enableThinking: params.enableThinking,
       enableStreaming,
       signal: ac.signal,
+      ...(params.temperature !== undefined ? { temperature: params.temperature } : {}),
       ...(structured
         ? {
             responseFormat: structured.responseFormat,

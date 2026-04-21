@@ -18,6 +18,8 @@ export const TelemetryEventTypeSchema = z.enum([
   'performance_frame_time',
   'crystal_trial_pregeneration_started',
   'crystal_trial_completed',
+  'subject_graph_generated',
+  'subject_graph_validation_failed',
 ]);
 
 export type TelemetryEventType = z.infer<typeof TelemetryEventTypeSchema>;
@@ -152,6 +154,45 @@ export const PerformanceFrameTimePayloadSchema = z.object({
 });
 export type PerformanceFrameTimePayload = z.infer<typeof PerformanceFrameTimePayloadSchema>;
 
+const prereqEdgesCorrectionLogSchema = z.object({
+  removed: z.array(
+    z.object({ topicId: z.string(), prereqId: z.string(), reason: z.string() }),
+  ),
+  added: z.array(
+    z.object({
+      topicId: z.string(),
+      prereqId: z.string(),
+      kind: z.enum(['filler-tier1', 'filler-tier2']),
+    }),
+  ),
+});
+
+export const SubjectGraphGeneratedPayloadSchema = z.object({
+  subjectId: z.string(),
+  boundModel: z.string(),
+  stageADurationMs: z.number().nonnegative(),
+  stageBDurationMs: z.number().nonnegative(),
+  retryCount: z.number().int().nonnegative(),
+  topicCount: z.number().int().nonnegative(),
+  prereqEdgesCorrectionApplied: z.boolean().optional(),
+  prereqEdgesCorrectionRemovedCount: z.number().int().nonnegative().optional(),
+  prereqEdgesCorrectionAddedCount: z.number().int().nonnegative().optional(),
+  prereqEdgesCorrection: prereqEdgesCorrectionLogSchema.optional(),
+});
+export type SubjectGraphGeneratedPayload = z.infer<typeof SubjectGraphGeneratedPayloadSchema>;
+
+export const SubjectGraphValidationFailedPayloadSchema = z.object({
+  subjectId: z.string(),
+  stage: z.enum(['topics', 'edges']),
+  error: z.string(),
+  offendingTopicIds: z.array(z.string()),
+  boundModel: z.string(),
+  retryCount: z.number().int().nonnegative(),
+  stageDurationMs: z.number().nonnegative(),
+  hasLatticeSnapshot: z.boolean(),
+});
+export type SubjectGraphValidationFailedPayload = z.infer<typeof SubjectGraphValidationFailedPayloadSchema>;
+
 export const TelemetryEventPayloadSchema = z.object({
   id: z.string().uuid(),
   version: telemetryVersionSchema,
@@ -181,4 +222,6 @@ export const TelemetryEventMap: Record<TelemetryEventType, z.ZodSchema<unknown>>
   study_panel_tab_switched: StudyPanelTabSwitchedPayloadSchema,
   modal_opened: ModalOpenedPayloadSchema,
   performance_frame_time: PerformanceFrameTimePayloadSchema,
+  subject_graph_generated: SubjectGraphGeneratedPayloadSchema,
+  subject_graph_validation_failed: SubjectGraphValidationFailedPayloadSchema,
 };

@@ -35,7 +35,7 @@ function createLocalRepository(): IChatCompletionsRepository {
 function createOpenRouterWorkerRepository(): IChatCompletionsRepository {
   const workerUrl = resolveLlmWorkerChatUrl();
   // No Authorization header: the Worker injects the OpenRouter key server-side.
-  return new HttpChatCompletionsRepository(workerUrl, '', null);
+  return new HttpChatCompletionsRepository(workerUrl, '', null, true);
 }
 
 function getRepositoryForProvider(providerId: LlmInferenceProviderId): IChatCompletionsRepository {
