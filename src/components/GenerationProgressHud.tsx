@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useMemo, useState } from 'react';
-import { ListTree, RotateCcw, Sparkles } from 'lucide-react';
+import { ListTree, RotateCcw } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -168,8 +168,6 @@ export function GenerationProgressHud() {
     [jobs],
   );
   const isBusy = activeJobs.length > 0;
-  const statusLabel =
-    !isBusy ? 'Generation idle' : activeJobs.length === 1 ? activeJobs[0]!.label : `${activeJobs.length} jobs running`;
 
   const { activeStandalone, pipelineIdsOrdered, activeByPipeline, terminalSorted, terminalPipelineGroups } = useMemo(() => {
     const all = Object.values(jobs);
@@ -216,15 +214,7 @@ export function GenerationProgressHud() {
     <>
       <div
         className="text-foreground flex h-7 items-center gap-1 self-end rounded-lg border border-surface-hud-border bg-surface-hud px-2 py-1"
-        aria-live="polite"
       >
-        <span className="sr-only">{statusLabel}</span>
-        {isBusy ? (
-          <Spinner className="size-3.5 shrink-0 text-primary" aria-hidden />
-        ) : (
-          <Sparkles className="text-muted-foreground size-3.5 shrink-0" aria-hidden />
-        )}
-        <span className="mr-0.5 h-4 w-px bg-border/60" aria-hidden="true" />
         <Button
           type="button"
           variant="ghost"
@@ -232,9 +222,13 @@ export function GenerationProgressHud() {
           className={isBusy ? 'motion-safe:animate-pulse' : undefined}
           onClick={() => handleOpenChange(true)}
           aria-label="Open background LLM content generation"
-          title={statusLabel}
+          title="Open background LLM content generation"
         >
-          <ListTree />
+          {isBusy ? (
+            <Spinner className="size-3.5 shrink-0" aria-hidden />
+          ) : (
+            <ListTree className="size-3.5 shrink-0" aria-hidden />
+          )}
         </Button>
       </div>
 

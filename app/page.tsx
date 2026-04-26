@@ -243,10 +243,10 @@ const HomeContent: React.FC = () => {
     [topicCardsByKey, selectTopic, startTopicStudySession, openStudyPanel],
   );
 
-  const handleQuickActionNewSubject = useCallback(() => { setIsIncrementalSubjectOpen(true); }, []);
   const handleQuickActionWisdomAltar = useCallback(() => { openDiscoveryModal(); }, [openDiscoveryModal]);
   const handleQuickActionCommandPalette = useCallback(() => { setIsCommandPaletteOpen(true); }, []);
   const handleQuickActionSettings = useCallback(() => { openGlobalSettings(); }, [openGlobalSettings]);
+  const handleCreateSubjectFromHud = useCallback(() => { setIsIncrementalSubjectOpen(true); }, []);
 
   const TOP_LEFT_STYLE: React.CSSProperties = { top: 'calc(0.75rem + env(safe-area-inset-top))', left: 'calc(0.75rem + env(safe-area-inset-left))' };
   const TOP_RIGHT_STYLE: React.CSSProperties = { top: 'calc(0.75rem + env(safe-area-inset-top))', right: 'calc(0.75rem + env(safe-area-inset-right))' };
@@ -276,7 +276,7 @@ const HomeContent: React.FC = () => {
         </div>
       )}
 
-      <SubjectNavigationHud />
+      <SubjectNavigationHud onCreateSubject={handleCreateSubjectFromHud} />
 
       <div className="absolute inset-0">
         <Scene
@@ -312,9 +312,6 @@ const HomeContent: React.FC = () => {
         <DropdownMenu>
           <DropdownMenuTrigger render={quickActionsTrigger} />
           <DropdownMenuContent side="top" align="end" sideOffset={8}>
-            <DropdownMenuItem onClick={handleQuickActionNewSubject}>
-              🌱 New subject
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={handleQuickActionWisdomAltar}>
               🏛️ Wisdom Altar
             </DropdownMenuItem>

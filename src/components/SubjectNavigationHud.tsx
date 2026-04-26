@@ -18,6 +18,13 @@ const NAV_CONTAINER_STYLE: React.CSSProperties = {
   left: 'calc(0.75rem + env(safe-area-inset-left))',
 };
 
+const ALL_FLOORS_VALUE = '__all_floors__';
+const NEW_SUBJECT_VALUE = '__create_subject__';
+
+interface SubjectNavigationHudProps {
+  onCreateSubject?: () => void;
+}
+
 /**
  * SubjectNavigationHud — floor/subject select fixed at bottom-left (safe areas).
  *
@@ -25,23 +32,46 @@ const NAV_CONTAINER_STYLE: React.CSSProperties = {
  * light/dark chrome matches the bottom-right quick-actions and top-right
  * generation-progress surfaces.
  */
-export const SubjectNavigationHud: React.FC = () => {
+export const SubjectNavigationHud: React.FC<SubjectNavigationHudProps> = ({ onCreateSubject }) => {
   const { data: subjects = [] } = useSubjects();
   const currentSubjectId = useStudyStore((state) => state.currentSubjectId);
   const setCurrentSubject = useStudyStore((state) => state.setCurrentSubject);
 
   const handleSelectSubject = (subjectId: string | null) => {
-    if (subjectId === null || subjectId === '__all_floors__') {
+    if (subjectId === null) {
+      return;
+    }
+
+    if (subjectId === ALL_FLOORS_VALUE) {
       setCurrentSubject(null);
       return;
     }
+
+    if (subjectId === NEW_SUBJECT_VALUE) {
+      onCreateSubject?.();
+      return;
+    }
+
     setCurrentSubject(subjectId);
   };
 
   const subjectSelectItems = useMemo(
     () => [
+      ...(onCreateSubject
+        ? [
+            {
+              value: NEW_SUBJECT_VALUE,
+              label: (
+                <span className="flex w-full items-center gap-2">
+                  <span aria-hidden>🌱</span>
+                  <span>New Subject</span>
+                </span>
+              ),
+            },
+          ]
+        : []),
       {
-        value: '__all_floors__',
+        value: ALL_FLOORS_VALUE,
         label: (
           <span className="flex w-full items-center gap-2">
             <span className="size-2 shrink-0 rounded-sm bg-muted" aria-hidden />
@@ -69,7 +99,7 @@ export const SubjectNavigationHud: React.FC = () => {
         };
       }),
     ],
-    [subjects],
+    [onCreateSubject, subjects],
   );
 
   return (
@@ -80,7 +110,7 @@ export const SubjectNavigationHud: React.FC = () => {
     >
       <Select
         items={subjectSelectItems}
-        value={currentSubjectId || '__all_floors__'}
+        value={currentSubjectId || ALL_FLOORS_VALUE}
         onValueChange={handleSelectSubject}
       >
         <SelectTrigger

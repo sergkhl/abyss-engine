@@ -5,6 +5,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { StudyForceGraph } from '@/components/StudyForceGraph';
 import StudyPanelModal from '@/components/StudyPanelModal';
 import TopicSelectionBar from '@/components/TopicSelectionBar';
+import { IncrementalSubjectModal } from '@/components/IncrementalSubjectModal';
+import SubjectNavigationHud from '@/components/SubjectNavigationHud';
 import {
   Select,
   SelectContent,
@@ -123,6 +125,7 @@ export function StudyGraphPageClient() {
   const subjectIdForSelection = selectedMetadata?.subjectId ?? '';
   const topicCardsQuery = useTopicCards(subjectIdForSelection, selectedTopic?.topicId ?? '');
   const selectedTopicCards = topicCardsQuery.data ?? [];
+  const [isIncrementalSubjectOpen, setIsIncrementalSubjectOpen] = useState(false);
 
   const selectedTopicXp = useMemo(() => {
     if (!selectedTopic) {
@@ -149,6 +152,10 @@ export function StudyGraphPageClient() {
   const handleCloseStudyPanel = useCallback(() => {
     closeStudyPanel();
   }, [closeStudyPanel]);
+
+  const handleCreateSubjectFromHud = useCallback(() => {
+    setIsIncrementalSubjectOpen(true);
+  }, []);
 
   const handleRate = useCallback(
     (cardId: string, isCorrect?: boolean, selfRating?: Rating) => {
@@ -255,6 +262,13 @@ export function StudyGraphPageClient() {
         selectedMetadata={selectedMetadata}
         selectedCards={selectedTopicCards}
         selectedXp={selectedTopicXp}
+      />
+
+      <SubjectNavigationHud onCreateSubject={handleCreateSubjectFromHud} />
+
+      <IncrementalSubjectModal
+        isOpen={isIncrementalSubjectOpen}
+        onClose={() => setIsIncrementalSubjectOpen(false)}
       />
 
       <StudyPanelModal
