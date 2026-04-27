@@ -4,9 +4,9 @@ import {
   formatOpenRouterReasoningDetails,
   mergeAssistantReasoningDetails,
   reasoningTextFromOpenRouterDelta,
-} from './openRouterReasoning';
+} from './openRouterReasoningDetails';
 
-describe('openRouterReasoning', () => {
+describe('openRouterReasoningDetails', () => {
   it('preserves whitespace in streamed reasoning fragments', () => {
     const first = reasoningTextFromOpenRouterDelta({
       reasoning_details: [{ type: 'reasoning.text', text: ' the ' }],

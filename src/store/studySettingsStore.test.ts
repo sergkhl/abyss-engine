@@ -8,6 +8,7 @@ import {
 import {
   GENERATION_SURFACE_DEFAULT_MODEL,
   OPENROUTER_MODEL_OPTIONS,
+  PREVIOUS_GENERATION_SURFACE_DEFAULT_MODEL,
   STUDY_SURFACE_DEFAULT_MODEL,
 } from '../infrastructure/openRouterDefaults';
 
@@ -42,14 +43,18 @@ describe('studySettingsStore', () => {
     expect(configs[0].model).toBe(OPENROUTER_MODEL_OPTIONS[0]);
   });
 
+  it('seeds OpenRouter configs with reasoning enabled by default', () => {
+    const store = createStudySettingsStore();
+    const allEnabled = store.getState().openRouterConfigs.every((config) => config.enableReasoning);
+    expect(allEnabled).toBe(true);
+  });
+
   it('defaults study-hook surfaces to OpenRouter → gemma-4-26b with streaming', () => {
     const store = createStudySettingsStore();
     const configs = store.getState().openRouterConfigs;
     const studySurfaces = [
       'studyQuestionExplain',
       'studyFormulaExplain',
-      'studyQuestionMermaid',
-      'screenCaptureSummary',
     ] as const;
     for (const id of studySurfaces) {
       const binding = store.getState().surfaceProviders[id];
@@ -60,7 +65,7 @@ describe('studySettingsStore', () => {
     }
   });
 
-  it('defaults generation surfaces to OpenRouter → gemma-4-31b', () => {
+  it('defaults generation surfaces to OpenRouter → Mistral Small', () => {
     const store = createStudySettingsStore();
     const configs = store.getState().openRouterConfigs;
     const genSurfaces = [
@@ -75,6 +80,38 @@ describe('studySettingsStore', () => {
       const model = configs.find((c) => c.id === binding.openRouterConfigId)?.model;
       expect(model).toBe(GENERATION_SURFACE_DEFAULT_MODEL);
     }
+  });
+
+  it('migrates only surfaces bound to the previous seeded generation default', () => {
+    const seededStore = createStudySettingsStore();
+    const configs = seededStore.getState().openRouterConfigs;
+    const oldConfig = configs.find((config) => config.model === PREVIOUS_GENERATION_SURFACE_DEFAULT_MODEL);
+    const customConfig = configs.find((config) => config.model === STUDY_SURFACE_DEFAULT_MODEL);
+    expect(oldConfig).toBeTruthy();
+    expect(customConfig).toBeTruthy();
+    localStorage.setItem(STUDY_SETTINGS_STORAGE_KEY, JSON.stringify({
+      targetAudience: TARGET_AUDIENCE_OPTIONS[0],
+      agentPersonality: AGENT_PERSONALITY_OPTIONS[0],
+      localModelId: '',
+      openRouterResponseHealing: true,
+      openRouterConfigs: configs,
+      surfaceProviders: {
+        subjectGenerationTopics: { provider: 'openrouter', openRouterConfigId: oldConfig!.id },
+        subjectGenerationEdges: { provider: 'openrouter', openRouterConfigId: oldConfig!.id },
+        topicContent: { provider: 'openrouter', openRouterConfigId: customConfig!.id },
+        crystalTrial: { provider: 'openrouter', openRouterConfigId: oldConfig!.id },
+      },
+    }));
+
+    const migrated = createStudySettingsStore().getState();
+    const topicContentModel = migrated.openRouterConfigs.find(
+      (config) => config.id === migrated.surfaceProviders.topicContent.openRouterConfigId,
+    )?.model;
+    const topicsModel = migrated.openRouterConfigs.find(
+      (config) => config.id === migrated.surfaceProviders.subjectGenerationTopics.openRouterConfigId,
+    )?.model;
+    expect(topicsModel).toBe(GENERATION_SURFACE_DEFAULT_MODEL);
+    expect(topicContentModel).toBe(STUDY_SURFACE_DEFAULT_MODEL);
   });
 
   it('defaults openRouterResponseHealing to true', () => {
@@ -110,14 +147,19 @@ describe('studySettingsStore', () => {
     const initialLength = store.getState().openRouterConfigs.length;
     const id = store.getState().addOpenRouterConfig({
       label: 'Claude',
-      model: 'anthropic/claude-sonnet-4',
+      model: 'mistralai/mistral-small-2603',
       enableReasoning: false,
       enableStreaming: false,
     });
     const configs = store.getState().openRouterConfigs;
     expect(configs.length).toBe(initialLength + 1);
     expect(configs[configs.length - 1].id).toBe(id);
-    expect(configs[configs.length - 1].model).toBe('anthropic/claude-sonnet-4');
+    expect(configs[configs.length - 1].model).toBe('mistralai/mistral-small-2603');
+    expect(configs[configs.length - 1].supportedParameters).toEqual([
+      'tools',
+      'response_format',
+      'structured_outputs',
+    ]);
   });
 
   it('updateOpenRouterConfig patches model only', () => {
@@ -127,13 +169,42 @@ describe('studySettingsStore', () => {
     expect(store.getState().openRouterConfigs[0].model).toBe('new/model');
   });
 
-  it('updateOpenRouterConfig clears supportedParameters when model is unknown', () => {
+  it('strips unsupported non-reasoning extras when model changes to unknown', () => {
     const store = createStudySettingsStore();
     const id = store.getState().openRouterConfigs[0].id;
-    const before = store.getState().openRouterConfigs[0];
-    expect(before.supportedParameters).toEqual(['reasoning']);
+    store.getState().updateOpenRouterConfig(id, { supportedParameters: ['tools', 'response_format', 'structured_outputs'] });
     store.getState().updateOpenRouterConfig(id, { model: 'openrouter/elephant-alpha' });
     expect(store.getState().openRouterConfigs[0].supportedParameters).toBeUndefined();
+  });
+
+  it('normalizes legacy reasoning-supportedParameters entries on load', () => {
+    const legacyConfig = {
+      id: 'legacy-1',
+      label: 'Claude',
+      model: 'anthropic/claude-sonnet-4',
+      enableReasoning: false,
+      enableStreaming: true,
+      supportedParameters: ['reasoning'],
+    };
+    localStorage.setItem(
+      STUDY_SETTINGS_STORAGE_KEY,
+      JSON.stringify({
+        targetAudience: TARGET_AUDIENCE_OPTIONS[0],
+        agentPersonality: AGENT_PERSONALITY_OPTIONS[0],
+        localModelId: '',
+        openRouterResponseHealing: true,
+        openRouterConfigs: [legacyConfig],
+        surfaceProviders: {
+          studyQuestionExplain: { provider: 'openrouter', openRouterConfigId: legacyConfig.id },
+        },
+      }),
+    );
+
+    const store = createStudySettingsStore();
+    const migrated = store.getState().openRouterConfigs.find((config) => config.id === legacyConfig.id);
+    expect(migrated).toBeDefined();
+    expect(migrated?.enableReasoning).toBe(false);
+    expect(migrated?.supportedParameters).toBeUndefined();
   });
 
   it('deleteOpenRouterConfig cascades bindings to fallback', () => {
@@ -148,7 +219,8 @@ describe('studySettingsStore', () => {
       expect(studyBinding.provider).toBe('openrouter');
       expect(studyBinding.openRouterConfigId).toBe(secondId);
       expect(topicBinding.provider).toBe('openrouter');
-      expect(topicBinding.openRouterConfigId).toBe(secondId);
+      const topicModel = store.getState().openRouterConfigs.find((c) => c.id === topicBinding.openRouterConfigId)?.model;
+      expect(topicModel).toBe(GENERATION_SURFACE_DEFAULT_MODEL);
     } else {
       expect(studyBinding.provider).toBe('local');
       expect(topicBinding.provider).toBe('local');

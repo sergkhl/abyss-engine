@@ -4,6 +4,7 @@ import {
   DEFAULT_AGENT_PERSONALITY,
   normalizeAgentPersonality,
 } from '../features/studyPanel/agentPersonalityPresets';
+import { ALL_SURFACE_IDS } from '../types/llmInference';
 import type {
   InferenceSurfaceId,
   LlmInferenceProviderId,
@@ -11,11 +12,11 @@ import type {
   OpenRouterSupportedParameter,
   SurfaceProviderBinding,
 } from '../types/llmInference';
-import { inferOpenRouterSupportedParameters } from '../lib/openRouterReasoning';
-import { ALL_SURFACE_IDS } from '../types/llmInference';
 import {
   buildSeedOpenRouterConfigs,
   GENERATION_SURFACE_DEFAULT_MODEL,
+  PREVIOUS_GENERATION_SURFACE_DEFAULT_MODEL,
+  inferOpenRouterExtraSupportedParameters,
   seededConfigIdForModel,
   STUDY_SURFACE_DEFAULT_MODEL,
 } from '../infrastructure/openRouterDefaults';
@@ -52,8 +53,6 @@ function buildDefaultSurfaceBindings(
   return {
     studyQuestionExplain: or(studyId),
     studyFormulaExplain: or(studyId),
-    studyQuestionMermaid: or(studyId),
-    screenCaptureSummary: or(studyId),
     subjectGenerationTopics: or(genId),
     subjectGenerationEdges: or(genId),
     topicContent: or(genId),
@@ -115,7 +114,12 @@ function isStringRecord(v: unknown): v is Record<string, unknown> {
 
 function parseStoredSupportedParameters(raw: unknown): readonly OpenRouterSupportedParameter[] | undefined {
   if (!Array.isArray(raw)) return undefined;
-  const out = raw.filter((x): x is OpenRouterSupportedParameter => x === 'reasoning');
+  const allowed = new Set<OpenRouterSupportedParameter>([
+    'tools',
+    'response_format',
+    'structured_outputs',
+  ]);
+  const out = raw.filter((x): x is OpenRouterSupportedParameter => typeof x === 'string' && allowed.has(x as OpenRouterSupportedParameter));
   return out.length > 0 ? out : undefined;
 }
 
@@ -130,8 +134,7 @@ function parseConfigs(raw: unknown): OpenRouterModelConfig[] | null {
     const enableReasoning = item.enableReasoning === true;
     const enableStreaming = item.enableStreaming !== false;
     if (!id || !model) continue;
-    const supportedParameters =
-      inferOpenRouterSupportedParameters(model) ?? parseStoredSupportedParameters(item.supportedParameters);
+    const supportedParameters = parseStoredSupportedParameters(item.supportedParameters);
     out.push({
       id,
       label: label || model,
@@ -142,6 +145,40 @@ function parseConfigs(raw: unknown): OpenRouterModelConfig[] | null {
     });
   }
   return out;
+}
+
+function mergeSeedConfigs(configs: OpenRouterModelConfig[]): OpenRouterModelConfig[] {
+  const next = [...configs];
+  const existing = new Set(next.map((c) => c.id));
+  for (const seeded of buildSeedOpenRouterConfigs()) {
+    if (!existing.has(seeded.id)) {
+      next.push(seeded);
+      existing.add(seeded.id);
+    }
+  }
+  return next;
+}
+
+function migrateOldGenerationDefaultBindings(
+  bindings: Record<InferenceSurfaceId, SurfaceProviderBinding>,
+  configs: OpenRouterModelConfig[],
+): Record<InferenceSurfaceId, SurfaceProviderBinding> {
+  const oldId = seededConfigIdForModel(configs, PREVIOUS_GENERATION_SURFACE_DEFAULT_MODEL);
+  const newId = seededConfigIdForModel(configs, GENERATION_SURFACE_DEFAULT_MODEL);
+  const generationSurfaces: InferenceSurfaceId[] = [
+    'subjectGenerationTopics',
+    'subjectGenerationEdges',
+    'topicContent',
+    'crystalTrial',
+  ];
+  const next = { ...bindings };
+  for (const surfaceId of generationSurfaces) {
+    const binding = next[surfaceId];
+    if (binding.provider === 'openrouter' && binding.openRouterConfigId === oldId) {
+      next[surfaceId] = { provider: 'openrouter', openRouterConfigId: newId };
+    }
+  }
+  return next;
 }
 
 function parseBindings(
@@ -211,11 +248,14 @@ function readSnapshotFromStorage(): Snapshot {
   let configs = parseConfigs(parsed.openRouterConfigs);
   if (!configs || configs.length === 0) {
     configs = buildSeedOpenRouterConfigs();
+  } else {
+    configs = mergeSeedConfigs(configs);
   }
   const validConfigIds = new Set(configs.map((c) => c.id));
 
-  const bindings =
+  const parsedBindings =
     parseBindings(parsed.surfaceProviders, validConfigIds) ?? buildDefaultSurfaceBindings(configs);
+  const bindings = migrateOldGenerationDefaultBindings(parsedBindings, configs);
 
   return {
     targetAudience,
@@ -285,7 +325,7 @@ export const createStudySettingsStore = () =>
       addOpenRouterConfig: (partial) => {
         const id = partial.id ?? randomId();
         const model = partial.model.trim();
-        const supportedParameters = inferOpenRouterSupportedParameters(model);
+        const supportedParameters = inferOpenRouterExtraSupportedParameters(model);
         const config: OpenRouterModelConfig = {
           id,
           label: partial.label || model,
@@ -308,7 +348,7 @@ export const createStudySettingsStore = () =>
                 ...(patch.model !== undefined
                   ? {
                       model: patch.model,
-                      supportedParameters: inferOpenRouterSupportedParameters(patch.model),
+                      supportedParameters: inferOpenRouterExtraSupportedParameters(patch.model),
                     }
                   : {}),
                 ...(patch.enableReasoning !== undefined ? { enableReasoning: patch.enableReasoning } : {}),
