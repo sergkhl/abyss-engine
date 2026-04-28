@@ -30,9 +30,11 @@ export type ChatResponseFormatJsonObject = { type: 'json_object' };
 
 export type OpenRouterWebSearchTool = {
   type: 'openrouter:web_search';
-  engine: string;
-  max_results: number;
-  max_total_results: number;
+  parameters: {
+    engine: string;
+    max_results: number;
+    max_total_results: number;
+  };
 };
 
 export type ChatCompletionTool = OpenRouterWebSearchTool;

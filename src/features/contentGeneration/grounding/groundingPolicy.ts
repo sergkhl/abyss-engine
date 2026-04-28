@@ -3,8 +3,8 @@ import type { OpenRouterWebSearchTool } from '@/types/llm';
 
 export const FIRECRAWL_TOPIC_GROUNDING_POLICY: GroundingSearchPolicy = {
   engine: 'firecrawl',
-  maxResults: 6,
-  maxTotalResults: 8,
+  maxResults: 3,
+  maxTotalResults: 6,
   requireWebSearch: true,
   minAcceptedSources: 2,
   requireAuthoritativePrimarySource: true,
@@ -56,9 +56,11 @@ export function buildOpenRouterWebSearchTools(
   return [
     {
       type: 'openrouter:web_search',
-      engine: policy.engine,
-      max_results: policy.maxResults,
-      max_total_results: policy.maxTotalResults,
+      parameters: {
+        engine: policy.engine,
+        max_results: policy.maxResults,
+        max_total_results: policy.maxTotalResults,
+      },
     },
   ];
 }

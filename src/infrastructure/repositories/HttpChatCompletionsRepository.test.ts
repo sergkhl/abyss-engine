@@ -210,12 +210,12 @@ describe('HttpChatCompletionsRepository', () => {
     const result = await repo.completeChat({
       model: 'm',
       messages: [{ role: 'user', content: 'a' }],
-      tools: [{ type: 'openrouter:web_search', engine: 'firecrawl', max_results: 3, max_total_results: 5 }],
+      tools: [{ type: 'openrouter:web_search', parameters: { engine: 'firecrawl', max_results: 3, max_total_results: 5 } }],
     });
     const init = (fetch as ReturnType<typeof vi.fn>).mock.calls[0]![1]!;
     const body = JSON.parse(init.body as string);
     expect(body.tools).toEqual([
-      { type: 'openrouter:web_search', engine: 'firecrawl', max_results: 3, max_total_results: 5 },
+      { type: 'openrouter:web_search', parameters: { engine: 'firecrawl', max_results: 3, max_total_results: 5 } },
     ]);
     expect(result.providerMetadata?.usage).toEqual({ server_tool_use: { web_search_requests: 1 } });
     expect(result.providerMetadata?.annotations).toEqual([{ url: 'https://example.edu/source' }]);
