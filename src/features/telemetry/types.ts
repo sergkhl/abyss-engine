@@ -8,6 +8,7 @@ export const TelemetryEventTypeSchema = z.enum([
   'study-panel:undo-applied',
   'study-panel:redo-applied',
   'study-session:completed',
+  'study-session:abandoned',
   'attunement-ritual:submitted',
   'attunement-cooldown:checked',
   'crystal:unlocked',
@@ -93,6 +94,29 @@ export const StudySessionCompletePayloadSchema = z.object({
   sessionDurationMs: z.number().nonnegative(),
 });
 export type StudySessionCompletePayload = z.infer<typeof StudySessionCompletePayloadSchema>;
+
+/**
+ * Phase 4 — terminal signal for sessions the user closed mid-flight.
+ *
+ * Disjoint from `study-session:completed`: the completion event fires
+ * when `attempts.length >= totalCards` (see `progressionStore.ts` →
+ * `session:completed` bus event); the abandonment event fires from the
+ * study-panel modal close handler when there were attempts but the
+ * session never reached completion. Capturing both lets PostHog
+ * insights distinguish "finished" from "started-then-left" without
+ * inferring abandonment from the absence of a completion event.
+ */
+export const StudySessionAbandonedPayloadSchema = z.object({
+  sessionId: z.string(),
+  subjectId: z.string(),
+  topicId: z.string(),
+  /** Number of cards the user submitted before closing. > 0 by emission contract. */
+  attemptsCompleted: z.number().int().min(0),
+  /** Original queue size at session start (immutable for the session). */
+  totalCards: z.number().int().min(0),
+  sessionDurationMs: z.number().nonnegative(),
+});
+export type StudySessionAbandonedPayload = z.infer<typeof StudySessionAbandonedPayloadSchema>;
 
 export const AttunementCooldownPayloadSchema = z.object({
   topicId: z.string(),
@@ -380,6 +404,7 @@ export const TelemetryEventMap: Record<TelemetryEventType, z.ZodSchema<unknown>>
   'study-panel:undo-applied': StudyUndoPayloadSchema,
   'study-panel:redo-applied': StudyRedoPayloadSchema,
   'study-session:completed': StudySessionCompletePayloadSchema,
+  'study-session:abandoned': StudySessionAbandonedPayloadSchema,
   'attunement-ritual:submitted': AttunementRitualSubmittedPayloadSchema,
   'attunement-cooldown:checked': AttunementCooldownPayloadSchema,
   'crystal:unlocked': CrystalUnlockedPayloadSchema,

@@ -66,6 +66,13 @@ export const TELEMETRY_TO_POSTHOG = {
     posthogEvent: 'study-session:completed',
     properties: defaultProperties,
   },
+  // Phase 4: terminal signal for sessions closed mid-flight. Disjoint
+  // from `study-session:completed` by detection contract (emitted only
+  // when `attempts.length > 0 && attempts.length < totalCards`).
+  'study-session:abandoned': {
+    posthogEvent: 'study-session:abandoned',
+    properties: defaultProperties,
+  },
   'attunement-ritual:submitted': {
     posthogEvent: 'attunement-ritual:submitted',
     properties: defaultProperties,
@@ -142,7 +149,7 @@ export const TELEMETRY_TO_POSTHOG = {
     posthogEvent: 'mentor:first-subject-generation-enqueued',
     properties: defaultProperties,
   },
-  // ── Phase 3: topic-content pipeline lifecycle ─────────────────────
+  // ── Phase 3: topic-content pipeline lifecycle ─────────────────
   // Disjoint from `topic-content:generation-requested` in
   // APP_BUS_TO_POSTHOG; the bus event captures user intent (request
   // phase), these telemetry events capture actual pipeline execution.
