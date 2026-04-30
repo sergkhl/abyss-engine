@@ -1,5 +1,10 @@
 'use client';
 
+import type {
+  AutocaptureCompatibleElement,
+  DomAutocaptureEvents,
+} from 'posthog-js';
+
 export const POSTHOG_DEFAULTS = '2026-01-30' as const;
 export const POSTHOG_DEFAULT_HOST = 'https://us.i.posthog.com';
 export const POSTHOG_LOCAL_DISABLE_KEY = 'abyss-analytics-disabled';
@@ -14,8 +19,8 @@ export interface PosthogResolvedConfig {
   recordCanvas: false;
   enableSessionRecording: true;
   autocapture: {
-    dom_event_allowlist: readonly string[];
-    element_allowlist: readonly string[];
+    dom_event_allowlist: readonly DomAutocaptureEvents[];
+    element_allowlist: readonly AutocaptureCompatibleElement[];
   };
 }
 
@@ -96,7 +101,7 @@ export function readPosthogConfig(
     autocapture: {
       // Day-one allowlist; broaden only after architectural review.
       dom_event_allowlist: ['click', 'submit', 'change'],
-      element_allowlist: ['button', 'a', 'input', '[role="button"]'],
+      element_allowlist: ['button', 'a', 'input'],
     },
   };
 }
