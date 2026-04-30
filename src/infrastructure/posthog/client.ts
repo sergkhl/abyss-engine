@@ -33,7 +33,9 @@ export function createPosthogSink(
 ): AnalyticsSink {
   posthog.init(config.token, {
     api_host: config.host,
+    ui_host: config.uiHost,
     defaults: config.defaults,
+    person_profiles: config.personProfiles,
     autocapture: {
       dom_event_allowlist: [...config.autocapture.dom_event_allowlist],
       element_allowlist: [...config.autocapture.element_allowlist],
@@ -41,8 +43,11 @@ export function createPosthogSink(
     session_recording: {
       captureCanvas: {
         recordCanvas: config.recordCanvas,
+        canvasFps: config.captureCanvasFps,
+        canvasQuality: config.captureCanvasQuality,
       },
     },
+    logs: config.logs,
     capture_pageview: 'history_change',
     persistence: 'localStorage+cookie',
     bootstrap: {

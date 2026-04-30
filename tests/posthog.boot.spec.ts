@@ -9,14 +9,14 @@ import {
 /**
  * Phase 1 PostHog smoke. Asserts that the cold-boot path performs no
  * outbound traffic to any PostHog host when analytics are disabled,
- * either implicitly (no `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` in the
+ * either implicitly (no `NEXT_PUBLIC_POSTHOG_TOKEN` in the
  * environment) or explicitly via the documented `?abyss-analytics=off`
  * kill-switch querystring.
  *
  * The route handler aborts any matching request — a green test means
  * no requests were ever attempted.
  */
-const POSTHOG_HOST_PATTERN = /\.(posthog\.com|posthog\.io)(?:[/?#]|$)/i;
+const POSTHOG_HOST_PATTERN = /\.(posthog\.com|posthog\.io|globesoul\.com)(?:[/?#]|$)/i;
 
 test.describe('PostHog boot', () => {
   test('does not contact any PostHog host on cold boot when the kill switch is active', async ({

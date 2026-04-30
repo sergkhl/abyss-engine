@@ -7,21 +7,37 @@ import {
   bootstrapPosthog,
   type BootstrapBuildContext,
 } from '../bootstrapPosthog';
+import {
+  POSTHOG_LOGS_FLUSH_INTERVAL_MS,
+  POSTHOG_LOGS_MAX_BUFFER_SIZE,
+  POSTHOG_LOGS_MAX_LOGS_PER_INTERVAL,
+} from '../config';
 import type { AnalyticsSink } from '../client';
 import type { PosthogResolvedConfig } from '../config';
 
 const TOKEN = 'phc_test_token';
-const HOST = 'https://us.i.posthog.com';
+const HOST = 'https://render.globesoul.com';
+const UI_HOST = 'https://us.posthog.com';
 
 const TEST_CONFIG: PosthogResolvedConfig = {
   token: TOKEN,
   host: HOST,
+  uiHost: UI_HOST,
   defaults: '2026-01-30',
-  recordCanvas: false,
+  personProfiles: 'identified_only',
+  recordCanvas: true,
   enableSessionRecording: true,
+  captureCanvasFps: 2,
+  captureCanvasQuality: '0.2',
   autocapture: {
     dom_event_allowlist: ['click', 'submit', 'change'],
     element_allowlist: ['button', 'a', 'input'],
+  },
+  logs: {
+    captureConsoleLogs: false,
+    flushIntervalMs: POSTHOG_LOGS_FLUSH_INTERVAL_MS,
+    maxBufferSize: POSTHOG_LOGS_MAX_BUFFER_SIZE,
+    maxLogsPerInterval: POSTHOG_LOGS_MAX_LOGS_PER_INTERVAL,
   },
 };
 
@@ -64,6 +80,32 @@ describe('bootstrapPosthog', () => {
     expect(createSink).not.toHaveBeenCalled();
     expect(sink.identify).not.toHaveBeenCalled();
     expect(sink.setPersonProperties).not.toHaveBeenCalled();
+  });
+
+  it('passes deterministic logs batching config to the analytics sink', () => {
+    let capturedConfig: PosthogResolvedConfig | null = null;
+    const createSink = vi.fn((cfg: PosthogResolvedConfig, _distinctId: string): AnalyticsSink => {
+      capturedConfig = cfg;
+      return sink;
+    });
+    bootstrapPosthog({
+      resolveConfig: () => TEST_CONFIG,
+      resolveDistinctId: () => 'pid',
+      createSink,
+      buildContext: () => TEST_BUILD,
+    });
+
+    expect(createSink).toHaveBeenCalledTimes(1);
+    expect(capturedConfig).not.toBeNull();
+
+    expect(capturedConfig!.logs).toEqual(
+      expect.objectContaining({
+        captureConsoleLogs: false,
+        flushIntervalMs: POSTHOG_LOGS_FLUSH_INTERVAL_MS,
+        maxBufferSize: POSTHOG_LOGS_MAX_BUFFER_SIZE,
+        maxLogsPerInterval: POSTHOG_LOGS_MAX_LOGS_PER_INTERVAL,
+      }),
+    );
   });
 
   it('initializes the sink and identifies the visitor with infrastructure-owned context (init -> identify ordering)', () => {
