@@ -154,4 +154,187 @@ export function migrateMentorState(
   _fromVersion: number,
 ): MentorPersistedState {
   if (!isPlainObject(persisted)) {
-    return { ...DEFAULT_PERSISTED_STATE
+    return { ...DEFAULT_PERSISTED_STATE };
+  }
+
+  const playerName =
+    typeof persisted.playerName === 'string' || persisted.playerName === null
+      ? (persisted.playerName as string | null)
+      : DEFAULT_PERSISTED_STATE.playerName;
+
+  const mentorLocale =
+    persisted.mentorLocale === 'en' ? 'en' : DEFAULT_PERSISTED_STATE.mentorLocale;
+
+  const narrationEnabled =
+    typeof persisted.narrationEnabled === 'boolean'
+      ? persisted.narrationEnabled
+      : DEFAULT_PERSISTED_STATE.narrationEnabled;
+
+  const lastInteractionAt =
+    typeof persisted.lastInteractionAt === 'number' || persisted.lastInteractionAt === null
+      ? (persisted.lastInteractionAt as number | null)
+      : DEFAULT_PERSISTED_STATE.lastInteractionAt;
+
+  const firstSubjectGenerationEnqueuedAt =
+    typeof persisted.firstSubjectGenerationEnqueuedAt === 'number' ||
+    persisted.firstSubjectGenerationEnqueuedAt === null
+      ? (persisted.firstSubjectGenerationEnqueuedAt as number | null)
+      : DEFAULT_PERSISTED_STATE.firstSubjectGenerationEnqueuedAt;
+
+  return {
+    playerName,
+    mentorLocale,
+    narrationEnabled,
+    lastInteractionAt,
+    firstSubjectGenerationEnqueuedAt,
+    // Hard-cut the two trigger-id-keyed fields (legacy values are now
+    // meaningless dot-namespace ids).
+    seenTriggers: [],
+    cooldowns: {},
+  };
+}
+
+export const useMentorStore = create<MentorState>()(
+  persist(
+    (set, get) => ({
+      ...DEFAULT_PERSISTED_STATE,
+      ...DEFAULT_EPHEMERAL_STATE,
+
+      setPlayerName: (name) => {
+        set({ playerName: name });
+        // Mentor → infrastructure boundary. The PostHog bootstrap
+        // (see `src/infrastructure/posthog/bootstrapPosthog.ts`)
+        // subscribes to this event and enriches the payload with
+        // analytics deployment metadata (appVersion, buildMode,
+        // timestamps); feature code only carries `playerName`.
+        appEventBus.emit('player-profile:updated', { playerName: name });
+      },
+      setNarrationEnabled: (enabled) => set({ narrationEnabled: enabled }),
+
+      enqueue: (plan) => {
+        set((state) => {
+          const next = [...state.dialogQueue, plan].sort(
+            (a, b) => b.priority - a.priority || a.enqueuedAt - b.enqueuedAt,
+          );
+          return { dialogQueue: next };
+        });
+      },
+
+      popHead: () => {
+        const state = get();
+        const head = state.dialogQueue[0] ?? null;
+        if (!head) return null;
+        set({ dialogQueue: state.dialogQueue.slice(1) });
+        return head;
+      },
+
+      peekHead: () => get().dialogQueue[0] ?? null,
+
+      openCurrentFromQueue: () => {
+        const state = get();
+        const head = state.dialogQueue[0] ?? null;
+        if (!head) return null;
+        set({
+          currentDialog: head,
+          dialogQueue: state.dialogQueue.slice(1),
+          lastInteractionAt: Date.now(),
+        });
+        return head;
+      },
+
+      dismissCurrent: () => {
+        set({ currentDialog: null, lastInteractionAt: Date.now() });
+      },
+
+      markSeen: (trigger) => {
+        set((state) =>
+          state.seenTriggers.includes(trigger)
+            ? state
+            : { seenTriggers: [...state.seenTriggers, trigger] },
+        );
+      },
+
+      recordCooldown: (trigger, atMs) => {
+        set((state) => ({
+          cooldowns: { ...state.cooldowns, [trigger]: atMs },
+        }));
+      },
+
+      markFirstSubjectGenerationEnqueued: (atMs) => {
+        set({ firstSubjectGenerationEnqueuedAt: atMs });
+      },
+
+      nextVariantIndex: (trigger, variantCount, rng = Math.random) => {
+        if (variantCount <= 0) {
+          throw new Error(`Trigger "${trigger}" has no variants`);
+        }
+        const state = get();
+        const existing = state.variantCursors[trigger];
+        const cursorValid =
+          existing &&
+          existing.order.length === variantCount &&
+          existing.order.every((n) => Number.isInteger(n) && n >= 0 && n < variantCount);
+
+        if (!cursorValid) {
+          const order = fisherYatesShuffle(variantCount, rng);
+          set({
+            variantCursors: {
+              ...state.variantCursors,
+              [trigger]: { order, index: 0 },
+            },
+          });
+          return order[0]!;
+        }
+
+        const nextIndex = existing.index + 1;
+        if (nextIndex >= existing.order.length) {
+          const previousTail = existing.order[existing.order.length - 1];
+          const order = reshuffleAvoidingHeadEqualsTail(variantCount, previousTail, rng);
+          set({
+            variantCursors: {
+              ...state.variantCursors,
+              [trigger]: { order, index: 0 },
+            },
+          });
+          return order[0]!;
+        }
+
+        set({
+          variantCursors: {
+            ...state.variantCursors,
+            [trigger]: { order: existing.order, index: nextIndex },
+          },
+        });
+        return existing.order[nextIndex]!;
+      },
+
+      reset: () => {
+        set({ ...DEFAULT_PERSISTED_STATE, ...DEFAULT_EPHEMERAL_STATE });
+      },
+    }),
+    {
+      name: STORAGE_KEY,
+      version: STORAGE_VERSION,
+      storage: createJSONStorage(() =>
+        typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
+          ? window.localStorage
+          : getMemoryStorage(),
+      ),
+      partialize: (state): MentorPersistedState => ({
+        playerName: state.playerName,
+        mentorLocale: state.mentorLocale,
+        seenTriggers: state.seenTriggers,
+        narrationEnabled: state.narrationEnabled,
+        lastInteractionAt: state.lastInteractionAt,
+        cooldowns: state.cooldowns,
+        firstSubjectGenerationEnqueuedAt: state.firstSubjectGenerationEnqueuedAt,
+      }),
+      migrate: (persisted, fromVersion) => migrateMentorState(persisted, fromVersion),
+    },
+  ),
+);
+
+export const mentorStore = useMentorStore;
+
+export const selectCurrentDialog = (state: MentorState) => state.currentDialog;
+export const selectIsOverlayOpen = (state: MentorState) => state.currentDialog !== null;
