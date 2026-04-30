@@ -7,7 +7,7 @@
  *
  * The `posthog-js` SDK itself is intentionally NOT re-exported here.
  * It is confined to `./client.ts` so feature code can never reach
- * into the SDK directly. See CLAUDE.md “Analytics SDK isolation”.
+ * into the SDK directly. See CLAUDE.md "Analytics SDK isolation".
  */
 
 export {
@@ -38,3 +38,20 @@ export {
   readLocalPlayerId,
   writeLocalPlayerId,
 } from './localPlayerIdentity';
+
+// Phase 2 sinks. Re-exported for use by `bootstrapPosthog` and tests.
+// Feature code must NOT import these — analytics forwarding happens
+// only via `bootstrapPosthog`'s composition root.
+export {
+  TELEMETRY_TO_POSTHOG,
+  forwardTelemetryToPosthog,
+} from './telemetryPosthogSink';
+export type {
+  PosthogMapping,
+  TelemetrySubscribe,
+} from './telemetryPosthogSink';
+
+export {
+  APP_BUS_TO_POSTHOG,
+  forwardAppBusToPosthog,
+} from './contentGenerationPosthogSink';
