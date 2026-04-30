@@ -39,7 +39,9 @@ export function createPosthogSink(
       element_allowlist: [...config.autocapture.element_allowlist],
     },
     session_recording: {
-      recordCanvas: config.recordCanvas,
+      captureCanvas: {
+        recordCanvas: config.recordCanvas,
+      },
     },
     capture_pageview: 'history_change',
     persistence: 'localStorage+cookie',
