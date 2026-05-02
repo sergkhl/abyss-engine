@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import MathMarkdownRenderer from '../MathMarkdownRenderer';
 import { RenderableCard } from '../../features/studyPanel/cardPresenter';
 import {
@@ -19,8 +19,9 @@ import {
 import { LlmReasoningBlock } from '../LlmReasoningBlock';
 import { LlmReasoningToggle } from '../LlmReasoningToggle';
 import { LlmTtsToggle } from '../LlmTtsToggle';
-import { Redo2, Sparkles, Undo2 } from 'lucide-react';
+import { Lightbulb, Sparkles } from 'lucide-react';
 import { StudyKatexInteractive } from './StudyKatexInteractive';
+import { StudyPromptExternalActions } from './StudyPromptExternalActions';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useLlmAssistantSpeech } from '@/hooks/useLlmAssistantSpeech';
 import { useStudyPanelLlmSurfaces } from '@/hooks/useStudyPanelLlmSurfaces';
@@ -151,17 +152,13 @@ interface StudyPanelStudyViewProps {
   isRevealed: boolean;
   sm2State: SM2Data | null;
   activeCard: Card | null;
+  topicSystemPrompt: string;
+  resolvedTopic: string;
   onSelectAnswer: (answer: string) => void;
   onChoiceSubmit: () => void;
   onChoiceContinue: () => void;
   onCoarseRate: (choice: CoarseChoice) => void;
   onHintUsed: () => void;
-  onUndo: () => void;
-  onRedo: () => void;
-  canUndo: boolean;
-  canRedo: boolean;
-  undoCount: number;
-  redoCount: number;
   llmExplain: StudyPanelLlmExplainProps;
   llmFormulaExplain: StudyPanelFormulaExplainProps;
   explainReasoningEnabled: boolean;
@@ -178,6 +175,9 @@ interface StudyPanelStudyViewProps {
 
 const QUESTION_EXPLAIN_DESCRIPTION = 'AI explanation for the current card question.';
 
+/** Delay before the Hint control is shown (viewport-fixed; resets when the card changes). */
+export const STUDY_HINT_BUTTON_REVEAL_DELAY_MS = 15_000;
+
 /** Inline LaTeX as remark-math; escapes `$` inside the expression. */
 function formulaDescriptionMarkdown(latex: string | null): string {
   if (!latex) {
@@ -192,25 +192,17 @@ export function StudyPanelStudyView({
   renderedCard,
   isFlashcard,
   isChoiceQuestion,
-  isSingleChoice,
-  isMultiChoice,
-  selectedAnswers,
   isAnswerSubmitted,
-  isCorrect,
   isRevealed,
-  sm2State,
+  selectedAnswers,
   activeCard,
+  topicSystemPrompt,
+  resolvedTopic,
   onSelectAnswer,
   onChoiceSubmit,
   onChoiceContinue,
-    onCoarseRate,
-    onHintUsed,
-  onUndo,
-  onRedo,
-  canUndo,
-  canRedo,
-  undoCount,
-  redoCount,
+  onCoarseRate,
+  onHintUsed,
   llmExplain,
   llmFormulaExplain,
   explainReasoningEnabled,
@@ -224,6 +216,16 @@ export function StudyPanelStudyView({
   onToggleExplainTts,
   onToggleFormulaTts,
 }: StudyPanelStudyViewProps) {
+  void activeCard;
+  const [hintButtonVisible, setHintButtonVisible] = useState(false);
+  useEffect(() => {
+    setHintButtonVisible(false);
+    const timerId = window.setTimeout(() => {
+      setHintButtonVisible(true);
+    }, STUDY_HINT_BUTTON_REVEAL_DELAY_MS);
+    return () => window.clearTimeout(timerId);
+  }, [renderedCard.id]);
+
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const {
     explainOpen,
@@ -256,30 +258,26 @@ export function StudyPanelStudyView({
     isPending: llmFormulaExplain.isPending,
   });
 
-  const formatTestId = isFlashcard
-    ? 'study-card-format-flashcard'
-    : isSingleChoice
-      ? 'study-card-format-single-choice'
-      : isMultiChoice
-        ? 'study-card-format-multi-choice'
-        : 'study-card-format-unknown';
-  const formatBadgeVariant = isFlashcard ? 'secondary' : isSingleChoice ? 'outline' : 'default';
-  const formatLabel = isFlashcard
-    ? '📝 Flashcard'
-    : isSingleChoice
-      ? '⭕ Single Choice'
-      : '☑️ Multiple Choice';
+  const trimmedSystemPrompt = topicSystemPrompt.trim();
+  const hasSystemPrompt = trimmedSystemPrompt.length > 0;
 
   const questionExplainBody = (
-    <LlmStreamBlock
-      isPending={llmExplain.isPending}
-      errorMessage={llmExplain.errorMessage}
-      assistantText={llmExplain.assistantText}
-      reasoningText={llmExplain.reasoningText}
-      contentTestId="study-card-llm-explain-content"
-      errorTestId="study-card-llm-explain-error"
-      loadingTestId="study-card-llm-explain-loading"
-    />
+    <div className="flex flex-col gap-2">
+      {!hasSystemPrompt && (
+        <p className="text-muted-foreground text-xs italic" data-testid="study-card-llm-explain-prompt-helper">
+          No topic prompt yet, so the search and diagram shortcuts are disabled.
+        </p>
+      )}
+      <LlmStreamBlock
+        isPending={llmExplain.isPending}
+        errorMessage={llmExplain.errorMessage}
+        assistantText={llmExplain.assistantText}
+        reasoningText={llmExplain.reasoningText}
+        contentTestId="study-card-llm-explain-content"
+        errorTestId="study-card-llm-explain-error"
+        loadingTestId="study-card-llm-explain-loading"
+      />
+    </div>
   );
 
   const formulaExplainBody = (
@@ -303,61 +301,36 @@ export function StudyPanelStudyView({
     kind: 'markdown',
     source: formulaDescSource,
   };
+
+  const hintOpenHandler = () => handleExplainOpenChange(true);
+  const hintTriggerWrapperClassName =
+    'pointer-events-none fixed left-0 top-0 z-[200] flex p-3 pl-[max(0.75rem,env(safe-area-inset-left,0px))] pt-[max(0.75rem,env(safe-area-inset-top,0px))]';
+
   return (
     <div className="w-full relative" data-testid="study-panel-card-root">
-      <div className="bg-card rounded-[15px] p-5 min-h-[150px] flex flex-col justify-center">
-        {/* Format Type Badge */}
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <Badge
-            variant={formatBadgeVariant}
-            data-testid={formatTestId}
+      {hintButtonVisible ? (
+        <div className={hintTriggerWrapperClassName}>
+          {/* pointer-events-none on the wrapper keeps taps from blocking the scene; the button re-enables hits. */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="pointer-events-auto gap-1 min-h-8 rounded-full"
+            aria-label="Hint: Explain question with AI"
+            title="Hint: Explain question with AI"
+            data-testid="study-card-llm-explain-trigger"
+            onClick={hintOpenHandler}
           >
-            {formatLabel}
-          </Badge>
-          <div className="flex items-center gap-1" data-testid="study-card-history-actions">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-xs"
-              aria-label="Explain question with AI"
-              title="Explain question with AI"
-              data-testid="study-card-llm-explain-trigger"
-              onClick={() => handleExplainOpenChange(true)}
-            >
-              <Sparkles className="h-3.5 w-3.5" aria-hidden />
-              <span className="sr-only">Explain question with AI</span>
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon-xs"
-              onClick={onUndo}
-              disabled={!canUndo}
-              aria-label={`Undo (${undoCount})`}
-              title={`Undo (${undoCount})`}
-              data-testid="study-card-undo"
-            >
-              <Undo2 className="h-3.5 w-3.5" />
-              <span className="sr-only">{`Undo (${undoCount})`}</span>
-            </Button>
-            <Button
-              onClick={onRedo}
-              disabled={!canRedo}
-              variant="outline"
-              size="icon-xs"
-              aria-label={`Redo (${redoCount})`}
-              title={`Redo (${redoCount})`}
-              data-testid="study-card-redo"
-            >
-              <Redo2 className="h-3.5 w-3.5" />
-              <span className="sr-only">{`Redo (${redoCount})`}</span>
-            </Button>
-          </div>
+            <Lightbulb aria-hidden />
+            Hint
+          </Button>
         </div>
+      ) : null}
 
+      <div className="bg-card p-5 min-h-[100px] flex flex-col justify-center">
         <div className="mb-2" data-testid="study-card-question">
           <StudyKatexInteractive
-            className="study-katex-interactive"
+            className="study-katex-interactive study-markdown-primary"
             onFormulaPress={(latex, el) => openFormulaExplain(latex, 'question', el)}
           >
             <MathMarkdownRenderer
@@ -371,10 +344,10 @@ export function StudyPanelStudyView({
         {isFlashcard && isRevealed && renderedCard.answer && (
           <div className="mt-4 pt-4 border-t border-border" data-testid="study-card-answer-section">
             <div className="mb-2">
-              <Badge variant="outline">Answer & explanation</Badge>
+              <Badge variant="outline">Answer &amp; explanation</Badge>
             </div>
             <StudyKatexInteractive
-              className="study-katex-interactive"
+              className="study-katex-interactive study-markdown-primary"
               onFormulaPress={(latex, el) => openFormulaExplain(latex, 'answer', el)}
             >
               <MathMarkdownRenderer
@@ -387,7 +360,7 @@ export function StudyPanelStudyView({
 
         {/* Choice Options */}
         {!isFlashcard && renderedCard.options && (
-          <div className="mt-4 space-y-2" data-testid="study-card-choice-options">
+          <div className="mt-4 space-y-2 study-markdown-secondary" data-testid="study-card-choice-options">
             {renderedCard.options.map((option, index) => {
               const isSelected = selectedAnswers.includes(option);
               const isCorrectOption = Boolean(renderedCard.correctAnswers?.includes(option));
@@ -403,9 +376,7 @@ export function StudyPanelStudyView({
                   disabled={isAnswerSubmitted}
                   variant="ghost"
                   multiline
-                  className={`w-full text-left p-3 rounded-lg border-2 transition-colors ${optionStyle} ${
-                    isAnswerSubmitted ? 'cursor-default' : 'cursor-pointer'
-                  }`}
+                  className={`w-full text-left p-3 rounded-lg border-2 transition-colors ${optionStyle}`}
                   data-testid={`study-card-choice-option-${index}`}
                   aria-label={`${option} ${isAnswerSubmitted ? optionState : 'not submitted'}`}
                 >
@@ -429,7 +400,7 @@ export function StudyPanelStudyView({
 
         {/* Context - shown after answering */}
         {((isFlashcard && isRevealed) || (isChoiceQuestion && isAnswerSubmitted)) && renderedCard.context && (
-          <div className="mt-4 pt-4 border-t border-border">
+          <div className="mt-4 pt-4 border-t border-border study-markdown-secondary">
             <div className="mb-2">
               <Badge variant="outline">💡 Explanation</Badge>
             </div>
@@ -439,28 +410,6 @@ export function StudyPanelStudyView({
             />
           </div>
         )}
-
-        {/* Card Metadata */}
-        <div className="flex gap-2 flex-wrap text-xs text-muted-foreground border-t border-border pt-3 mt-4">
-          <Badge variant="secondary" className="text-[10px] px-2 py-0.5">
-            ID {renderedCard.id.slice(0, 8)}
-          </Badge>
-          {activeCard && (
-            <Badge variant="outline" className="text-[10px] px-2 py-0.5">
-              Difficulty {activeCard.difficulty}
-            </Badge>
-          )}
-          {sm2State && (
-            <>
-              <Badge variant="outline" className="text-[10px] px-2 py-0.5">
-                Interval {sm2State.interval} days
-              </Badge>
-              <Badge variant="outline" className="text-[10px] px-2 py-0.5">
-                Reps {sm2State.repetitions}
-              </Badge>
-            </>
-          )}
-        </div>
       </div>
 
       {/* Inference surfaces: see ResponsiveLlmInferenceSurface (non-modal nested Radix). */}
@@ -476,6 +425,11 @@ export function StudyPanelStudyView({
         sheetBodyScrollClassName="max-h-[min(40vh,32rem)]"
         headerAction={
           <div className="flex items-center gap-1">
+            <StudyPromptExternalActions
+              topicSystemPrompt={topicSystemPrompt}
+              resolvedTopic={resolvedTopic}
+            />
+            <span className="mx-1 h-5 w-px bg-border" aria-hidden />
             <LlmReasoningToggle
               enabled={explainReasoningEnabled}
               disabled={explainReasoningToggleDisabled}
@@ -526,7 +480,6 @@ export function StudyPanelStudyView({
         {/* Flashcard Actions */}
         {isFlashcard && !isAnswerSubmitted && (
           <div className="grid gap-2">
-            <p className="text-muted-foreground text-sm">Did you recall it?</p>
             <div className="grid grid-cols-2 gap-2">
               <Button
                 onClick={() => onCoarseRate('forgot')}
@@ -542,7 +495,7 @@ export function StudyPanelStudyView({
                 className="w-full py-3"
                 data-testid="study-card-coarse-recalled"
               >
-                Recalled
+                Got it
               </Button>
             </div>
           </div>
@@ -563,9 +516,7 @@ export function StudyPanelStudyView({
           <Button
             onClick={onChoiceSubmit}
             disabled={selectedAnswers.length === 0}
-            className={`w-full ${
-              selectedAnswers.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary/90'
-            }`}
+            className="w-full"
             data-testid="study-card-submit-answer"
           >
             Submit Answer

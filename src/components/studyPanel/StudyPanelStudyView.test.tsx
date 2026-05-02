@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createElement, type ComponentProps } from 'react';
+import { act, createElement, type ComponentProps } from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
-import { StudyPanelStudyView } from './StudyPanelStudyView';
+import { StudyPanelStudyView, STUDY_HINT_BUTTON_REVEAL_DELAY_MS } from './StudyPanelStudyView';
 
 type StudyPanelStudyViewProps = ComponentProps<typeof StudyPanelStudyView>;
 
@@ -25,17 +25,13 @@ const baseProps: StudyPanelStudyViewProps = {
   isRevealed: false,
   sm2State: null,
   activeCard: null,
+  topicSystemPrompt: '',
+  resolvedTopic: 'Test topic',
   onSelectAnswer: vi.fn(),
   onChoiceSubmit: vi.fn(),
   onChoiceContinue: vi.fn(),
   onCoarseRate: vi.fn(),
   onHintUsed: vi.fn(),
-  onUndo: vi.fn(),
-  onRedo: vi.fn(),
-  canUndo: false,
-  canRedo: false,
-  undoCount: 0,
-  redoCount: 0,
   llmExplain: {
     isPending: false,
     errorMessage: null,
@@ -87,15 +83,22 @@ function renderStudyPanelView(override: Partial<StudyPanelStudyViewProps> = {}) 
 }
 
 afterEach(() => {
+  vi.useRealTimers();
   document.body.innerHTML = '';
 });
 
 describe('StudyPanelStudyView', () => {
-  it('renders Explain control for LLM inference', () => {
+  it('renders Hint trigger for LLM inference after reveal delay', () => {
+    vi.useFakeTimers();
     const { container, unmount } = renderStudyPanelView();
+    expect(container.querySelector('[data-testid="study-card-llm-explain-trigger"]')).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(STUDY_HINT_BUTTON_REVEAL_DELAY_MS);
+    });
     const trigger = container.querySelector('[data-testid="study-card-llm-explain-trigger"]');
     expect(trigger).not.toBeNull();
-    expect(trigger?.getAttribute('aria-label')).toContain('Explain');
+    expect(trigger?.getAttribute('aria-label')).toContain('Hint');
+    expect(trigger?.textContent).toContain('Hint');
     unmount();
   });
 
@@ -126,6 +129,7 @@ describe('StudyPanelStudyView', () => {
   });
 
   it('requests LLM explanation when Explain inference surface opens', () => {
+    vi.useFakeTimers();
     const requestExplain = vi.fn();
     const { container, unmount } = renderStudyPanelView({
       llmExplain: {
@@ -139,6 +143,9 @@ describe('StudyPanelStudyView', () => {
       },
     });
     document.body.append(container);
+    act(() => {
+      vi.advanceTimersByTime(STUDY_HINT_BUTTON_REVEAL_DELAY_MS);
+    });
     const trigger = container.querySelector('[data-testid="study-card-llm-explain-trigger"]') as HTMLButtonElement;
     trigger?.click();
     expect(requestExplain).toHaveBeenCalledTimes(1);
@@ -146,6 +153,7 @@ describe('StudyPanelStudyView', () => {
   });
 
   it('shows loading text in explain inference surface while pending', () => {
+    vi.useFakeTimers();
     const requestExplain = vi.fn();
     const cancelInflight = vi.fn();
     const { container, rerender, unmount } = renderStudyPanelView({
@@ -160,6 +168,9 @@ describe('StudyPanelStudyView', () => {
       },
     });
     document.body.append(container);
+    act(() => {
+      vi.advanceTimersByTime(STUDY_HINT_BUTTON_REVEAL_DELAY_MS);
+    });
     container.querySelector('[data-testid="study-card-llm-explain-trigger"]')?.dispatchEvent(
       new MouseEvent('click', { bubbles: true }),
     );
@@ -176,51 +187,6 @@ describe('StudyPanelStudyView', () => {
     });
     const loading = document.body.querySelector('[data-testid="study-card-llm-explain-loading"]');
     expect(loading).not.toBeNull();
-    unmount();
-  });
-
-  it('renders undo and redo controls with current stack counts', () => {
-    const onUndo = vi.fn();
-    const onRedo = vi.fn();
-    const { container, unmount } = renderStudyPanelView({
-      onUndo,
-      onRedo,
-      canUndo: true,
-      canRedo: true,
-      undoCount: 2,
-      redoCount: 1,
-    });
-
-    const undoButton = container.querySelector('[data-testid="study-card-undo"]') as HTMLButtonElement;
-    const redoButton = container.querySelector('[data-testid="study-card-redo"]') as HTMLButtonElement;
-
-    expect(undoButton).not.toBeNull();
-    expect(redoButton).not.toBeNull();
-    expect(undoButton?.getAttribute('aria-label')).toContain('Undo (2)');
-    expect(redoButton?.getAttribute('aria-label')).toContain('Redo (1)');
-    expect(undoButton.closest('[data-testid="study-card-history-actions"]')).not.toBeNull();
-    expect(redoButton.closest('[data-testid="study-card-history-actions"]')).not.toBeNull();
-
-    undoButton?.click();
-    redoButton?.click();
-    expect(onUndo).toHaveBeenCalledTimes(1);
-    expect(onRedo).toHaveBeenCalledTimes(1);
-    unmount();
-  });
-
-  it('disables undo and redo buttons when no history is available', () => {
-    const { container, unmount } = renderStudyPanelView({
-      canUndo: false,
-      canRedo: false,
-      undoCount: 0,
-      redoCount: 0,
-    });
-
-    const undoButton = container.querySelector('[data-testid="study-card-undo"]') as HTMLButtonElement;
-    const redoButton = container.querySelector('[data-testid="study-card-redo"]') as HTMLButtonElement;
-
-    expect(undoButton.disabled).toBe(true);
-    expect(redoButton.disabled).toBe(true);
     unmount();
   });
 
@@ -341,5 +307,4 @@ describe('StudyPanelStudyView', () => {
 
     unmount();
   });
-
 });
