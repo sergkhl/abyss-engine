@@ -77,7 +77,7 @@ export interface GenerationAttentionSurface {
 
 export type GenerationAttentionSelectorState = Pick<
   ContentGenerationState,
-  'jobs' | 'pipelines' | 'sessionAcknowledgedFailureKeys' | 'sessionRetryRoutingFailures'
+  'jobs' | 'pipelines' | 'sessionFailureAttentionKeys' | 'sessionRetryRoutingFailures'
 >;
 
 function jobKindToFailureKind(kind: ContentGenerationJobKind): GenerationAttentionFailureKind | null {
@@ -189,6 +189,14 @@ function primaryFailureFromJob(
   return base;
 }
 
+/** True when a failed job should create session mentor/HUD failure attention (matches primaryFailure job branch). */
+export function isJobFailureAttentionEligible(
+  job: ContentGenerationJob,
+  pipelines: Record<string, ContentGenerationPipeline>,
+): boolean {
+  return primaryFailureFromJob(job, pipelines) !== null;
+}
+
 function comparePrimaryFailures(
   a: GenerationAttentionPrimaryFailure,
   b: GenerationAttentionPrimaryFailure,
@@ -220,10 +228,56 @@ function retrySurfaceToPrimary(r: SessionRetryRoutingFailureSurface): Generation
   };
 }
 
+/** Field-wise equality so we can intern failures for referential stability (see internPrimaryFailure). */
+function generationPrimaryFailureEqual(
+  a: GenerationAttentionPrimaryFailure,
+  b: GenerationAttentionPrimaryFailure,
+): boolean {
+  return (
+    a.kind === b.kind &&
+    a.failureKey === b.failureKey &&
+    a.jobId === b.jobId &&
+    a.failureInstanceId === b.failureInstanceId &&
+    a.originalJobId === b.originalJobId &&
+    a.subjectId === b.subjectId &&
+    a.topicId === b.topicId &&
+    a.topicLabel === b.topicLabel &&
+    a.pipelineId === b.pipelineId &&
+    a.stage === b.stage &&
+    a.level === b.level &&
+    a.jobLabel === b.jobLabel &&
+    a.errorMessage === b.errorMessage
+  );
+}
+
+/**
+ * useShallow compares `primaryFailure` by reference. This selector rebuilds that object on every
+ * invocation; without interning, Zustand's useSyncExternalStore snapshot changes every render and
+ * React hits "Maximum update depth exceeded" / getSnapshot cache warnings.
+ */
+let internedPrimaryFailure: GenerationAttentionPrimaryFailure | null = null;
+
+function internPrimaryFailure(
+  next: GenerationAttentionPrimaryFailure | null,
+): GenerationAttentionPrimaryFailure | null {
+  if (next === null) {
+    internedPrimaryFailure = null;
+    return null;
+  }
+  if (
+    internedPrimaryFailure !== null &&
+    generationPrimaryFailureEqual(internedPrimaryFailure, next)
+  ) {
+    return internedPrimaryFailure;
+  }
+  internedPrimaryFailure = next;
+  return next;
+}
+
 /**
  * Unified content-generation attention for the nexus mentor bubble and entry
  * resolution: subject-graph progress pips plus the single highest-priority
- * unacknowledged canonical failure surface (including retry-routing collapse).
+ * current-session failure attention (including retry-routing collapse).
  */
 export function generationAttentionSurface(
   state: GenerationAttentionSelectorState,
@@ -241,13 +295,12 @@ export function generationAttentionSurface(
   let subjectGraphSubjectId: string | null = null;
   let subjectGraphPipelineId: string | null = null;
 
-  const ack = state.sessionAcknowledgedFailureKeys;
+  const attention = state.sessionFailureAttentionKeys;
 
   type Cand = { failure: GenerationAttentionPrimaryFailure; recency: number };
   const candidates: Cand[] = [];
 
   for (const r of Object.values(state.sessionRetryRoutingFailures)) {
-    if (ack[r.failureKey]) continue;
     candidates.push({ failure: retrySurfaceToPrimary(r), recency: r.createdAt });
   }
 
@@ -257,7 +310,7 @@ export function generationAttentionSurface(
       continue;
     }
     const fk = failureKeyForJob(job.id);
-    if (ack[fk]) continue;
+    if (!attention[fk]) continue;
     const p = primaryFailureFromJob(job, state.pipelines);
     if (!p) continue;
     candidates.push({ failure: p, recency: job.finishedAt ?? job.createdAt });
@@ -293,6 +346,6 @@ export function generationAttentionSurface(
     subjectGraphLabel,
     subjectGraphSubjectId,
     subjectGraphPipelineId,
-    primaryFailure: best,
+    primaryFailure: internPrimaryFailure(best),
   };
 }
