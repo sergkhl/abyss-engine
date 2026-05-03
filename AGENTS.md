@@ -1,4 +1,4 @@
-# CLAUDE.md
+# AGENTS.md
 
 ## Scope
 Authoritative reference for repository architecture and agent workflows. Codebase contradictions to this document must be resolved in favor of this document.
@@ -98,9 +98,9 @@ Before generating code, the agent must evaluate the request against the architec
 Every agent response proposing code modifications **must begin** with a **Compliance, Risk & Drift Assessment** (before any code, rationale, or optimization proposal). This assessment enforces zero-tolerance architectural hygiene and must explicitly:
 
 1. **Misalignment Check**
-   Systematically verify the entire proposal against **every section** of this CLAUDE.md (Scope, Project Vision, all Architectural Patterns, Mandatory Project Rules, WebGPU Strictness, Mobile-first UI, and Agent Workflow).
+   Systematically verify the entire proposal against **every section** of this AGENTS.md (Scope, Project Vision, all Architectural Patterns, Mandatory Project Rules, WebGPU Strictness, Mobile-first UI, and Agent Workflow).
    - List and highlight **every** misalignment or potential contradiction.
-   - If zero misalignments exist, state verbatim: **"Full alignment with CLAUDE.md confirmed — zero deviations detected."**
+   - If zero misalignments exist, state verbatim: **"Full alignment with AGENTS.md confirmed — zero deviations detected."**
 
 2. **Architectural Risk Highlight**
    Identify and rate (Low/Medium/High) every architectural risk introduced by the change, including (but not limited to):
@@ -116,6 +116,6 @@ Every agent response proposing code modifications **must begin** with a **Compli
    If any drift vector exists, state the risk and the exact guardrail added to eliminate it.
 
 This file is authoritative.
-If something in the codebase contradicts CLAUDE.md, the codebase is wrong.
+If something in the codebase contradicts AGENTS.md, the codebase is wrong.
 Welcome, agent.
 Let’s build the most beautiful learning garden in existence. 🌌

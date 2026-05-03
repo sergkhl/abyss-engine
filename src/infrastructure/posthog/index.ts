@@ -7,7 +7,7 @@
  *
  * The `posthog-js` SDK itself is intentionally NOT re-exported here.
  * It is confined to `./client.ts` so feature code can never reach
- * into the SDK directly. See CLAUDE.md "Analytics SDK isolation".
+ * into the SDK directly. See AGENTS "Analytics SDK isolation".
  */
 
 export {

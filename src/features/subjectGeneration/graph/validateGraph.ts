@@ -5,7 +5,7 @@ import type { SubjectGraph } from '@/types/core';
  * Subject graph validation — STRICT terminal gate on the fully assembled graph.
  *
  * Prerequisite repair runs earlier in `correctPrereqEdges` / `parsePrereqWiringResponse`
- * (see CLAUDE.md). This function validates the canonical `SubjectGraph` only.
+ * (see AGENTS). This function validates the canonical `SubjectGraph` only.
  */
 
 export interface GraphValidationExpectations {

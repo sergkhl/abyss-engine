@@ -3,7 +3,7 @@
 // Next.js 16 runs `instrumentation-client.ts` on the client before any
 // other application code, which makes it the correct — and only —
 // place to invoke `bootstrapPosthog()`. Feature code must never import
-// `posthog-js` directly nor call `bootstrapPosthog()`; see CLAUDE.md
+// `posthog-js` directly nor call `bootstrapPosthog()`; see AGENTS.md
 // (“Analytics SDK isolation”) and `src/infrastructure/posthog/AGENTS”.
 //
 // `bootstrapPosthog` is fully idempotent and returns early when the

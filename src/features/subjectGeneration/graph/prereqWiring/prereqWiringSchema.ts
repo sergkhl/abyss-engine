@@ -7,7 +7,7 @@ import type { TopicLattice } from '@/types/topicLattice';
  * Prereq wiring schema — validated **after** deterministic repair (`correctPrereqEdges`).
  *
  * Invalid LLM edges are stripped and missing required tiers are filled by lattice order (see
- * CLAUDE.md — Curriculum prerequisite edges). This Zod schema is the strict gate on the
+ * AGENTS — Curriculum prerequisite edges). This Zod schema is the strict gate on the
  * **repaired** graph only.
  *
  * REJECTED (still): accepting empty prerequisite arrays without repair — that would bypass the

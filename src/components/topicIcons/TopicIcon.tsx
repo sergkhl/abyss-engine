@@ -51,7 +51,7 @@ import type { TopicIconName } from '@/types/core';
  * The required `Record<TopicIconName, LucideIcon>` shape makes adding or
  * removing an icon name a compile-time error until this registry is updated,
  * keeping the schema/prompt/registry/visual paths in lockstep with
- * `TOPIC_ICON_NAMES` (CLAUDE.md "No magic strings", "No legacy burden").
+ * `TOPIC_ICON_NAMES` (AGENTS "No magic strings", "No legacy burden").
  *
  * Static named imports only — never `import * as ...`, never deep imports —
  * so the user-facing bundle stays tree-shakeable and the lucide entry
@@ -127,7 +127,7 @@ export interface TopicIconProps {
  *   component never selects icons heuristically and never falls back.
  * - Color inherits via `currentColor`; size and tone are owned by callers.
  * - Decorative by default. Topic names always remain visible beside the
- *   icon, satisfying CLAUDE.md mobile-first "no hover-only / icon-only
+ *   icon, satisfying AGENTS mobile-first "no hover-only / icon-only
  *   affordances".
  */
 export function TopicIcon({

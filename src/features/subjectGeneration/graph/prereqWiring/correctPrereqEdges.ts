@@ -3,7 +3,7 @@ import type { TopicLattice } from '@/types/topicLattice';
 
 import type { PrereqEdges } from './prereqWiringSchema';
 
-/** Deterministic prerequisite repair applied before strict schema validation (see CLAUDE.md). */
+/** Deterministic prerequisite repair applied before strict schema validation (see AGENTS). */
 export type PrereqEdgesCorrectionLog = {
   removed: Array<{ topicId: string; prereqId: string; reason: string }>;
   added: Array<{ topicId: string; prereqId: string; kind: 'filler-tier1' | 'filler-tier2' }>;
