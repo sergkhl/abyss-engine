@@ -13,6 +13,7 @@ type Rating = 1 | 2 | 3 | 4;
 export const APP_EVENT_NAMES = [
   'card:reviewed',
   'xp:gained',
+  'crystal:unlocked',
   'crystal:leveled',
   'session:completed',
   'attunement-ritual:submitted',
@@ -59,6 +60,18 @@ export type AppEventMap = {
     sessionId: string;
     cardId: string;
   };
+  /**
+   * Emitted when a topic crystal is first spawned (initial unlock).
+   * Sole emitter (after Phase 1 step 6) is `crystalGardenOrchestrator.unlockTopic`.
+   * The eventBusHandlers ceremony wiring picks this up alongside `crystal:leveled`
+   * and routes both through `crystalCeremonyStore.presentCeremony`, reading
+   * `selectIsAnyModalOpen(useUIStore.getState())` directly so the payload stays
+   * focused on domain facts.
+   */
+  'crystal:unlocked': {
+    subjectId: string;
+    topicId: string;
+  };
   'crystal:leveled': {
     subjectId: string;
     topicId: string;
@@ -66,7 +79,13 @@ export type AppEventMap = {
     to: number;
     levelsGained: number;
     sessionId: string;
-    /** True when any modal/dialog is open at emission time. */
+    /**
+     * True when any modal/dialog is open at emission time.
+     * Phase 1 step 6 (atomic with the `notifyLevelUp` -> `presentCeremony`
+     * rename) will strip this field; the eventBusHandlers ceremony handler
+     * will read `selectIsAnyModalOpen(useUIStore.getState())` directly
+     * instead. Field stays here until the rename commit lands.
+     */
     isDialogOpen: boolean;
   };
   'session:completed': {
