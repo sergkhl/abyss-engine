@@ -545,7 +545,7 @@ describe('progressionStore card-only canonical API', () => {
   });
 
   it('triggers the unlock ceremony animation when unlocking a topic', () => {
-    const notifySpy = vi.spyOn(crystalCeremonyStore.getState(), 'notifyLevelUp');
+    const notifySpy = vi.spyOn(crystalCeremonyStore.getState(), 'presentCeremony');
     useProgressionStore.setState({
       activeCrystals: [],
       unlockPoints: 1,

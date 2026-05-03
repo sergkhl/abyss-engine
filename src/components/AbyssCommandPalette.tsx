@@ -322,7 +322,7 @@ export function AbyssCommandPalette({
   const handleDevTriggerLevelUpAnimation = () => {
     if (!selectedTopic) return;
     const { isDiscoveryModalOpen, isStudyPanelOpen, isRitualModalOpen, isStudyTimelineOpen, isCrystalTrialOpen } = useUIStore.getState();
-    crystalCeremonyStore.getState().notifyLevelUp(
+    crystalCeremonyStore.getState().presentCeremony(
       selectedTopic,
       isDiscoveryModalOpen || isStudyPanelOpen || isRitualModalOpen || isStudyTimelineOpen || isCrystalTrialOpen,
     );
