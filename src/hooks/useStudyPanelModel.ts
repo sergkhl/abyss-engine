@@ -1,7 +1,11 @@
 import { useMemo } from 'react';
 
 import { cardRefKey, topicRefKey } from '@/lib/topicRef';
-import { useProgressionStore } from '../features/progression';
+import {
+  useCrystalGardenStore,
+  useSM2Store,
+  useStudySessionStore,
+} from '../features/progression';
 import { useTopicMetadata } from '../features/content';
 import { useTopicCards } from './useDeckData';
 import topicSystemPromptTemplate from '../prompts/topic-system.prompt';
@@ -67,9 +71,13 @@ export function useStudyPanelModel({
   currentSubjectId,
   totalCards,
 }: UseStudyPanelModelProps): StudyPanelModel {
-  const sm2Data = useProgressionStore((state) => state.sm2Data);
-  const currentSession = useProgressionStore((state) => state.currentSession);
-  const activeCrystals = useProgressionStore((state) => state.activeCrystals);
+  // Phase 2 step 10 (round 3): the three primitive reads needed by this hook
+  // each flow through their domain store directly. The plan explicitly allows
+  // this hook to read from multiple stores (single exception to the
+  // one-store-per-hook rule, see refactor plan section 5).
+  const sm2Data = useSM2Store((state) => state.sm2Data);
+  const currentSession = useStudySessionStore((state) => state.currentSession);
+  const activeCrystals = useCrystalGardenStore((state) => state.activeCrystals);
   const unlockedTopicKeys = useMemo(
     () => activeCrystals.map((c) => topicRefKey({ subjectId: c.subjectId, topicId: c.topicId })),
     [activeCrystals],

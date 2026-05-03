@@ -14,7 +14,11 @@ import { GlowPostProcessing } from '../graphics/glowPostProcessing'
 import { SceneDebugStats } from './debug/SceneDebugStats'
 import { SceneProbeMount } from './debug/SceneProbeMount'
 import TopicSelectionBar from './TopicSelectionBar'
-import { useProgressionStore as useStudyStore } from '../features/progression'
+import {
+  useCrystalGardenStore,
+  useProgressionStore as useStudyStore,
+  useStudySessionStore,
+} from '../features/progression'
 import { useUIStore } from '../store/uiStore'
 import { topicRefKey } from '@/lib/topicRef'
 import { useTopicMetadata, type TopicMetadata } from '../features/content'
@@ -206,8 +210,11 @@ export const Scene: React.FC<SceneProps> = ({
   const cameraRef = useRef<THREE.PerspectiveCamera>(null)
   const orbitControlsRef = useRef<{ target: THREE.Vector3; update: () => void } | null>(null)
   const sunDirectionRef = useRef(new THREE.Vector3(0, 1, 0))
-  const activeCrystals = useStudyStore((state) => state.activeCrystals)
-  const currentSubjectId = useStudyStore((state) => state.currentSubjectId)
+  // Phase 2 step 10 (round 3): activeCrystals + currentSubjectId reads route
+  // through the new domain stores. startTopicStudySession is still a legacy
+  // writer; orchestrator migration is a later round.
+  const activeCrystals = useCrystalGardenStore((state) => state.activeCrystals)
+  const currentSubjectId = useStudySessionStore((state) => state.currentSubjectId)
   const selectedTopic = useUIStore((state) => state.selectedTopic)
   const isStudyPanelOpen = useUIStore((state) => state.isStudyPanelOpen)
   const startTopicStudySession = useStudyStore((state) => state.startTopicStudySession)

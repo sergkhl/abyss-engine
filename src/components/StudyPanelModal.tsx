@@ -3,7 +3,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { CoarseChoice, Rating, type CoarseRatingResult } from '../types';
-import { useProgressionStore as useStudyStore } from '../features/progression';
+import {
+  useProgressionStore as useStudyStore,
+  useStudySessionStore,
+} from '../features/progression';
 import { evaluateAnswer as evaluateChoiceAnswer } from '../features/content';
 import { telemetry } from '../features/telemetry';
 import {
@@ -56,7 +59,10 @@ export function StudyPanelModal({
   onUndo,
   onRedo,
 }: StudyPanelModalProps) {
-  const currentSession = useStudyStore((state) => state.currentSession);
+  // Phase 2 step 10 (round 3): currentSession reads now flow through the new
+  // study-session store. markHintUsed is a write path and still routes through
+  // the legacy store; the legacy mirror keeps both surfaces consistent.
+  const currentSession = useStudySessionStore((state) => state.currentSession);
 
   const model = useStudyPanelModel({ currentCardId, currentTopicId, currentSubjectId, totalCards });
   const explainReasoning = useReasoningToggle('studyQuestionExplain');
@@ -101,7 +107,7 @@ export function StudyPanelModal({
   });
 
   const handleClose = useCallback(() => {
-    const session = useStudyStore.getState().currentSession;
+    const session = useStudySessionStore.getState().currentSession;
     if (session) {
       const attemptsCompleted = session.attempts?.length ?? 0;
       const sessionTotalCards = session.totalCards ?? 0;
@@ -186,6 +192,7 @@ export function StudyPanelModal({
   const handleHintUsed = () => {
     const cardKey = resolveSubmitCardKey();
     if (!cardKey) return;
+    // markHintUsed is still a legacy writer; orchestrator migration is a later round.
     useStudyStore.getState().markHintUsed(cardKey);
   };
 

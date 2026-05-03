@@ -8,6 +8,7 @@ import {
   useCrystalTrialStore,
 } from '@/features/crystalTrial';
 import { useUIStore } from '@/store/uiStore';
+import { useCrystalGardenStore } from '@/features/progression';
 import { useProgressionStore } from '@/features/progression/progressionStore';
 import { appEventBus } from '@/infrastructure/eventBus';
 import { getXpToNextBandThreshold } from '@/features/progression/progressionUtils';
@@ -36,7 +37,11 @@ export function CrystalTrialModal() {
     if (!selectedTopic) return null;
     return s.getCurrentTrial(selectedTopic);
   });
-  const selectedCrystal = useProgressionStore((state) => {
+  // Phase 2 step 10 (round 3): selectedCrystal read flows through the new
+  // crystal-garden store. The addXP write inside `handleLevelUp` continues
+  // to route through the legacy progressionStore until Phase 2 caller
+  // migration retires the legacy writer.
+  const selectedCrystal = useCrystalGardenStore((state) => {
     if (!selectedTopic) return null;
     return (
       state.activeCrystals.find(
@@ -125,7 +130,10 @@ export function CrystalTrialModal() {
 
   const handleLevelUp = useCallback(() => {
     if (!selectedTopic) return;
-    const { activeCrystals, addXP } = useProgressionStore.getState();
+    // Read activeCrystals from the new crystal-garden store; addXP is still a
+    // legacy writer (orchestrator-bound migration happens in a later round).
+    const { activeCrystals } = useCrystalGardenStore.getState();
+    const { addXP } = useProgressionStore.getState();
     const crystal = activeCrystals.find(
       (item) => item.subjectId === selectedTopic.subjectId && item.topicId === selectedTopic.topicId,
     );
