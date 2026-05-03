@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import {
-  useProgressionStore as useStudyStore,
+  studySessionOrchestrator,
   useStudySessionStore,
 } from '../features/progression';
 import { useSubjects } from '../features/content';
@@ -34,17 +34,18 @@ interface SubjectNavigationHudProps {
  * light/dark chrome matches the bottom-right quick-actions and top-right
  * generation-progress surfaces.
  *
- * Phase 2 step 10 (initial reads): the `currentSubjectId` read is sourced from
- * the new `useStudySessionStore` (subject viewport signal moved off the legacy
- * monolith in Phase 1 step 1). The `setCurrentSubject` write still routes
- * through the legacy store while Phase 2 finishes migrating callers; the
- * legacy → new-store mirror bridge keeps both surfaces consistent until the
- * orchestrator takes over the writer in a follow-up commit.
+ * Phase 2 step 10 (writer migration round): the `currentSubjectId` read is
+ * sourced from the new `useStudySessionStore` (subject viewport signal moved
+ * off the legacy monolith in Phase 1 step 1) and the `setCurrentSubject`
+ * write now routes through `studySessionOrchestrator.setCurrentSubject` (no
+ * `useProgressionStore` import on this file). The legacy writer of the same
+ * name remains on `progressionStore.ts` for the existing
+ * `progressionStore.test.ts` parity gate until Phase 4 step 15 deletes the
+ * monolith.
  */
 export const SubjectNavigationHud: React.FC<SubjectNavigationHudProps> = ({ onCreateSubject }) => {
   const { data: subjects = [] } = useSubjects();
   const currentSubjectId = useStudySessionStore((state) => state.currentSubjectId);
-  const setCurrentSubject = useStudyStore((state) => state.setCurrentSubject);
 
   const handleSelectSubject = (subjectId: string | null) => {
     if (subjectId === null) {
@@ -52,7 +53,7 @@ export const SubjectNavigationHud: React.FC<SubjectNavigationHudProps> = ({ onCr
     }
 
     if (subjectId === ALL_FLOORS_VALUE) {
-      setCurrentSubject(null);
+      studySessionOrchestrator.setCurrentSubject(null);
       return;
     }
 
@@ -61,7 +62,7 @@ export const SubjectNavigationHud: React.FC<SubjectNavigationHudProps> = ({ onCr
       return;
     }
 
-    setCurrentSubject(subjectId);
+    studySessionOrchestrator.setCurrentSubject(subjectId);
   };
 
   const subjectSelectItems = useMemo(

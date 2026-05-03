@@ -35,9 +35,10 @@ import { deckRepository } from '@/infrastructure/di';
 import { getChatCompletionsRepositoryForSurface } from '@/infrastructure/llmInferenceRegistry';
 import {
   crystalCeremonyStore,
+  crystalGardenOrchestrator,
+  toggleBuffFromCatalog,
   useBuffStore,
   useCrystalGardenStore,
-  useProgressionStore,
 } from '@/features/progression';
 import { uiStore, useUIStore } from '@/store/uiStore';
 import { useFeatureFlagsStore } from '@/store/featureFlagsStore';
@@ -195,11 +196,11 @@ export function AbyssCommandPalette({
   onStartStudyWithCardTypes,
 }: AbyssCommandPaletteProps) {
   const selectedTopic = useUIStore((s) => s.selectedTopic);
-  // Phase 2 step 10 (round 4): activeBuffs and activeCrystals reads now flow
-  // through the new domain stores. Writes (addXP, toggleBuffFromCatalog,
-  // presentCeremony) and read-after-write reads inside dev write handlers
-  // continue to route through the legacy progressionStore until orchestrator
-  // migration retires the legacy writers.
+  // Phase 2 step 10 (writer migration round): activeBuffs and activeCrystals
+  // reads flow through the new domain stores; the dev XP add/subtract writes
+  // route through `crystalGardenOrchestrator.addXP` and the dev XP-buff
+  // toggle through the colocated `toggleBuffFromCatalog` helper. The legacy
+  // `useProgressionStore` import has been retired from this file.
   const devXpBuffActive = useBuffStore((s) => s.activeBuffs.some(matchesDevXpBuff));
   const activeCrystals = useCrystalGardenStore((s) => s.activeCrystals);
   const trialStatus = useCrystalTrialStore((s) => (selectedTopic ? s.getTrialStatus(selectedTopic) : 'idle'));
@@ -305,8 +306,7 @@ export function AbyssCommandPalette({
   const handleDevAddXp = () => {
     const ref = uiStore.getState().selectedTopic;
     if (!ref) return;
-    const progression = useProgressionStore.getState();
-    const nextXp = progression.addXP(ref, DEV_XP_AMOUNT, { sessionId: 'dev-command-palette' });
+    const nextXp = crystalGardenOrchestrator.addXP(ref, DEV_XP_AMOUNT, { sessionId: 'dev-command-palette' });
     if (nextXp <= 0) return;
     appEventBus.emit('xp:gained', {
       subjectId: ref.subjectId, topicId: ref.topicId, amount: DEV_XP_AMOUNT,
@@ -318,12 +318,11 @@ export function AbyssCommandPalette({
   const handleDevSubtractXp = () => {
     const ref = uiStore.getState().selectedTopic;
     if (!ref) return;
-    const progression = useProgressionStore.getState();
     const crystal = useCrystalGardenStore
       .getState()
       .activeCrystals.find((c) => c.subjectId === ref.subjectId && c.topicId === ref.topicId);
     if (!crystal) return;
-    progression.addXP(ref, -DEV_XP_AMOUNT);
+    crystalGardenOrchestrator.addXP(ref, -DEV_XP_AMOUNT);
     appEventBus.emit('xp:gained', {
       subjectId: ref.subjectId, topicId: ref.topicId, amount: -DEV_XP_AMOUNT,
       sessionId: 'dev-command-palette', cardId: 'dev-command-palette',
@@ -342,7 +341,7 @@ export function AbyssCommandPalette({
   };
 
   const handleDevXpBuffToggle = () => {
-    useProgressionStore.getState().toggleBuffFromCatalog(DEV_XP_BUFF_ID, DEV_BUFF_SOURCE);
+    toggleBuffFromCatalog(DEV_XP_BUFF_ID, DEV_BUFF_SOURCE);
     onOpenChange(false);
   };
 
