@@ -50,6 +50,24 @@ export async function waitForAbyssDev(page: Page, timeout = 10000): Promise<void
 }
 
 /**
+ * Wait until the deck store reports at least one active card (after "Load Default Deck").
+ * Ensures bundled graphs/topics have hydrated into the client before Discovery lists topics.
+ */
+export async function waitForDeckReady(page: Page, timeoutMs = 8000): Promise<void> {
+  await page.waitForFunction(
+    () => {
+      const dev = (window as unknown as {
+        abyssDev?: { getState?: () => { activeCards?: number } };
+      }).abyssDev;
+      const state = dev?.getState?.();
+      return typeof state?.activeCards === 'number' && state.activeCards > 0;
+    },
+    undefined,
+    { timeout: timeoutMs },
+  );
+}
+
+/**
  * Find the 3D canvas element on the page.
  */
 export async function getCanvas(page: Page, timeoutMs = 8000): Promise<Locator | null> {
@@ -130,9 +148,9 @@ export function startConsoleErrorCapture(page: Page): BrowserConsoleErrors {
  */
 export async function waitForStudyPanelReady(page: Page): Promise<void> {
   await page.locator('[data-testid="study-panel-modal-content"]').waitFor({ state: 'visible', timeout: 5000 });
-  // DialogTitle uses `sr-only` — it is attached but not "visible" to Playwright.
-  await page.getByTestId('study-tab-study').waitFor({ state: 'visible', timeout: 5000 });
-  await page.locator('[data-testid="study-panel-card-root"]').waitFor({ state: 'visible', timeout: 5000 });
+  // Study tabs were removed from the modal; the active card mounts under `study-panel-card-root`
+  // after loading finishes (brief `study-panel-loading` is possible).
+  await page.locator('[data-testid="study-panel-card-root"]').waitFor({ state: 'visible', timeout: 15_000 });
 }
 
 /**

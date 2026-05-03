@@ -222,7 +222,9 @@ test.describe('Study Session', () => {
     const discoveryDialog = page.getByRole('dialog').filter({ hasText: 'Wisdom Altar' });
     await expect(discoveryDialog).toBeVisible({ timeout: 5000 });
     await expect(discoveryDialog.getByText(/Spend keys to unlock topic crystals/i)).toBeVisible();
-    await page.keyboard.press('Escape');
+    // Base UI may not deliver Escape to this dialog if focus stayed on the palette trigger;
+    // use the built-in close control for a deterministic dismiss.
+    await discoveryDialog.getByRole('button', { name: 'Close' }).click();
     await expect(discoveryDialog).not.toBeVisible({ timeout: 3000 });
 
     // If there are due cards, try to study one

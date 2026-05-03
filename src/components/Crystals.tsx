@@ -519,6 +519,11 @@ export const Crystals: React.FC<CrystalsProps> = ({
       const anchor = labelAnchorRefs.current[i];
       if (anchor) {
         anchor.position.set(gx, py, gz);
+        Object.assign(anchor.userData, {
+          topicId: crystal.topicId,
+          subjectId: crystal.subjectId,
+          level,
+        });
       }
     }
 

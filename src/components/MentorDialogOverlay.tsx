@@ -328,7 +328,14 @@ export function MentorDialogOverlay({ onOpenTopicStudy }: MentorDialogOverlayPro
     totalChars,
   ]);
 
-  const handleClose = useCallback(() => handleAdvance('closed'), [handleAdvance]);
+  // The ✕ control dismisses the whole plan immediately (do not step through
+  // remaining scripted messages — that breaks empty-state flows and E2E setup).
+  const handleClose = useCallback(() => {
+    if (!currentDialog) return;
+    cancel();
+    cancelTypewriterAnimation();
+    finalizePlanCompletion(currentDialog, 'closed');
+  }, [cancel, cancelTypewriterAnimation, currentDialog, finalizePlanCompletion]);
   const handleAmbientAdvance = useCallback(() => handleAdvance('ambient'), [handleAdvance]);
 
   const handleChoice = useCallback(

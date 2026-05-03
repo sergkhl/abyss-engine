@@ -64,7 +64,10 @@ test.describe('Mentor \u2014 Quick Actions parity', () => {
     const overlay = page.getByTestId('mentor-dialog-overlay');
     await expect(overlay).toBeVisible({ timeout: 10_000 });
 
-    const initialText = await page.getByTestId('mentor-dialog-text').textContent();
+    const textLocator = page.getByTestId('mentor-dialog-text');
+    // Typewriter cursor (U+258C) must be gone or the "before" snapshot races the animation.
+    await expect(textLocator).not.toContainText('\u258c', { timeout: 15_000 });
+    const initialText = await textLocator.textContent();
 
     await page.getByTestId('quick-actions-trigger').click();
     await page.getByTestId('quick-action-mentor').click();
@@ -72,7 +75,7 @@ test.describe('Mentor \u2014 Quick Actions parity', () => {
     // Dialog text must not change \u2014 v1 selection rules say overlay-open
     // clicks are no-ops.
     await page.waitForTimeout(250); // small settle window for any (unwanted) state churn
-    const afterText = await page.getByTestId('mentor-dialog-text').textContent();
+    const afterText = await textLocator.textContent();
     expect(afterText).toBe(initialText);
   });
 });
