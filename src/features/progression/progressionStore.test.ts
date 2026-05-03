@@ -8,8 +8,7 @@ import { ATTUNEMENT_SUBMISSION_COOLDOWN_MS, MAX_UNDO_DEPTH, useProgressionStore 
 import { BuffEngine } from './buffs/buffEngine';
 import { AttunementRitualPayload } from '../../types/progression';
 import { undoManager } from './undoManager';
-import { PASS_THRESHOLD } from '../crystalTrial/crystalTrialConfig';
-import { useCrystalTrialStore } from '../crystalTrial/crystalTrialStore';
+import { PASS_THRESHOLD, useCrystalTrialStore } from '../crystalTrial';
 import { crystalCeremonyStore } from './crystalCeremonyStore';
 
 const DS = 'data-science' as const;
@@ -432,6 +431,37 @@ describe('progressionStore card-only canonical API', () => {
 
     const pregenCalls = emitSpy.mock.calls.filter((c) => c[0] === 'crystal-trial:pregeneration-requested');
     expect(pregenCalls).toHaveLength(0);
+    emitSpy.mockRestore();
+  });
+
+  it('Q7 regression: boundary-idle on study path emits pregeneration once and caps XP at 99', () => {
+    // When trial is idle and study reward would cross the level boundary,
+    // the gating helper must (a) cap effective reward to keep XP at 99 and
+    // (b) signal pregeneration, producing exactly one emission.
+    const ref = topicRef('topic-a');
+    useCrystalTrialStore.setState({ trials: {} });
+
+    const emitSpy = vi.spyOn(appEventBus, 'emit');
+
+    const cards = [createCard('a-1')];
+    useProgressionStore.setState({
+      activeCrystals: [crystal('topic-a', 95)],
+      unlockPoints: 0,
+    });
+
+    useProgressionStore.getState().startTopicStudySession(ref, cards);
+    useProgressionStore.getState().submitStudyResult(cr('topic-a', 'a-1'), 4);
+
+    expect(useProgressionStore.getState().activeCrystals[0]).toMatchObject({ xp: 99 });
+
+    const pregenCalls = emitSpy.mock.calls.filter((c) => c[0] === 'crystal-trial:pregeneration-requested');
+    expect(pregenCalls).toHaveLength(1);
+    expect(pregenCalls[0]?.[1]).toMatchObject({
+      subjectId: DS,
+      topicId: 'topic-a',
+      currentLevel: 0,
+      targetLevel: 1,
+    });
     emitSpy.mockRestore();
   });
 
