@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { CrystalTrialStatus } from '@/types/crystalTrial';
-import { CRYSTAL_XP_PER_LEVEL } from '@/features/progression/progressionUtils';
+import { CRYSTAL_XP_PER_LEVEL } from '@/types/crystalLevel';
 import {
   busMayStartTrialPregeneration,
   isCrystalTrialAvailableForPlayer,

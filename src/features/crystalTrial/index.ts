@@ -1,7 +1,8 @@
 export {
-  emitCrystalTrialPregenerateForTopic,
-  resolveCrystalTrialPregenerateLevels,
-} from './emitCrystalTrialPregenerate';
+  computeTrialGatedStudyReward,
+  computeTrialGatedDirectReward,
+} from './trialXpGating';
+export type { TrialXpGateInput, TrialXpGateResult } from './trialXpGating';
 export {
   trialStatusRequiresXpCapAtLevelBoundary,
   busMayStartTrialPregeneration,
