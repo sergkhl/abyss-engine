@@ -8,9 +8,12 @@ import {
   useCrystalTrialStore,
 } from '@/features/crystalTrial';
 import { useUIStore } from '@/store/uiStore';
-import { crystalGardenOrchestrator, useCrystalGardenStore } from '@/features/progression';
+import {
+  crystalGardenOrchestrator,
+  getXpToNextBandThreshold,
+  useCrystalGardenStore,
+} from '@/features/progression';
 import { appEventBus } from '@/infrastructure/eventBus';
-import { getXpToNextBandThreshold } from '@/features/progression/progressionUtils';
 import { CRYSTAL_XP_PER_LEVEL } from '@/types/crystalLevel';
 import type { CrystalTrialResult, CrystalTrialScenarioQuestion } from '@/types/crystalTrial';
 import { evaluateTrial } from '@/features/crystalTrial/evaluateTrial';
@@ -40,6 +43,10 @@ export function CrystalTrialModal() {
   // through the new crystal-garden store; the addXP write inside
   // `handleLevelUp` now routes through `crystalGardenOrchestrator.addXP`
   // (no `useProgressionStore` import on this file).
+  //
+  // Phase 4 prep: getXpToNextBandThreshold now flows through the
+  // `@/features/progression` barrel rather than the soon-to-be-deleted
+  // `progressionUtils.ts` file.
   const selectedCrystal = useCrystalGardenStore((state) => {
     if (!selectedTopic) return null;
     return (
