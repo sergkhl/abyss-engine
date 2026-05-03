@@ -3,7 +3,6 @@ import { persist } from 'zustand/middleware';
 
 import { cardRefKey, parseCardRefKey } from '@/lib/topicRef';
 import { appEventBus } from '@/infrastructure/eventBus';
-import { selectIsAnyModalOpen, useUIStore } from '@/store/uiStore';
 import {
   applyCrystalXpDelta,
   calculateXPReward,
@@ -41,7 +40,6 @@ import {
 } from '../analytics/attunementMetrics';
 import { calculateRitualHarmony, deriveRitualBuffs } from './progressionRitual';
 import { undoManager } from './undoManager';
-import { crystalCeremonyStore } from './crystalCeremonyStore';
 import { resolveCoarseRating } from './coarseRating';
 import { useBuffStore } from './stores/buffStore';
 import { useCrystalGardenStore } from './stores/crystalGardenStore';
@@ -608,7 +606,6 @@ export const useProgressionStore = create<ProgressionStore>()(
           return null;
         }
 
-        const isDialogOpen = selectIsAnyModalOpen(useUIStore.getState());
         set((current) => ({
           activeCrystals: [
             ...current.activeCrystals,
@@ -622,12 +619,17 @@ export const useProgressionStore = create<ProgressionStore>()(
           ],
           unlockPoints: Math.max(0, current.unlockPoints - 1),
         }));
-        // Phase 1 step 6: legacy progressionStore keeps the direct
-        // presentCeremony call (preserves progressionStore.test.ts).
-        // The orchestrator path emits crystal:unlocked instead; once
-        // Phase 2 caller migration retires the legacy unlockTopic, this
-        // direct call will go away.
-        crystalCeremonyStore.getState().presentCeremony(ref, isDialogOpen);
+        // Phase 1 step 6 (e): unified ceremony presentation through the bus.
+        // Both this legacy path and `crystalGardenOrchestrator.unlockTopic`
+        // emit `crystal:unlocked`; the eventBusHandlers wiring reads
+        // `selectIsAnyModalOpen(useUIStore.getState())` and routes into
+        // `crystalCeremonyStore.presentCeremony`. The legacy direct
+        // `presentCeremony` call has been retired so there is exactly one
+        // ceremony entry point regardless of which writer fires.
+        appEventBus.emit('crystal:unlocked', {
+          subjectId: ref.subjectId,
+          topicId: ref.topicId,
+        });
 
         return nextPosition;
       },

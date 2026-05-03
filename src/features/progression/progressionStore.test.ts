@@ -544,8 +544,16 @@ describe('progressionStore card-only canonical API', () => {
     expect(useProgressionStore.getState().activeCrystals.map((storeCrystal) => storeCrystal.topicId)).toContain('topic-b');
   });
 
-  it('triggers the unlock ceremony animation when unlocking a topic', () => {
-    const notifySpy = vi.spyOn(crystalCeremonyStore.getState(), 'presentCeremony');
+  it('emits crystal:unlocked on the bus when unlocking a topic so the bus handler can present the ceremony', () => {
+    // Phase 1 step 6 (e): the legacy `unlockTopic` no longer calls
+    // `crystalCeremonyStore.presentCeremony` directly. Both the legacy path
+    // and `crystalGardenOrchestrator.unlockTopic` emit `crystal:unlocked`;
+    // the eventBusHandlers wiring (registered at app boot — not in this
+    // unit-level test) reads `selectIsAnyModalOpen(useUIStore.getState())`
+    // and routes into `crystalCeremonyStore.presentCeremony`. This test
+    // asserts the store-side contract: a `crystal:unlocked` event is
+    // dispatched with the unlocked topic ref.
+    const emitSpy = vi.spyOn(appEventBus, 'emit');
     useProgressionStore.setState({
       activeCrystals: [],
       unlockPoints: 1,
@@ -553,13 +561,12 @@ describe('progressionStore card-only canonical API', () => {
 
     const firstUnlock = useProgressionStore.getState().unlockTopic(topicRef('topic-a'), topicGraphs);
     expect(firstUnlock).not.toBeNull();
-    expect(notifySpy).toHaveBeenCalledTimes(1);
-    expect(notifySpy).toHaveBeenCalledWith(
-      { subjectId: DS, topicId: 'topic-a' },
-      false,
-    );
 
-    notifySpy.mockRestore();
+    const unlockedCalls = emitSpy.mock.calls.filter(([eventName]) => eventName === 'crystal:unlocked');
+    expect(unlockedCalls).toHaveLength(1);
+    expect(unlockedCalls[0]?.[1]).toEqual({ subjectId: DS, topicId: 'topic-a' });
+
+    emitSpy.mockRestore();
   });
 
   it('returns deterministic topic tiers from graph data', () => {
