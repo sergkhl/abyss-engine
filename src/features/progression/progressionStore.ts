@@ -43,6 +43,10 @@ import { calculateRitualHarmony, deriveRitualBuffs } from './progressionRitual';
 import { undoManager } from './undoManager';
 import { crystalCeremonyStore } from './crystalCeremonyStore';
 import { resolveCoarseRating } from './coarseRating';
+import { useBuffStore } from './stores/buffStore';
+import { useCrystalGardenStore } from './stores/crystalGardenStore';
+import { useSM2Store } from './stores/sm2Store';
+import { useStudySessionStore } from './stores/studySessionStore';
 
 type ProgressionStore = ProgressionState & ProgressionActions;
 const PROGRESSION_STORAGE_KEY = 'abyss-progression-v3';
@@ -752,3 +756,40 @@ export const useProgressionStore = create<ProgressionStore>()(
     },
   ),
 );
+
+// ---------------------------------------------------------------------------
+// Phase 1 step 6 bridge: legacy → new-store mirror
+//
+// The legacy progressionStore is still the source of truth for writes during
+// the Phase 2 caller-migration window. The four new stores
+// (crystalGardenStore, studySessionStore, sm2Store, buffStore) are the read
+// surface for `eventBusHandlers` (after the step 6 swap) and for any Phase 2
+// callers that have already migrated. To keep both surfaces consistent without
+// a bidirectional bridge, we observe legacy state changes and replay them into
+// the four new stores. Phase 4 step 17 deletes both this bridge and the legacy
+// progressionStore.ts entirely; the orchestrators become the only writers and
+// the new stores become both source of truth and read surface.
+//
+// The mirror is intentionally a thin replay — no validation, no diffing — so
+// each legacy `set` corresponds to at most four new-store writes in the same
+// tick. React's batching collapses the resulting subscriber notifications into
+// a single render commit.
+// ---------------------------------------------------------------------------
+function mirrorLegacyToNewStores(state: ProgressionStore): void {
+  useCrystalGardenStore.setState({
+    activeCrystals: state.activeCrystals,
+    unlockPoints: state.unlockPoints,
+    resonancePoints: state.resonancePoints,
+  });
+  useStudySessionStore.setState({
+    currentSession: state.currentSession,
+    pendingRitual: state.pendingRitual,
+    lastRitualSubmittedAt: state.lastRitualSubmittedAt,
+    currentSubjectId: state.currentSubjectId,
+  });
+  useSM2Store.setState({ sm2Data: state.sm2Data });
+  useBuffStore.setState({ activeBuffs: state.activeBuffs });
+}
+
+mirrorLegacyToNewStores(useProgressionStore.getState());
+useProgressionStore.subscribe(mirrorLegacyToNewStores);

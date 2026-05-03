@@ -20,7 +20,8 @@ import {
   busMayStartTrialPregeneration,
   isCrystalTrialAvailableForPlayer,
 } from '@/features/crystalTrial';
-import { useProgressionStore } from '@/features/progression/progressionStore';
+import { useCrystalGardenStore } from '@/features/progression/stores/crystalGardenStore';
+import { useStudySessionStore } from '@/features/progression/stores/studySessionStore';
 import { calculateLevelFromXP, MAX_CRYSTAL_LEVEL } from '@/types/crystalLevel';
 import { selectIsAnyModalOpen, useUIStore } from '@/store/uiStore';
 import {
@@ -138,7 +139,7 @@ if (!g.__abyssEventBusHandlersRegistered) {
         trialStore.clearCooldown(ref);
 
         // Trigger question regeneration for the retry
-        const crystal = useProgressionStore.getState().activeCrystals.find(
+        const crystal = useCrystalGardenStore.getState().activeCrystals.find(
           (c) => c.subjectId === ref.subjectId && c.topicId === ref.topicId,
         );
         if (crystal) {
@@ -216,7 +217,7 @@ if (!g.__abyssEventBusHandlersRegistered) {
       // The dedupe set guards against re-fires across regenerates within the
       // same session — once shown, the player won't see this prod again for
       // the same subjectId regardless of subsequent generations.
-      const hasAnyUnlockedInSubject = useProgressionStore
+      const hasAnyUnlockedInSubject = useCrystalGardenStore
         .getState()
         .activeCrystals.some((c) => c.subjectId === e.subjectId);
       const alreadyFiredOnboarding = firedSubjectUnlockFirstCrystal.has(e.subjectId);
@@ -419,7 +420,7 @@ if (!g.__abyssEventBusHandlersRegistered) {
   // Fires `crystal-trial:available-for-player` exactly once per topic per
   // false→true transition of `isCrystalTrialAvailableForPlayer(status, xp)`.
   // The predicate combines BOTH the trial-store status (must be
-  // `awaiting_player`) AND the progression-store XP (must be at the
+  // `awaiting_player`) AND the crystal-garden-store XP (must be at the
   // band cap), so a trial that is prepared but XP-deficient does NOT
   // fire — the player would see a mentor announcement they cannot act
   // on. This watcher subscribes to both stores so availability reached
@@ -435,7 +436,7 @@ if (!g.__abyssEventBusHandlersRegistered) {
 
   function recomputeTrialAvailability(): void {
     const trials = useCrystalTrialStore.getState().trials;
-    const activeCrystals = useProgressionStore.getState().activeCrystals;
+    const activeCrystals = useCrystalGardenStore.getState().activeCrystals;
     const xpByKey = new Map<string, number>();
     for (const crystal of activeCrystals) {
       xpByKey.set(topicRefKey(crystal), crystal.xp);
@@ -467,7 +468,7 @@ if (!g.__abyssEventBusHandlersRegistered) {
   }
 
   useCrystalTrialStore.subscribe(recomputeTrialAvailability);
-  useProgressionStore.subscribe(recomputeTrialAvailability);
+  useCrystalGardenStore.subscribe(recomputeTrialAvailability);
 
   // ---- Phase C: content-generation terminal events → mentor triggers ----
   //
@@ -570,7 +571,7 @@ if (!g.__abyssEventBusHandlersRegistered) {
       // `emitCrystalTrialPregenerate.ts`). Skip when there is no
       // active crystal for the topic, or when the crystal is already
       // at max level and has no next level to pre-generate for.
-      const crystal = useProgressionStore.getState().activeCrystals.find(
+      const crystal = useCrystalGardenStore.getState().activeCrystals.find(
         (c) => c.subjectId === ref.subjectId && c.topicId === ref.topicId,
       );
       if (!crystal) {
@@ -677,7 +678,7 @@ if (!g.__abyssEventBusHandlersRegistered) {
   });
 
   appEventBus.on('study-panel:opened', () => {
-    const session = useProgressionStore.getState().currentSession;
+    const session = useStudySessionStore.getState().currentSession;
     if (!session) {
       return;
     }

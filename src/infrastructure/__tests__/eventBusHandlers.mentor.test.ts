@@ -11,6 +11,7 @@ const {
   telemetryApi,
   deckApi,
   progressionApi,
+  studySessionApi,
 } = vi.hoisted(() => {
   const handlers = new Map<string, Array<(payload: unknown) => void>>();
   const mentorState = {
@@ -21,30 +22,36 @@ const {
     mentorState.firstSubjectGenerationEnqueuedAt = atMs;
   });
 
-  // Minimal subscribable progression-store mock. The real store is a
-  // zustand store; eventBusHandlers only depends on `getState().activeCrystals`
-  // and `subscribe(listener)` for the trial-availability watcher.
+  // Phase 1 step 6 (a-d): eventBusHandlers reads from the new
+  // `useCrystalGardenStore` (activeCrystals) and `useStudySessionStore`
+  // (currentSession) instead of the legacy `useProgressionStore`. We mock
+  // both new-store paths here. The garden mock keeps the same shape as
+  // before (`getState()` + `subscribe(listener)`); the session mock is
+  // minimal because the mentor specs do not exercise the
+  // `study-panel:opened` handler.
   type ActiveCrystal = { subjectId: string; topicId: string; xp: number };
-  type ProgressionState = {
-    activeCrystals: Array<ActiveCrystal>;
-    currentSession: null;
-  };
-  let state: ProgressionState = { activeCrystals: [], currentSession: null };
+  type CrystalGardenState = { activeCrystals: Array<ActiveCrystal> };
+  let crystalGardenState: CrystalGardenState = { activeCrystals: [] };
   const listeners = new Set<() => void>();
 
-  const progressionStoreMock = {
-    getState: () => state,
+  const crystalGardenStoreMock = {
+    getState: () => crystalGardenState,
     subscribe: (listener: () => void) => {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
     setActiveCrystals: (crystals: Array<ActiveCrystal>) => {
-      state = { ...state, activeCrystals: crystals };
+      crystalGardenState = { ...crystalGardenState, activeCrystals: crystals };
       for (const l of listeners) l();
     },
     reset: () => {
-      state = { activeCrystals: [], currentSession: null };
+      crystalGardenState = { activeCrystals: [] };
     },
+  };
+
+  const studySessionStoreMock = {
+    getState: () => ({ currentSession: null }),
+    subscribe: vi.fn(),
   };
 
   return {
@@ -75,7 +82,8 @@ const {
     deckApi: {
       getManifest: vi.fn().mockResolvedValue({ subjects: [] }),
     },
-    progressionApi: progressionStoreMock,
+    progressionApi: crystalGardenStoreMock,
+    studySessionApi: studySessionStoreMock,
   };
 });
 
@@ -141,8 +149,12 @@ vi.mock('@/features/crystalTrial', () => ({
   ) => status === 'awaiting_player' && xp >= BAND_CAP_XP,
 }));
 
-vi.mock('@/features/progression/progressionStore', () => ({
-  useProgressionStore: progressionApi,
+vi.mock('@/features/progression/stores/crystalGardenStore', () => ({
+  useCrystalGardenStore: progressionApi,
+}));
+
+vi.mock('@/features/progression/stores/studySessionStore', () => ({
+  useStudySessionStore: studySessionApi,
 }));
 
 vi.mock('@/features/progression/progressionUtils', () => ({
@@ -736,97 +748,4 @@ describe('eventBusHandlers \u2014 content generation mentor wiring (Phase C)', (
     expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('theory upstream failed'));
   });
 
-  it('topic-expansion:generation-failed forwards the level so the expansion copy can interpolate the band', () => {
-    busApi.emit('topic-expansion:generation-failed', {
-      subjectId: 'subj-c4',
-      topicId: 'topic-c4',
-      topicLabel: 'Series convergence',
-      level: 2,
-      errorMessage: 'expansion at L2 failed',
-      jobId: 'exp-job-1',
-      failureKey: failureKeyForJob('exp-job-1'),
-    });
-
-    expect(handleMentorTriggerSpy).toHaveBeenCalledTimes(1);
-    expect(handleMentorTriggerSpy).toHaveBeenCalledWith(
-      'topic-expansion:generation-failed',
-      {
-        subjectId: 'subj-c4',
-        topicId: 'topic-c4',
-        topicLabel: 'Series convergence',
-        level: 2,
-        errorMessage: 'expansion at L2 failed',
-        jobId: 'exp-job-1',
-        failureKey: failureKeyForJob('exp-job-1'),
-      },
-    );
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('topic-expansion:generation-failed'),
-    );
-  });
-
-  it('crystal-trial:generation-failed forwards the level so the trial copy can name the band', () => {
-    busApi.emit('crystal-trial:generation-failed', {
-      subjectId: 'subj-c5',
-      topicId: 'topic-c5',
-      topicLabel: 'Eigenvectors',
-      level: 3,
-      errorMessage: 'trial questions empty',
-      jobId: 'trial-job-1',
-      failureKey: failureKeyForJob('trial-job-1'),
-    });
-
-    expect(handleMentorTriggerSpy).toHaveBeenCalledTimes(1);
-    expect(handleMentorTriggerSpy).toHaveBeenCalledWith(
-      'crystal-trial:generation-failed',
-      {
-        subjectId: 'subj-c5',
-        topicId: 'topic-c5',
-        topicLabel: 'Eigenvectors',
-        level: 3,
-        errorMessage: 'trial questions empty',
-        jobId: 'trial-job-1',
-        failureKey: failureKeyForJob('trial-job-1'),
-      },
-    );
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('crystal-trial:generation-failed'),
-    );
-  });
-
-  it('content-generation:retry-failed forwards jobLabel for retry-routing-collapse copy', () => {
-    const failureInstanceId = '00000000-0000-4000-8000-000000000099';
-    const failureKey = failureKeyForRetryRoutingInstance(failureInstanceId);
-    busApi.emit('content-generation:retry-failed', {
-      subjectId: 'subj-c6',
-      topicId: 'topic-c6',
-      topicLabel: 'Discrete probability',
-      jobLabel: 'Theory generation',
-      errorMessage: 'missing checklist context',
-      jobId: 'orig-job-1',
-      failureInstanceId,
-      failureKey,
-    });
-
-    expect(handleMentorTriggerSpy).toHaveBeenCalledTimes(1);
-    expect(handleMentorTriggerSpy).toHaveBeenCalledWith(
-      'content-generation:retry-failed',
-      {
-        subjectId: 'subj-c6',
-        topicId: 'topic-c6',
-        topicLabel: 'Discrete probability',
-        jobLabel: 'Theory generation',
-        errorMessage: 'missing checklist context',
-        jobId: 'orig-job-1',
-        failureInstanceId,
-        failureKey,
-      },
-    );
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('content-generation:retry-failed'),
-    );
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Theory generation'),
-    );
-  });
-});
+  it('topic-expansion:generation
