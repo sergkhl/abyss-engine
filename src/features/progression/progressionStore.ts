@@ -6,15 +6,18 @@ import { appEventBus } from '@/infrastructure/eventBus';
 import { selectIsAnyModalOpen, useUIStore } from '@/store/uiStore';
 import {
   applyCrystalXpDelta,
-  calculateLevelFromXP,
   calculateXPReward,
   calculateTopicTier,
   filterCardsByDifficulty,
   getTopicUnlockStatus,
   getTopicsByTier as computeTopicsByTier,
-  CRYSTAL_XP_PER_LEVEL,
-  MAX_CRYSTAL_LEVEL,
 } from './progressionUtils';
+import { calculateLevelFromXP } from '@/types/crystalLevel';
+import {
+  computeTrialGatedDirectReward,
+  computeTrialGatedStudyReward,
+  useCrystalTrialStore,
+} from '@/features/crystalTrial';
 import { defaultSM2, sm2, SM2Data } from './sm2';
 import { Card, SubjectGraph, TopicRef } from '../../types/core';
 import {
@@ -38,16 +41,6 @@ import {
 } from '../analytics/attunementMetrics';
 import { calculateRitualHarmony, deriveRitualBuffs } from './progressionRitual';
 import { undoManager } from './undoManager';
-import {
-  emitCrystalTrialPregenerateForTopic,
-  trialStatusRequiresXpCapAtLevelBoundary,
-} from '../crystalTrial';
-import { useCrystalTrialStore } from '../crystalTrial/crystalTrialStore';
-import {
-  hasAddedAnyXp,
-  wouldCrossLevelBoundary,
-  capXpBelowThreshold,
-} from '../crystalTrial/progressionIntegration';
 import { crystalCeremonyStore } from './crystalCeremonyStore';
 import { resolveCoarseRating } from './coarseRating';
 
@@ -128,27 +121,19 @@ export const useProgressionStore = create<ProgressionStore>()(
         const buffedReward = Math.max(0, Math.round(reward * buffMultiplier));
 
         // --- Crystal Trial: XP gating ---
+        // Single trial-status read at gate time. The gating helper computes
+        // the capped reward and whether pregeneration should fire, so this
+        // site stays decoupled from crystalTrial internals.
         const ref: TopicRef = { subjectId: session.subjectId, topicId: session.topicId };
         const previousXp = crystal.xp;
         const currentLevel = calculateLevelFromXP(previousXp);
-        const trialStore = useCrystalTrialStore.getState();
-        const trialStatus = trialStore.getTrialStatus(ref);
-
-        let effectiveReward = buffedReward;
-        let hasBoundaryPregeneration = false;
-
-        if (currentLevel < MAX_CRYSTAL_LEVEL) {
-          const { crosses } = wouldCrossLevelBoundary(previousXp, buffedReward);
-
-          if (crosses && trialStatusRequiresXpCapAtLevelBoundary(trialStatus)) {
-            const { maxReward } = capXpBelowThreshold(previousXp, currentLevel);
-            effectiveReward = maxReward;
-            if (trialStatus === 'idle') {
-              emitCrystalTrialPregenerateForTopic(ref, state.activeCrystals);
-              hasBoundaryPregeneration = true;
-            }
-          }
-        }
+        const trialGating = computeTrialGatedStudyReward({
+          previousXp,
+          rawReward: buffedReward,
+          trialStatus: useCrystalTrialStore.getState().getTrialStatus(ref),
+          currentLevel,
+        });
+        const effectiveReward = trialGating.effectiveReward;
 
         const applied = applyCrystalXpDelta(state.activeCrystals, ref, effectiveReward);
         if (!applied) {
@@ -175,8 +160,6 @@ export const useProgressionStore = create<ProgressionStore>()(
         const nextAttempts = [...(session.attempts ?? []), attempt];
         const buffsAfterUsage = BuffEngine.get().consumeForEvent(activeBuffs, 'card_reviewed');
         const nextAttemptsCount = nextAttempts.length;
-        // Compare against totalCards (original queue size set at session start)
-        // instead of the shrinking queueCardIds to avoid premature completion.
         const isSessionComplete = nextAttemptsCount >= session.totalCards;
         const nextBuffs = isSessionComplete
           ? BuffEngine.get().consumeForEvent(buffsAfterUsage, 'session_ended')
@@ -229,19 +212,17 @@ export const useProgressionStore = create<ProgressionStore>()(
           });
         }
 
-        // --- Crystal Trial: XP pregeneration trigger ---
-        if (currentLevel < MAX_CRYSTAL_LEVEL && effectiveReward > 0) {
-          const newXp = previousXp + effectiveReward;
-          const trialStatusAfter = useCrystalTrialStore.getState().getTrialStatus(ref);
-          if (!hasBoundaryPregeneration && hasAddedAnyXp(previousXp, newXp) && trialStatusAfter === 'idle') {
-            // Use level from pre-reward XP (currentLevel); post-set crystal XP can differ
-            appEventBus.emit('crystal-trial:pregeneration-requested', {
-              subjectId: ref.subjectId,
-              topicId: ref.topicId,
-              currentLevel,
-              targetLevel: currentLevel + 1,
-            });
-          }
+        // --- Crystal Trial: pregeneration trigger ---
+        // The gating helper covers both the boundary-idle case (study path)
+        // and the positive-gain idle case in `shouldPregenerate`, so this
+        // is a single emission point.
+        if (trialGating.shouldPregenerate) {
+          appEventBus.emit('crystal-trial:pregeneration-requested', {
+            subjectId: ref.subjectId,
+            topicId: ref.topicId,
+            currentLevel,
+            targetLevel: currentLevel + 1,
+          });
         }
 
         if (isSessionComplete && sessionMetrics) {
@@ -554,8 +535,6 @@ export const useProgressionStore = create<ProgressionStore>()(
             ...session,
             queueCardIds: nextQueue,
             currentCardId: nextCard,
-            // Keep totalCards unchanged — it represents the original queue
-            // size used for session completion detection.
             ...(nextQueue.length > 0 ? { lastCardStart: now } : {}),
           },
         });
@@ -675,7 +654,10 @@ export const useProgressionStore = create<ProgressionStore>()(
       addXP: (ref, xpAmount, options) => {
         const state = get();
 
-        // --- Crystal Trial: XP gating (mirrors submitStudyResult) ---
+        // --- Crystal Trial: XP gating (direct path) ---
+        // One trial-status read; the gating helper applies the direct-path
+        // policy where idle never caps and pregeneration only fires on
+        // positive gains while idle.
         const crystal = state.activeCrystals.find(
           (item) => item.subjectId === ref.subjectId && item.topicId === ref.topicId,
         );
@@ -684,21 +666,15 @@ export const useProgressionStore = create<ProgressionStore>()(
         if (crystal) {
           const previousXp = crystal.xp;
           const currentLevel = calculateLevelFromXP(previousXp);
+          const trialGating = computeTrialGatedDirectReward({
+            previousXp,
+            rawReward: xpAmount,
+            trialStatus: useCrystalTrialStore.getState().getTrialStatus(ref),
+            currentLevel,
+          });
+          effectiveXpAmount = trialGating.effectiveReward;
 
-          if (currentLevel < MAX_CRYSTAL_LEVEL) {
-            const trialStore = useCrystalTrialStore.getState();
-            const trialStatus = trialStore.getTrialStatus(ref);
-            const { crosses } = wouldCrossLevelBoundary(previousXp, xpAmount);
-
-            if (crosses && trialStatus !== 'idle' && trialStatusRequiresXpCapAtLevelBoundary(trialStatus)) {
-              const { maxReward } = capXpBelowThreshold(previousXp, currentLevel);
-              effectiveXpAmount = maxReward;
-            }
-          }
-
-          const trialStatus = useCrystalTrialStore.getState().getTrialStatus(ref);
-          const newXp = previousXp + effectiveXpAmount;
-          if (currentLevel < MAX_CRYSTAL_LEVEL && hasAddedAnyXp(previousXp, newXp) && trialStatus === 'idle') {
+          if (trialGating.shouldPregenerate) {
             appEventBus.emit('crystal-trial:pregeneration-requested', {
               subjectId: ref.subjectId,
               topicId: ref.topicId,

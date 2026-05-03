@@ -1,5 +1,5 @@
 import type { CrystalTrialStatus } from '@/types/crystalTrial';
-import { isXpMaxedForCurrentLevel } from '@/features/progression/progressionUtils';
+import { isXpMaxedForCurrentLevel } from '@/types/crystalLevel';
 
 const XP_CAP_AT_LEVEL_BOUNDARY_STATUSES = new Set<CrystalTrialStatus>([
   'idle',
@@ -10,13 +10,13 @@ const XP_CAP_AT_LEVEL_BOUNDARY_STATUSES = new Set<CrystalTrialStatus>([
   'cooldown',
 ]);
 
-/** Trial states where XP that would cross the next level boundary is capped (not `passed` or `idle`). */
+/** Trial states where XP that would cross the next level boundary is capped (not `passed`). */
 export function trialStatusRequiresXpCapAtLevelBoundary(status: CrystalTrialStatus): boolean {
   return XP_CAP_AT_LEVEL_BOUNDARY_STATUSES.has(status);
 }
 
 /**
- * `crystal:trial-pregenerate` may start work only from a clean slate — never auto-retry from `failed`.
+ * `crystal-trial:pregeneration-requested` may start work only from a clean slate — never auto-retry from `failed`.
  */
 export function busMayStartTrialPregeneration(status: CrystalTrialStatus): boolean {
   return status === 'idle';
