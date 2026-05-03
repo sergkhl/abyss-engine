@@ -33,7 +33,12 @@ import {
 import { appEventBus } from '@/infrastructure/eventBus';
 import { deckRepository } from '@/infrastructure/di';
 import { getChatCompletionsRepositoryForSurface } from '@/infrastructure/llmInferenceRegistry';
-import { crystalCeremonyStore, useProgressionStore } from '@/features/progression';
+import {
+  crystalCeremonyStore,
+  useBuffStore,
+  useCrystalGardenStore,
+  useProgressionStore,
+} from '@/features/progression';
 import { uiStore, useUIStore } from '@/store/uiStore';
 import { useFeatureFlagsStore } from '@/store/featureFlagsStore';
 import { calculateLevelFromXP, MAX_CRYSTAL_LEVEL } from '@/types/crystalLevel';
@@ -190,8 +195,13 @@ export function AbyssCommandPalette({
   onStartStudyWithCardTypes,
 }: AbyssCommandPaletteProps) {
   const selectedTopic = useUIStore((s) => s.selectedTopic);
-  const devXpBuffActive = useProgressionStore((s) => s.activeBuffs.some(matchesDevXpBuff));
-  const activeCrystals = useProgressionStore((s) => s.activeCrystals);
+  // Phase 2 step 10 (round 4): activeBuffs and activeCrystals reads now flow
+  // through the new domain stores. Writes (addXP, toggleBuffFromCatalog,
+  // presentCeremony) and read-after-write reads inside dev write handlers
+  // continue to route through the legacy progressionStore until orchestrator
+  // migration retires the legacy writers.
+  const devXpBuffActive = useBuffStore((s) => s.activeBuffs.some(matchesDevXpBuff));
+  const activeCrystals = useCrystalGardenStore((s) => s.activeCrystals);
   const trialStatus = useCrystalTrialStore((s) => (selectedTopic ? s.getTrialStatus(selectedTopic) : 'idle'));
   const sfxEnabled = useFeatureFlagsStore((s) => s.sfxEnabled);
   const toggleSfxEnabled = useFeatureFlagsStore((s) => s.toggleSfxEnabled);
@@ -309,7 +319,9 @@ export function AbyssCommandPalette({
     const ref = uiStore.getState().selectedTopic;
     if (!ref) return;
     const progression = useProgressionStore.getState();
-    const crystal = progression.activeCrystals.find((c) => c.subjectId === ref.subjectId && c.topicId === ref.topicId);
+    const crystal = useCrystalGardenStore
+      .getState()
+      .activeCrystals.find((c) => c.subjectId === ref.subjectId && c.topicId === ref.topicId);
     if (!crystal) return;
     progression.addXP(ref, -DEV_XP_AMOUNT);
     appEventBus.emit('xp:gained', {

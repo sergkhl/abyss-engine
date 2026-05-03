@@ -16,6 +16,7 @@ import {
 } from '@/features/contentGeneration';
 import {
   getXpToNextBandThreshold,
+  useCrystalGardenStore,
   useProgressionStore as useStudyStore,
 } from '@/features/progression';
 import {
@@ -43,6 +44,15 @@ interface TopicSelectionBarProps {
  *
  * A small persistent bar at the bottom of the 3D view that shows the selected topic
  * when a crystal is selected. Displays subject name, topic name, and level.
+ *
+ * Phase 2 step 10 (round 4): `resonancePoints` is now read from the new
+ * `useCrystalGardenStore`. The remaining computed reads (`getDueCardsCount`,
+ * `getTopicsByTier`, `getTopicUnlockStatus`) and the `unlockTopic` writer
+ * still route through the legacy progressionStore; switching them to the
+ * new hooks (`useDueCardsCount`, `useTopicsByTier`, `useTopicUnlockStatus`) +
+ * `crystalGardenOrchestrator.unlockTopic` is its own follow-up commit so the
+ * structural change can be reviewed alongside the analogous DiscoveryModal
+ * migration.
  */
 export default function TopicSelectionBar({
   onStartTopicStudySession,
@@ -57,7 +67,7 @@ export default function TopicSelectionBar({
   const getTopicsByTier = useStudyStore((state) => state.getTopicsByTier);
   const getTopicUnlockStatus = useStudyStore((state) => state.getTopicUnlockStatus);
   const unlockTopic = useStudyStore((state) => state.unlockTopic);
-  const resonancePoints = useStudyStore((state) => state.resonancePoints);
+  const resonancePoints = useCrystalGardenStore((state) => state.resonancePoints);
   const trialStatus = useCrystalTrialStore((state) =>
     selectedTopic ? state.getTrialStatus(selectedTopic) : 'idle',
   );
