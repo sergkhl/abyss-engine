@@ -3,7 +3,17 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
-import { useProgressionStore as useStudyStore } from '@/features/progression';
+import {
+  crystalGardenOrchestrator,
+  defaultSM2,
+  sm2,
+  studySessionOrchestrator,
+  useBuffStore,
+  useCrystalGardenStore,
+  useRemainingRitualCooldownMs,
+  useSM2Store,
+  useStudySessionStore,
+} from '@/features/progression';
 import { undoManager } from '@/features/progression/undoManager';
 import { useUIStore } from '@/store/uiStore';
 import { useFeatureFlagsStore } from '@/store/featureFlagsStore';
@@ -41,7 +51,7 @@ import { useMentorEntryContext } from '@/hooks/useMentorEntryContext';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useContentGenerationHydration } from '@/hooks/useContentGenerationHydration';
 import { useContentGenerationLifecycle } from '@/hooks/useContentGenerationLifecycle';
-import { topicRefKey } from '@/lib/topicRef';
+import { cardRefKey, topicRefKey } from '@/lib/topicRef';
 import { useTopicCardQueriesForSubjectFilter } from '@/hooks/useTopicCardQueries';
 import { applyOpenTopicStudyEffect } from '@/hooks/openTopicStudyAdapter';
 import type { Card } from '@/types/core';
@@ -88,16 +98,34 @@ const HomeContent: React.FC = () => {
 
   const pomodoroVisible = useFeatureFlagsStore((s) => s.pomodoroVisible);
 
-  const currentSession = useStudyStore((state) => state.currentSession);
-  const activeCrystals = useStudyStore((s) => s.activeCrystals);
-  const currentSubjectId = useStudyStore((s) => s.currentSubjectId);
-  const sm2Data = useStudyStore((s) => s.sm2Data);
-  const unlockPoints = useStudyStore((s) => s.unlockPoints);
-  const activeBuffs = useStudyStore((state) => state.activeBuffs);
-  const getRemainingRitualCooldownMs = useStudyStore((state) => state.getRemainingRitualCooldownMs);
-  const getDueCardsCount = useStudyStore((state) => state.getDueCardsCount);
-  const focusStudyCard = useStudyStore((state) => state.focusStudyCard);
-  const startTopicStudySession = useStudyStore((state) => state.startTopicStudySession);
+  // Phase 2 step 11: page.tsx reads now flow through the four progression
+  // domain stores directly. Writers route through the orchestrator
+  // namespaces imported from the progression barrel; the legacy
+  // `useProgressionStore` facade is no longer reachable from this module.
+  const currentSession = useStudySessionStore((s) => s.currentSession);
+  const activeCrystals = useCrystalGardenStore((s) => s.activeCrystals);
+  const currentSubjectId = useStudySessionStore((s) => s.currentSubjectId);
+  const sm2Data = useSM2Store((s) => s.sm2Data);
+  const unlockPoints = useCrystalGardenStore((s) => s.unlockPoints);
+  const activeBuffs = useBuffStore((s) => s.activeBuffs);
+
+  // Destructure orchestrator entries up-front so handler `useCallback` dep
+  // arrays can list stable function references (matching the prior
+  // selector-derived pattern). The destructured names are referentially
+  // stable across renders because the orchestrator namespaces are
+  // module-level imports.
+  const {
+    startTopicStudySession,
+    focusStudyCard,
+    submitStudyResult,
+    submitCoarseStudyResult,
+    advanceStudyAfterReveal,
+    undoLastStudyResult,
+    redoLastStudyResult,
+    submitAttunementRitual,
+    clearPendingRitual,
+  } = studySessionOrchestrator;
+  const { initialize } = crystalGardenOrchestrator;
 
   const activeTopicRefs = useMemo(
     () => activeCrystals.map((c) => ({ subjectId: c.subjectId, topicId: c.topicId })),
@@ -109,6 +137,13 @@ const HomeContent: React.FC = () => {
     currentSubjectId,
     allTopicMetadata,
   );
+  // Aggregated due / total counts across every active topic on the board.
+  // The per-topic `useDueCardsCount` hook cannot be called inside a
+  // `forEach` loop (rules-of-hooks), so this `useMemo` reproduces the
+  // hook's body directly: attach the SM-2 snapshot to each card, then run
+  // the SM-2 due-cards policy. Memoized on the SM-2 snapshot identity +
+  // the card-query list so unrelated store updates do not retrigger the
+  // filter.
   const allTopicsCardCounts = useMemo(() => {
     let due = 0;
     let total = 0;
@@ -116,21 +151,16 @@ const HomeContent: React.FC = () => {
       const cards = query?.data ?? [];
       const ref = queriedTopicRefs[index];
       if (!ref) return;
-      due += getDueCardsCount(ref, cards);
+      const withSm2 = cards.map((card) => ({
+        ...card,
+        sm2: sm2Data[cardRefKey({ ...ref, cardId: card.id })] ?? defaultSM2,
+      }));
+      due += sm2.getDueCards(withSm2).length;
       total += cards.length;
     });
     return { due, total };
-  }, [getDueCardsCount, topicCardQueries, queriedTopicRefs]);
+  }, [sm2Data, topicCardQueries, queriedTopicRefs]);
   const totalCards = allTopicsCardCounts.total;
-
-  const initialize = useStudyStore((s) => s.initialize);
-  const submitStudyResult = useStudyStore((s) => s.submitStudyResult);
-  const submitCoarseStudyResult = useStudyStore((s) => s.submitCoarseStudyResult);
-  const advanceStudyAfterReveal = useStudyStore((state) => state.advanceStudyAfterReveal);
-  const undoLastStudyResult = useStudyStore((s) => s.undoLastStudyResult);
-  const redoLastStudyResult = useStudyStore((s) => s.redoLastStudyResult);
-  const submitAttunementRitual = useStudyStore((s) => s.submitAttunementRitual);
-  const clearPendingRitual = useStudyStore((s) => s.clearPendingRitual);
 
   const isDiscoveryModalOpen = useUIStore((s) => s.isDiscoveryModalOpen);
   const isStudyPanelOpen = useUIStore((s) => s.isStudyPanelOpen);
@@ -147,7 +177,10 @@ const HomeContent: React.FC = () => {
   const openStudyPanel = useUIStore((state) => state.openStudyPanel);
   const openGenerationProgress = useUIStore((state) => state.openGenerationProgress);
 
-  const ritualCooldownRemainingMs = getRemainingRitualCooldownMs(Date.now());
+  // The cooldown hook subscribes to `lastRitualSubmittedAt`; the
+  // render-driven re-evaluation off `Date.now()` matches the legacy
+  // facade behavior, which also recomputed the value each render.
+  const ritualCooldownRemainingMs = useRemainingRitualCooldownMs(Date.now());
 
   const currentTopicId = currentSession?.topicId || null;
   const currentSubjectIdSession = currentSession?.subjectId ?? null;
@@ -266,12 +299,12 @@ const HomeContent: React.FC = () => {
     setIsIncrementalSubjectOpen(true);
   }, [closeDiscoveryModal]);
 
-  // Quick Actions "\ud83d\udde3\ufe0f Mentor" — keyboard-accessible parity with the
+  // Quick Actions "\ud83d\udde3\ufe0f Mentor" \u2014 keyboard-accessible parity with the
   // MentorBubble billboard. Both paths route through the contextual entry
   // helper, which encodes the v1 selection rules:
-  //   overlay open    → no-op
-  //   queue non-empty → no-op (queued head wins)
-  //   else            → resolve trigger from live context, enqueue.
+  //   overlay open    \u2192 no-op
+  //   queue non-empty \u2192 no-op (queued head wins)
+  //   else            \u2192 resolve trigger from live context, enqueue.
   const entryContext = useMentorEntryContext();
   const {
     subjectGraphActiveStage,
@@ -362,7 +395,7 @@ const HomeContent: React.FC = () => {
           <DropdownMenuTrigger render={quickActionsTrigger} />
           <DropdownMenuContent side="top" align="end" sideOffset={8}>
             <DropdownMenuItem onClick={handleQuickActionWisdomAltar}>
-              🏛️ Wisdom Altar
+              \ud83c\udfdb\ufe0f Wisdom Altar
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={handleQuickActionGenerationProgress}
@@ -372,13 +405,13 @@ const HomeContent: React.FC = () => {
               Background generation
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleQuickActionMentor} data-testid="quick-action-mentor">
-              🗣️ Mentor
+              \ud83d\udde3\ufe0f Mentor
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleQuickActionCommandPalette}>
-              🔍 Command palette (⌘K)
+              \ud83d\udd0d Command palette (\u2318K)
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleQuickActionSettings}>
-              ⚙️ Settings
+              \u2699\ufe0f Settings
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
