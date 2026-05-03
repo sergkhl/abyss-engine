@@ -20,7 +20,7 @@ import {
   getCrystalScale,
   subjectSeedFromId,
   topicSeedFromRef,
-  useProgressionStore,
+  useCrystalGardenStore,
 } from '../features/progression';
 import {
   isCrystalTrialAvailableForPlayer,
@@ -149,7 +149,10 @@ export const Crystals: React.FC<CrystalsProps> = ({
   onStartTopicStudySession,
   isStudyPanelOpen = false,
 }) => {
-  const activeCrystals = useProgressionStore((state) => state.activeCrystals);
+  // Phase 2 step 10 (round 2): activeCrystals reads now flow through the new
+  // crystal-garden store. The legacy progression store mirror keeps the new
+  // store fed until Phase 2 caller migration retires the legacy writer.
+  const activeCrystals = useCrystalGardenStore((state) => state.activeCrystals);
   const metadataLookup = useTopicMetadata(
     crystals.map((crystal) => ({ subjectId: crystal.subjectId, topicId: crystal.topicId })),
   );
