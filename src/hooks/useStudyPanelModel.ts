@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 
 import { cardRefKey, topicRefKey } from '@/lib/topicRef';
 import {
+  normalizeSM2State,
+  type SM2Data,
   useCrystalGardenStore,
   useSM2Store,
   useStudySessionStore,
@@ -18,7 +20,6 @@ import {
   resolveActiveCard,
 } from '../features/studyPanel';
 import { toRenderableCard, type RenderableCard, type RenderableType } from '../features/studyPanel/cardPresenter';
-import { normalizeSM2State, type SM2Data } from '../features/progression/sm2';
 import { undoManager } from '../features/progression/undoManager';
 import { ActiveCrystal, Card, TopicRef } from '../types/core';
 import { TopicMetadata } from '../features/content/selectors';
@@ -75,6 +76,10 @@ export function useStudyPanelModel({
   // each flow through their domain store directly. The plan explicitly allows
   // this hook to read from multiple stores (single exception to the
   // one-store-per-hook rule, see refactor plan section 5).
+  //
+  // Phase 4 prep: `normalizeSM2State` and `SM2Data` are now imported through
+  // the `@/features/progression` barrel rather than the soon-to-be-deleted
+  // root-level `sm2.ts` file.
   const sm2Data = useSM2Store((state) => state.sm2Data);
   const currentSession = useStudySessionStore((state) => state.currentSession);
   const activeCrystals = useCrystalGardenStore((state) => state.activeCrystals);

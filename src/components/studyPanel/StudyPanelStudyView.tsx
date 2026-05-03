@@ -9,7 +9,7 @@ import {
 } from '../../features/studyPanel/studyPanelLlmSurfaceProps';
 import { CoarseChoice } from '../../types';
 import { Card } from '../../types/core';
-import { SM2Data } from '../../features/progression/sm2';
+import { SM2Data } from '../../features/progression';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
