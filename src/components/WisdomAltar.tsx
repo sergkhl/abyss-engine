@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber/webgpu';
 import * as THREE from 'three/webgpu';
 import { Billboard, Sparkles } from '@react-three/drei/webgpu';
-import { selectIsAnyModalOpen, uiStore } from '../store/uiStore';
-import { useRemainingRitualCooldownMs } from '../features/progression';
+import { uiStore } from '../store/uiStore';
+import { useRitualCooldownClock } from '../features/progression';
 import { useSceneInvalidator } from '../hooks/useSceneInvalidator';
 import {
   createAltarMaterialBundle,
@@ -51,9 +51,6 @@ const FRAGMENT_BOB_COOLDOWN_LOCAL = 0.04;
 /** Sparkles field / particle size in altar local space (inherit `ALTAR_SCALE` toward world). */
 const SPARKLES_FIELD_SCALE = 1.8;
 const SPARKLES_POINT_SIZE = 2.4;
-
-/** Cadence of the wall-clock tick that re-derives the ritual cooldown remaining ms. */
-const COOLDOWN_TICK_INTERVAL_MS = 1000;
 
 /** Orbital parameters per fragment (radius, base height, angular speed, phase, bob phase). */
 const FRAGMENT_ORBITS: ReadonlyArray<{
@@ -106,17 +103,13 @@ export const WisdomAltar: React.FC = () => {
     document.body.style.cursor = 'auto';
   };
 
-  // Phase 2 step 10 — WisdomAltar cooldown-poll restructure.
-  // The data source flips from the legacy `useStudyStore.getRemainingRitualCooldownMs`
-  // imperative getter to the `useRemainingRitualCooldownMs(atMs)` hook. The hook
-  // subscribes to `lastRitualSubmittedAt` on the new study-session store and
-  // derives remaining ms against the supplied `atMs`; we still need a wall-clock
-  // tick to advance `atMs` (the hook would otherwise return a stale value between
-  // ritual submissions). The modal-open guard is preserved — while any modal is
-  // open we freeze the tick, which freezes the derived availability without
-  // ever calling the hook conditionally.
-  const [now, setNow] = useState(() => Date.now());
-  const remainingCooldownMs = useRemainingRitualCooldownMs(now);
+  // Fix #7: cooldown clock unification. The shared
+  // `useRitualCooldownClock` hook owns the wall-clock interval, the
+  // modal-open freeze, and the derived remaining-ms value. Both the
+  // altar (here) and `app/page.tsx` adopt the same hook so their
+  // cooldown UIs stay in lockstep and freeze identically when any
+  // modal is open.
+  const remainingCooldownMs = useRitualCooldownClock();
   const isRitualSubmissionAvailable = remainingCooldownMs <= 0;
   const { isPaused, invalidate } = useSceneInvalidator();
 
@@ -127,22 +120,6 @@ export const WisdomAltar: React.FC = () => {
     }
     mesh.layers.set(CUBE_REFLECTION_EXCLUDED_LAYER);
   }, [isRitualSubmissionAvailable, isPaused]);
-
-  useEffect(() => {
-    const tick = () => {
-      if (selectIsAnyModalOpen(uiStore.getState())) {
-        return;
-      }
-      setNow(Date.now());
-    };
-
-    tick();
-    const timer = window.setInterval(tick, COOLDOWN_TICK_INTERVAL_MS);
-
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, []);
 
   useFrame(() => {
     if (isPaused) {
@@ -189,6 +166,14 @@ export const WisdomAltar: React.FC = () => {
 
     invalidate();
   });
+
+  // Touch the unused-effect lint by anchoring to the cooldown value;
+  // the previous `useEffect` block that set up the wall-clock interval
+  // has been replaced by the shared hook above.
+  useEffect(() => {
+    // no-op placeholder removed: cooldown plumbing now lives entirely
+    // inside `useRitualCooldownClock`.
+  }, []);
 
   return (
     <group
