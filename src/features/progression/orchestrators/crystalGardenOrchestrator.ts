@@ -17,22 +17,35 @@
  * emitted only after the final write so subscribers observe a consistent
  * post-mutation state.
  *
- * `addXP` direct-path emission order: `crystal-trial:pregeneration-requested`
- * is emitted *after* the XP write here (study path emits it after the write
- * too). Acceptable: the bus handler for that event only writes to
- * `crystalTrialStore` and never reads `crystalGardenStore`, so any reader
- * sees the post-write XP value regardless.
+ * `addXP` direct-path emission order:
+ *   1. `xp:gained` (effective post-gating delta, if positive) —
+ *      orchestrator owns this telemetry as the single direct-path
+ *      emitter (fix #5 of the progression monolith verification plan).
+ *      Component-level emits in `AbyssCommandPalette` are removed.
+ *   2. `crystal-trial:pregeneration-requested` (if gating crossed the
+ *      pregeneration threshold).
+ *   3. `crystal:leveled` (if the applied delta crossed level bands).
+ *
+ * All three fire after the XP write. Acceptable: the bus handler for
+ * `crystal-trial:pregeneration-requested` only writes to
+ * `crystalTrialStore` and never reads `crystalGardenStore`, so any
+ * reader sees the post-write XP value regardless. The `xp:gained`
+ * handler is a passive telemetry sink.
  *
  * Buff catalog actions (`grantBuffFromCatalog` / `toggleBuffFromCatalog`)
  * are pure single-store mutations and live in `stores/buffStore.ts` helpers
  * — they are NOT part of this orchestrator (the orchestrator layer is
  * reserved for cross-store writes).
+ *
+ * Buff merge primitives are imported from `../buffs/buffMerge` so this
+ * file, `stores/buffStore.ts`, and `orchestrators/studySessionOrchestrator.ts`
+ * share a single interface (fix #4 of the progression monolith
+ * verification plan).
  */
 
 import { appEventBus } from '@/infrastructure/eventBus';
 import { calculateLevelFromXP } from '@/types/crystalLevel';
 import type { SubjectGraph, TopicRef } from '@/types/core';
-import type { Buff } from '@/types/progression';
 import {
 	computeTrialGatedDirectReward,
 	useCrystalTrialStore,
@@ -44,23 +57,7 @@ import { applyCrystalXpDelta } from '../policies/crystalLeveling';
 import { getTopicUnlockStatus } from '../policies/topicUnlocking';
 import { findNextGridPosition } from '../gridUtils';
 import { BuffEngine } from '../buffs/buffEngine';
-
-function dedupeBuffsById(buffs: Buff[]): Buff[] {
-	const seen = new Set<string>();
-	const deduped: Buff[] = [];
-	for (let index = buffs.length - 1; index >= 0; index -= 1) {
-		const buff = buffs[index];
-		const dedupeKey = !buff
-			? ''
-			: `${buff.buffId}|${buff.source ?? 'unknown'}|${buff.condition}`;
-		if (!buff || seen.has(dedupeKey)) {
-			continue;
-		}
-		seen.add(dedupeKey);
-		deduped.push(buff);
-	}
-	return deduped.reverse();
-}
+import { dedupeBuffsById } from '../buffs/buffMerge';
 
 export function initialize(): void {
 	const buff = useBuffStore.getState();
@@ -131,13 +128,18 @@ export function addXP(
 		(item) => item.subjectId === ref.subjectId && item.topicId === ref.topicId,
 	);
 
+	// Lifted out of the `if (crystal)` block so the post-write delta
+	// calculation downstream has a single source of truth. When the
+	// crystal does not yet exist, `previousXp` is 0 and `applyCrystalXpDelta`
+	// returns null, so we never reach the emit path.
+	const previousXp = crystal?.xp ?? 0;
+
 	let effectiveXpAmount = xpAmount;
 	let pregenPayload:
 		| { subjectId: string; topicId: string; currentLevel: number; targetLevel: number }
 		| null = null;
 
 	if (crystal) {
-		const previousXp = crystal.xp;
 		const currentLevel = calculateLevelFromXP(previousXp);
 		const trialGating = computeTrialGatedDirectReward({
 			previousXp,
@@ -169,6 +171,25 @@ export function addXP(
 			applied.levelsGained > 0 ? cg.unlockPoints + applied.levelsGained : cg.unlockPoints,
 	});
 	// --- End mutation phase ---
+
+	const appliedDelta = applied.nextXp - previousXp;
+	if (appliedDelta > 0) {
+		// Fix #5: orchestrator owns direct-path `xp:gained` telemetry.
+		// Emits the post-gating effective delta (not the requested
+		// `xpAmount`) so the listener records what actually landed on
+		// the crystal. Component-level dev emits in `AbyssCommandPalette`
+		// are removed in a sibling commit so each direct grant produces
+		// exactly one `xp:gained` event. Negative deltas (subtractXp
+		// dev path) are intentionally skipped — `xp:gained` retains
+		// "net positive XP landed" semantics for downstream consumers.
+		appEventBus.emit('xp:gained', {
+			subjectId: ref.subjectId,
+			topicId: ref.topicId,
+			amount: appliedDelta,
+			sessionId: options?.sessionId ?? 'direct',
+			cardId: 'direct',
+		});
+	}
 
 	if (pregenPayload) {
 		appEventBus.emit('crystal-trial:pregeneration-requested', pregenPayload);
