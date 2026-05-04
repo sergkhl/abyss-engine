@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { cardRefKey } from '@/lib/topicRef';
 import type { ProgressionState } from '@/types/progression';
 import { BuffEngine } from '../buffs/buffEngine';
-import { defaultSM2 } from '../sm2';
+import { defaultSM2 } from '../policies/sm2';
 import { undoManager } from '../undoManager';
 
 const SUB = 'sub';

@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber/webgpu';
 import * as THREE from 'three/webgpu';
 import { Billboard, Sparkles } from '@react-three/drei/webgpu';
-import { selectIsAnyModalOpen, uiStore } from '../store/uiStore';
-import { useProgressionStore as useStudyStore } from '../features/progression';
+import { uiStore } from '../store/uiStore';
+import { useRitualCooldownClock } from '../features/progression';
 import { useSceneInvalidator } from '../hooks/useSceneInvalidator';
 import {
   createAltarMaterialBundle,
@@ -103,8 +103,14 @@ export const WisdomAltar: React.FC = () => {
     document.body.style.cursor = 'auto';
   };
 
-  const getRemainingRitualCooldownMs = useStudyStore((state) => state.getRemainingRitualCooldownMs);
-  const [isRitualSubmissionAvailable, setIsRitualSubmissionAvailable] = useState(true);
+  // Fix #7: cooldown clock unification. The shared
+  // `useRitualCooldownClock` hook owns the wall-clock interval, the
+  // modal-open freeze, and the derived remaining-ms value. Both the
+  // altar (here) and `app/page.tsx` adopt the same hook so their
+  // cooldown UIs stay in lockstep and freeze identically when any
+  // modal is open.
+  const remainingCooldownMs = useRitualCooldownClock();
+  const isRitualSubmissionAvailable = remainingCooldownMs <= 0;
   const { isPaused, invalidate } = useSceneInvalidator();
 
   useLayoutEffect(() => {
@@ -114,24 +120,6 @@ export const WisdomAltar: React.FC = () => {
     }
     mesh.layers.set(CUBE_REFLECTION_EXCLUDED_LAYER);
   }, [isRitualSubmissionAvailable, isPaused]);
-
-  useEffect(() => {
-    const updateSubmissionAvailability = () => {
-      if (selectIsAnyModalOpen(uiStore.getState())) {
-        return;
-      }
-
-      const remaining = getRemainingRitualCooldownMs(Date.now());
-      setIsRitualSubmissionAvailable(remaining <= 0);
-    };
-
-    updateSubmissionAvailability();
-    const timer = window.setInterval(updateSubmissionAvailability, 1000);
-
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [getRemainingRitualCooldownMs]);
 
   useFrame(() => {
     if (isPaused) {

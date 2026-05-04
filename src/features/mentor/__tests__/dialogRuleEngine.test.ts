@@ -91,7 +91,7 @@ describe('dialogRuleEngine', () => {
   });
 
   describe('onboarding:subject-unlock-first-crystal', () => {
-    it('emits a single hint message carrying open-discovery and maybe-later choices', () => {
+    it('emits a single hint message carrying an open-discovery choice', () => {
       const plan = evaluateTrigger(
         'onboarding:subject-unlock-first-crystal',
         { subjectName: 'Topology', subjectId: 'subj-topology' },
@@ -105,7 +105,7 @@ describe('dialogRuleEngine', () => {
       expect(message.mood).toBe('hint');
 
       const choiceIds = message.choices?.map((c) => c.id) ?? [];
-      expect(choiceIds).toEqual(['open-discovery', 'maybe-later']);
+      expect(choiceIds).toEqual(['open-discovery']);
 
       const openDiscovery = message.choices?.find((c) => c.id === 'open-discovery');
       // The choice must carry the payload's subjectId into open_discovery so
@@ -115,8 +115,7 @@ describe('dialogRuleEngine', () => {
         subjectId: 'subj-topology',
       });
       expect(openDiscovery?.next).toBe('end');
-      const maybeLater = message.choices?.find((c) => c.id === 'maybe-later');
-      expect(maybeLater?.next).toBe('end');
+
     });
 
     it('interpolates the payload subjectName into the variant text', () => {

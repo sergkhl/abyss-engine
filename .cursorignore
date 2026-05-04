@@ -1,4 +1,9 @@
+!.cursor/plans/
+
 !node_modules/@react-three/
 !node_modules/three/
-!.cursor/plans/
+
+!playwright-report/
+!playwright-results/
+
 .tmp/

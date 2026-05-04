@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { CoarseChoice } from '../../types';
+import type { CoarseChoice } from '@/types';
 import {
   computeFastThresholdMs,
   computeSlowThresholdMs,

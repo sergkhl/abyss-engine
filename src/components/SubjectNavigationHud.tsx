@@ -1,7 +1,10 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { useProgressionStore as useStudyStore } from '../features/progression';
+import {
+  studySessionOrchestrator,
+  useStudySessionStore,
+} from '../features/progression';
 import { useSubjects } from '../features/content';
 import {
   Select,
@@ -30,11 +33,19 @@ interface SubjectNavigationHudProps {
  * Part of the scene HUD cluster; consumes the shared `--surface-hud` tokens so
  * light/dark chrome matches the bottom-right quick-actions and top-right
  * generation-progress surfaces.
+ *
+ * Phase 2 step 10 (writer migration round): the `currentSubjectId` read is
+ * sourced from the new `useStudySessionStore` (subject viewport signal moved
+ * off the legacy monolith in Phase 1 step 1) and the `setCurrentSubject`
+ * write now routes through `studySessionOrchestrator.setCurrentSubject` (no
+ * `useProgressionStore` import on this file). The legacy writer of the same
+ * name remains on `progressionStore.ts` for the existing
+ * `progressionStore.test.ts` parity gate until Phase 4 step 15 deletes the
+ * monolith.
  */
 export const SubjectNavigationHud: React.FC<SubjectNavigationHudProps> = ({ onCreateSubject }) => {
   const { data: subjects = [] } = useSubjects();
-  const currentSubjectId = useStudyStore((state) => state.currentSubjectId);
-  const setCurrentSubject = useStudyStore((state) => state.setCurrentSubject);
+  const currentSubjectId = useStudySessionStore((state) => state.currentSubjectId);
 
   const handleSelectSubject = (subjectId: string | null) => {
     if (subjectId === null) {
@@ -42,7 +53,7 @@ export const SubjectNavigationHud: React.FC<SubjectNavigationHudProps> = ({ onCr
     }
 
     if (subjectId === ALL_FLOORS_VALUE) {
-      setCurrentSubject(null);
+      studySessionOrchestrator.setCurrentSubject(null);
       return;
     }
 
@@ -51,7 +62,7 @@ export const SubjectNavigationHud: React.FC<SubjectNavigationHudProps> = ({ onCr
       return;
     }
 
-    setCurrentSubject(subjectId);
+    studySessionOrchestrator.setCurrentSubject(subjectId);
   };
 
   const subjectSelectItems = useMemo(

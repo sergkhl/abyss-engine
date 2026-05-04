@@ -19,7 +19,7 @@ import {
   MOVEMENT_OPTIONS,
   SLEEP_OPTIONS,
 } from '../features/progression';
-import { useProgressionStore } from '../features/progression';
+import { useCrystalGardenStore } from '../features/progression';
 import { Button } from '@/components/ui/button';
 import { InfoPopover } from '@/components/InfoPopover';
 import { Switch } from './ui/switch';
@@ -87,7 +87,11 @@ export function AttunementRitualModal({
   const [targetCrystal, setTargetCrystal] = useState('');
   const [microGoal, setMicroGoal] = useState('');
   const [remainingCooldownMs, setRemainingCooldownMs] = useState<number>(cooldownRemainingMs);
-  const activeCrystals = useProgressionStore((state) => state.activeCrystals);
+  // Phase 2 step 10 (round 2): activeCrystals reads now flow through the
+  // crystal-garden store. Writes (the actual ritual submission) are still
+  // delivered through the legacy onSubmit prop wiring; the crystal selector
+  // here is read-only, so swapping the source is safe under the legacy mirror.
+  const activeCrystals = useCrystalGardenStore((state) => state.activeCrystals);
   const activeTopicRefs = useMemo(() => {
     const seen = new Set<string>();
     const out: TopicRef[] = [];

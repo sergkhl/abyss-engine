@@ -7,17 +7,26 @@ import DiscoveryModal from './DiscoveryModal';
 
 const DISCOVERY_MODAL_SUBJECT_STORAGE_KEY = 'abyss:discoveryModalSubjectId';
 
-const progressionState = {
-  getTopicsByTier: vi.fn(() => [] as { tier: number; topics: unknown[] }[]),
-  unlockTopic: () => null,
-  activeCrystals: [],
-  getTopicUnlockStatus: () => ({
-    canUnlock: false,
-    hasPrerequisites: false,
-    hasEnoughPoints: false,
-    unlockPoints: 0,
-    missingPrerequisites: [],
-  }),
+// Phase 2 step 10 — DiscoveryModal hook-substitution round.
+// The component no longer reads from the legacy progressionStore. We mock
+// the new-store / hook / orchestrator surfaces of '../features/progression'
+// instead, in the same commit as the component flip so the test never
+// observes a half-migrated graph.
+//
+// Phase 4 prep: the component now imports the policy-side helper as
+// `getTopicUnlockStatus as getTopicUnlockStatusFromPolicy` from the barrel,
+// so the mock provides `getTopicUnlockStatus` (the canonical barrel export).
+const tieredTopicsResult = vi.fn(() => [] as { tier: number; topics: unknown[] }[]);
+const topicUnlockStatusFallback = {
+  canUnlock: false,
+  hasPrerequisites: false,
+  hasEnoughPoints: false,
+  unlockPoints: 0,
+  missingPrerequisites: [],
+};
+const crystalGardenStateMock = {
+  activeCrystals: [] as unknown[],
+  unlockPoints: 0,
 };
 
 const mockSubject = (id: string, name: string) => ({
@@ -29,7 +38,13 @@ const mockSubject = (id: string, name: string) => ({
 });
 
 vi.mock('../features/progression', () => ({
-  useProgressionStore: (selector: (state: typeof progressionState) => unknown) => selector(progressionState),
+  useCrystalGardenStore: (selector: (state: typeof crystalGardenStateMock) => unknown) =>
+    selector(crystalGardenStateMock),
+  useTopicsByTier: () => tieredTopicsResult(),
+  getTopicUnlockStatus: () => topicUnlockStatusFallback,
+  crystalGardenOrchestrator: {
+    unlockTopic: vi.fn(() => null),
+  },
 }));
 
 vi.mock('../features/content', () => ({
@@ -68,7 +83,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks();
-  progressionState.getTopicsByTier.mockReturnValue([]);
+  tieredTopicsResult.mockReturnValue([]);
   featureFlagsState.ritualVisible = true;
   sessionStorage.removeItem(DISCOVERY_MODAL_SUBJECT_STORAGE_KEY);
   document.body.innerHTML = '';
@@ -114,7 +129,7 @@ describe('DiscoveryModal', () => {
   });
 
   it('shows unlock points in description and as KeyRound badge', () => {
-    progressionState.getTopicsByTier.mockReturnValue([
+    tieredTopicsResult.mockReturnValue([
       {
         tier: 1,
         topics: [
@@ -147,7 +162,7 @@ describe('DiscoveryModal', () => {
   });
 
   it('shows topic filter counts on toggle items', () => {
-    progressionState.getTopicsByTier.mockReturnValue([
+    tieredTopicsResult.mockReturnValue([
       {
         tier: 1,
         topics: [
@@ -204,7 +219,7 @@ describe('DiscoveryModal', () => {
   });
 
   it('renders subject group labels when viewing all subjects', () => {
-    progressionState.getTopicsByTier.mockReturnValue([
+    tieredTopicsResult.mockReturnValue([
       {
         tier: 1,
         topics: [
@@ -253,7 +268,7 @@ describe('DiscoveryModal', () => {
 
   it('hides subject group headings when a single subject is selected in the modal', () => {
     sessionStorage.setItem(DISCOVERY_MODAL_SUBJECT_STORAGE_KEY, 'sub-x');
-    progressionState.getTopicsByTier.mockReturnValue([
+    tieredTopicsResult.mockReturnValue([
       {
         tier: 1,
         topics: [
@@ -286,7 +301,7 @@ describe('DiscoveryModal', () => {
   });
 
   it('hides tier sections that have no curriculum-visible topics', () => {
-    progressionState.getTopicsByTier.mockReturnValue([
+    tieredTopicsResult.mockReturnValue([
       {
         tier: 1,
         topics: [
@@ -337,7 +352,7 @@ describe('DiscoveryModal', () => {
   });
 
   it('shows empty state with reset when no topics match the locked filter', () => {
-    progressionState.getTopicsByTier.mockReturnValue([
+    tieredTopicsResult.mockReturnValue([
       {
         tier: 1,
         topics: [
@@ -370,7 +385,7 @@ describe('DiscoveryModal', () => {
 
   it('reset filters widens list and clears stored modal subject', async () => {
     sessionStorage.setItem(DISCOVERY_MODAL_SUBJECT_STORAGE_KEY, 'sub-a');
-    progressionState.getTopicsByTier.mockReturnValue([
+    tieredTopicsResult.mockReturnValue([
       {
         tier: 1,
         topics: [
@@ -410,7 +425,7 @@ describe('DiscoveryModal', () => {
   });
 
   it('renders the curated topic icon and a Lucide lock badge for locked topics', () => {
-    progressionState.getTopicsByTier.mockReturnValue([
+    tieredTopicsResult.mockReturnValue([
       {
         tier: 1,
         topics: [
@@ -447,7 +462,7 @@ describe('DiscoveryModal', () => {
   });
 
   it('renders the curated topic icon and a Lucide unlock badge for unlocked topics after toggling the unlocked filter', async () => {
-    progressionState.getTopicsByTier.mockReturnValue([
+    tieredTopicsResult.mockReturnValue([
       {
         tier: 1,
         topics: [

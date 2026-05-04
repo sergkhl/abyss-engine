@@ -143,8 +143,6 @@ describe('topic-content:generation-ready', () => {
       subjectId: 'subj-topology',
       topicId: 't-1',
     });
-    const dismiss = msg.choices?.find((c) => c.id === 'dismiss');
-    expect(dismiss?.next).toBe('end');
   });
 
   it('returns null when subjectId or topicId is missing (CTA cannot route)', () => {

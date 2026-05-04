@@ -8,9 +8,12 @@ import {
   useCrystalTrialStore,
 } from '@/features/crystalTrial';
 import { useUIStore } from '@/store/uiStore';
-import { useProgressionStore } from '@/features/progression/progressionStore';
+import {
+  crystalGardenOrchestrator,
+  getXpToNextBandThreshold,
+  useCrystalGardenStore,
+} from '@/features/progression';
 import { appEventBus } from '@/infrastructure/eventBus';
-import { getXpToNextBandThreshold } from '@/features/progression/progressionUtils';
 import { CRYSTAL_XP_PER_LEVEL } from '@/types/crystalLevel';
 import type { CrystalTrialResult, CrystalTrialScenarioQuestion } from '@/types/crystalTrial';
 import { evaluateTrial } from '@/features/crystalTrial/evaluateTrial';
@@ -36,7 +39,15 @@ export function CrystalTrialModal() {
     if (!selectedTopic) return null;
     return s.getCurrentTrial(selectedTopic);
   });
-  const selectedCrystal = useProgressionStore((state) => {
+  // Phase 2 step 10 (writer migration round): selectedCrystal read flows
+  // through the new crystal-garden store; the addXP write inside
+  // `handleLevelUp` now routes through `crystalGardenOrchestrator.addXP`
+  // (no `useProgressionStore` import on this file).
+  //
+  // Phase 4 prep: getXpToNextBandThreshold now flows through the
+  // `@/features/progression` barrel rather than the soon-to-be-deleted
+  // `progressionUtils.ts` file.
+  const selectedCrystal = useCrystalGardenStore((state) => {
     if (!selectedTopic) return null;
     return (
       state.activeCrystals.find(
@@ -125,7 +136,10 @@ export function CrystalTrialModal() {
 
   const handleLevelUp = useCallback(() => {
     if (!selectedTopic) return;
-    const { activeCrystals, addXP } = useProgressionStore.getState();
+    // Phase 2 step 10 (writer migration round): activeCrystals read from the
+    // new crystal-garden store; addXP routes through the orchestrator. The
+    // legacy `useProgressionStore.addXP` is no longer referenced here.
+    const { activeCrystals } = useCrystalGardenStore.getState();
     const crystal = activeCrystals.find(
       (item) => item.subjectId === selectedTopic.subjectId && item.topicId === selectedTopic.topicId,
     );
@@ -144,7 +158,7 @@ export function CrystalTrialModal() {
       return;
     }
 
-    addXP(selectedTopic, xpToLevel);
+    crystalGardenOrchestrator.addXP(selectedTopic, xpToLevel);
 
     useCrystalTrialStore.getState().clearTrial(selectedTopic);
 

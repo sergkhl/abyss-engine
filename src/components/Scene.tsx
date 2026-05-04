@@ -14,7 +14,11 @@ import { GlowPostProcessing } from '../graphics/glowPostProcessing'
 import { SceneDebugStats } from './debug/SceneDebugStats'
 import { SceneProbeMount } from './debug/SceneProbeMount'
 import TopicSelectionBar from './TopicSelectionBar'
-import { useProgressionStore as useStudyStore } from '../features/progression'
+import {
+  studySessionOrchestrator,
+  useCrystalGardenStore,
+  useStudySessionStore,
+} from '../features/progression'
 import { useUIStore } from '../store/uiStore'
 import { topicRefKey } from '@/lib/topicRef'
 import { useTopicMetadata, type TopicMetadata } from '../features/content'
@@ -206,11 +210,14 @@ export const Scene: React.FC<SceneProps> = ({
   const cameraRef = useRef<THREE.PerspectiveCamera>(null)
   const orbitControlsRef = useRef<{ target: THREE.Vector3; update: () => void } | null>(null)
   const sunDirectionRef = useRef(new THREE.Vector3(0, 1, 0))
-  const activeCrystals = useStudyStore((state) => state.activeCrystals)
-  const currentSubjectId = useStudyStore((state) => state.currentSubjectId)
+  // Phase 2 step 10 (writer migration round): activeCrystals + currentSubjectId
+  // reads route through the new domain stores; the startTopicStudySession
+  // write below now routes through `studySessionOrchestrator` (no
+  // `useProgressionStore` import on this file).
+  const activeCrystals = useCrystalGardenStore((state) => state.activeCrystals)
+  const currentSubjectId = useStudySessionStore((state) => state.currentSubjectId)
   const selectedTopic = useUIStore((state) => state.selectedTopic)
   const isStudyPanelOpen = useUIStore((state) => state.isStudyPanelOpen)
-  const startTopicStudySession = useStudyStore((state) => state.startTopicStudySession)
   const openStudyPanel = useUIStore((state) => state.openStudyPanel)
   const activeTopicRefs = useMemo(
     () => activeCrystals.map((c) => ({ subjectId: c.subjectId, topicId: c.topicId })),
@@ -242,7 +249,7 @@ export const Scene: React.FC<SceneProps> = ({
       console.warn(`[Scene] No cards available for topic ${ref.topicId}; unable to start study session.`)
       return
     }
-    startTopicStudySession(ref, cards)
+    studySessionOrchestrator.startTopicStudySession(ref, cards)
     openStudyPanel()
   }
 

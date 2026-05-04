@@ -15,15 +15,19 @@ import {
   useContentGenerationStore,
 } from '@/features/contentGeneration';
 import {
+  crystalGardenOrchestrator,
   getXpToNextBandThreshold,
-  useProgressionStore as useStudyStore,
+  useCrystalGardenStore,
+  useDueCardsCount,
+  useTopicsByTier,
+  useTopicUnlockStatus,
 } from '@/features/progression';
 import {
   isCrystalTrialAvailableForPlayer,
   useCrystalTrialStore,
 } from '@/features/crystalTrial';
 import type { TopicMetadata } from '@/features/content';
-import type { Card } from '@/types/core';
+import type { Card, TopicRef } from '@/types/core';
 import { useCrystalContentCelebrationStore } from '@/store/crystalContentCelebrationStore';
 import { useUIStore } from '@/store/uiStore';
 
@@ -39,10 +43,31 @@ interface TopicSelectionBarProps {
 }
 
 /**
+ * Sentinel ref used to keep the hook order stable while `selectedTopic` is
+ * null. The topic-unlocking policy returns a default `canUnlock: false`
+ * status for an unknown ref, and `useDueCardsCount` returns 0 against an
+ * empty card list, so the sentinel produces no observable side effects —
+ * downstream `useMemo`s gate the value on `selectedTopic` before use.
+ */
+const SENTINEL_TOPIC_REF: TopicRef = { subjectId: '', topicId: '' };
+
+/**
  * TopicSelectionBar Component
  *
  * A small persistent bar at the bottom of the 3D view that shows the selected topic
  * when a crystal is selected. Displays subject name, topic name, and level.
+ *
+ * Phase 2 step 10 (TopicSelectionBar follow-up): the four computed reads /
+ * writer that previously routed through the legacy progressionStore now flow
+ * through the new hook trio + crystal-garden orchestrator:
+ *   - `useTopicsByTier`        replaces `getTopicsByTier`
+ *   - `useTopicUnlockStatus`   replaces `getTopicUnlockStatus`
+ *   - `useDueCardsCount`       replaces `getDueCardsCount`
+ *   - `crystalGardenOrchestrator.unlockTopic` replaces `unlockTopic`
+ *
+ * `useTopicUnlockStatus` and `useDueCardsCount` need a ref even when no topic
+ * is selected (we cannot call hooks conditionally); we pass `SENTINEL_TOPIC_REF`
+ * and gate the consumed values on `selectedTopic` in the dependent memos.
  */
 export default function TopicSelectionBar({
   onStartTopicStudySession,
@@ -53,11 +78,7 @@ export default function TopicSelectionBar({
   const selectedTopic = useUIStore((state) => state.selectedTopic);
   const selectTopic = useUIStore((state) => state.selectTopic);
   const isSelectionMode = selectedTopic !== null;
-  const getDueCardsCount = useStudyStore((state) => state.getDueCardsCount);
-  const getTopicsByTier = useStudyStore((state) => state.getTopicsByTier);
-  const getTopicUnlockStatus = useStudyStore((state) => state.getTopicUnlockStatus);
-  const unlockTopic = useStudyStore((state) => state.unlockTopic);
-  const resonancePoints = useStudyStore((state) => state.resonancePoints);
+  const resonancePoints = useCrystalGardenStore((state) => state.resonancePoints);
   const trialStatus = useCrystalTrialStore((state) =>
     selectedTopic ? state.getTrialStatus(selectedTopic) : 'idle',
   );
@@ -77,10 +98,11 @@ export default function TopicSelectionBar({
 
   const contentStatusMap = useTopicContentStatusMap();
 
-  const topicsByTier = useMemo(
-    () => getTopicsByTier(allGraphs, subjectList, undefined, contentStatusMap),
-    [getTopicsByTier, allGraphs, subjectList, contentStatusMap],
-  );
+  const topicsByTier = useTopicsByTier(allGraphs, subjectList, undefined, contentStatusMap);
+
+  const refForHooks = selectedTopic ?? SENTINEL_TOPIC_REF;
+  const computedSelectedUnlockStatus = useTopicUnlockStatus(refForHooks, allGraphs);
+  const computedSelectedDueCardsCount = useDueCardsCount(refForHooks, selectedCards);
 
   const selectedTieredTopic = useMemo(() => {
     if (!selectedTopic) {
@@ -97,12 +119,10 @@ export default function TopicSelectionBar({
     return null;
   }, [selectedTopic, topicsByTier]);
 
-  const barUnlockStatus = useMemo(() => {
-    if (!selectedTopic) {
-      return null;
-    }
-    return getTopicUnlockStatus(selectedTopic, allGraphs);
-  }, [allGraphs, getTopicUnlockStatus, selectedTopic]);
+  const barUnlockStatus = useMemo(
+    () => (selectedTopic ? computedSelectedUnlockStatus : null),
+    [selectedTopic, computedSelectedUnlockStatus],
+  );
 
   // Content generation awareness
   const selectedTopicContentStatus: TopicContentStatus = useMemo(() => {
@@ -135,13 +155,12 @@ export default function TopicSelectionBar({
   }, [selectedTopic]);
 
   const topicName = selectedMetadata?.topicName || 'Selected topic';
-  const selectedDueCards = React.useMemo(() => {
+  const selectedDueCards = useMemo(() => {
     if (!selectedCards.length || !selectedTopic) {
       return 0;
     }
-    const refs = selectedCards.map((card) => ({ id: card.id }));
-    return getDueCardsCount(selectedTopic, refs);
-  }, [getDueCardsCount, selectedTopic, selectedCards]);
+    return computedSelectedDueCardsCount;
+  }, [computedSelectedDueCardsCount, selectedCards, selectedTopic]);
 
   const handleOpenDetails = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -155,7 +174,7 @@ export default function TopicSelectionBar({
     if (!selectedTopic || !selectedTieredTopic || !barUnlockStatus?.canUnlock) {
       return;
     }
-    unlockTopic(selectedTopic, allGraphs);
+    crystalGardenOrchestrator.unlockTopic(selectedTopic, allGraphs);
 
     // Auto-trigger generation pipeline when content is not ready.
     const tKey = topicRefKey(selectedTopic);
@@ -165,7 +184,7 @@ export default function TopicSelectionBar({
     }
 
     setDetailsOpen(false);
-  }, [allGraphs, barUnlockStatus?.canUnlock, contentStatusMap, selectedTieredTopic, selectedTopic, unlockTopic]);
+  }, [allGraphs, barUnlockStatus?.canUnlock, contentStatusMap, selectedTieredTopic, selectedTopic]);
 
   const handleTriggerGeneration = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {

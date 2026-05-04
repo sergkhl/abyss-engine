@@ -3,7 +3,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { CoarseChoice, Rating, type CoarseRatingResult } from '../types';
-import { useProgressionStore as useStudyStore } from '../features/progression';
+import {
+  studySessionOrchestrator,
+  useStudySessionStore,
+} from '../features/progression';
 import { evaluateAnswer as evaluateChoiceAnswer } from '../features/content';
 import { telemetry } from '../features/telemetry';
 import {
@@ -56,7 +59,11 @@ export function StudyPanelModal({
   onUndo,
   onRedo,
 }: StudyPanelModalProps) {
-  const currentSession = useStudyStore((state) => state.currentSession);
+  // Phase 2 step 10 (writer migration round): currentSession reads flow
+  // through the new study-session store; markHintUsed routes through
+  // `studySessionOrchestrator.markHintUsed` (no `useProgressionStore`
+  // import on this file).
+  const currentSession = useStudySessionStore((state) => state.currentSession);
 
   const model = useStudyPanelModel({ currentCardId, currentTopicId, currentSubjectId, totalCards });
   const explainReasoning = useReasoningToggle('studyQuestionExplain');
@@ -101,7 +108,7 @@ export function StudyPanelModal({
   });
 
   const handleClose = useCallback(() => {
-    const session = useStudyStore.getState().currentSession;
+    const session = useStudySessionStore.getState().currentSession;
     if (session) {
       const attemptsCompleted = session.attempts?.length ?? 0;
       const sessionTotalCards = session.totalCards ?? 0;
@@ -186,7 +193,7 @@ export function StudyPanelModal({
   const handleHintUsed = () => {
     const cardKey = resolveSubmitCardKey();
     if (!cardKey) return;
-    useStudyStore.getState().markHintUsed(cardKey);
+    studySessionOrchestrator.markHintUsed(cardKey);
   };
 
   const handleChoiceSubmit = () => {

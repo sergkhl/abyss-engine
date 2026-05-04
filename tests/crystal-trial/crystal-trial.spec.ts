@@ -59,7 +59,7 @@ test.describe('Crystal Trial', () => {
 
     const completed = await waitForProgressionEvent(
       page,
-      'abyss-crystal:trial-completed',
+      'abyss-crystal-trial:completed',
       priorEvents,
       5000,
     );
@@ -119,7 +119,7 @@ test.describe('Crystal Trial', () => {
 
     const completed = await waitForProgressionEvent(
       page,
-      'abyss-crystal:trial-completed',
+      'abyss-crystal-trial:completed',
       prior,
       5000,
     );

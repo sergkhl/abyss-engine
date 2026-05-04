@@ -33,7 +33,13 @@ import {
 import { appEventBus } from '@/infrastructure/eventBus';
 import { deckRepository } from '@/infrastructure/di';
 import { getChatCompletionsRepositoryForSurface } from '@/infrastructure/llmInferenceRegistry';
-import { crystalCeremonyStore, useProgressionStore } from '@/features/progression';
+import {
+  crystalCeremonyStore,
+  crystalGardenOrchestrator,
+  toggleBuffFromCatalog,
+  useBuffStore,
+  useCrystalGardenStore,
+} from '@/features/progression';
 import { uiStore, useUIStore } from '@/store/uiStore';
 import { useFeatureFlagsStore } from '@/store/featureFlagsStore';
 import { calculateLevelFromXP, MAX_CRYSTAL_LEVEL } from '@/types/crystalLevel';
@@ -43,6 +49,7 @@ import { useCrystalTrialStore } from '@/features/crystalTrial/crystalTrialStore'
 const DEV_XP_BUFF_ID = 'dev_xp_multiplier_5x' as const;
 const DEV_BUFF_SOURCE = 'command_palette' as const;
 const DEV_XP_AMOUNT = 80;
+const DEV_XP_SESSION_ID = 'dev-command-palette' as const;
 
 const CARD_TYPE_FILTER_STORAGE_KEY = 'abyss.commandPalette.cardTypeFilter';
 const RECENT_COMMANDS_STORAGE_KEY = 'abyss.commandPalette.recentCommands';
@@ -190,8 +197,13 @@ export function AbyssCommandPalette({
   onStartStudyWithCardTypes,
 }: AbyssCommandPaletteProps) {
   const selectedTopic = useUIStore((s) => s.selectedTopic);
-  const devXpBuffActive = useProgressionStore((s) => s.activeBuffs.some(matchesDevXpBuff));
-  const activeCrystals = useProgressionStore((s) => s.activeCrystals);
+  // Phase 2 step 10 (writer migration round): activeBuffs and activeCrystals
+  // reads flow through the new domain stores; the dev XP add/subtract writes
+  // route through `crystalGardenOrchestrator.addXP` and the dev XP-buff
+  // toggle through the colocated `toggleBuffFromCatalog` helper. The legacy
+  // `useProgressionStore` import has been retired from this file.
+  const devXpBuffActive = useBuffStore((s) => s.activeBuffs.some(matchesDevXpBuff));
+  const activeCrystals = useCrystalGardenStore((s) => s.activeCrystals);
   const trialStatus = useCrystalTrialStore((s) => (selectedTopic ? s.getTrialStatus(selectedTopic) : 'idle'));
   const sfxEnabled = useFeatureFlagsStore((s) => s.sfxEnabled);
   const toggleSfxEnabled = useFeatureFlagsStore((s) => s.toggleSfxEnabled);
@@ -295,34 +307,36 @@ export function AbyssCommandPalette({
   const handleDevAddXp = () => {
     const ref = uiStore.getState().selectedTopic;
     if (!ref) return;
-    const progression = useProgressionStore.getState();
-    const nextXp = progression.addXP(ref, DEV_XP_AMOUNT, { sessionId: 'dev-command-palette' });
-    if (nextXp <= 0) return;
-    appEventBus.emit('xp:gained', {
-      subjectId: ref.subjectId, topicId: ref.topicId, amount: DEV_XP_AMOUNT,
-      sessionId: 'dev-command-palette', cardId: 'dev-command-palette',
-    });
+    // Fix #5: `crystalGardenOrchestrator.addXP` is the sole emitter of
+    // `xp:gained` for direct grants. The previous duplicate emit here
+    // logged the *requested* `DEV_XP_AMOUNT` even when trial gating
+    // clamped the actual delta, producing two events with potentially
+    // disagreeing magnitudes. The orchestrator emits exactly one event
+    // with the post-gating effective delta.
+    crystalGardenOrchestrator.addXP(ref, DEV_XP_AMOUNT, { sessionId: DEV_XP_SESSION_ID });
     onOpenChange(false);
   };
 
   const handleDevSubtractXp = () => {
     const ref = uiStore.getState().selectedTopic;
     if (!ref) return;
-    const progression = useProgressionStore.getState();
-    const crystal = progression.activeCrystals.find((c) => c.subjectId === ref.subjectId && c.topicId === ref.topicId);
+    const crystal = useCrystalGardenStore
+      .getState()
+      .activeCrystals.find((c) => c.subjectId === ref.subjectId && c.topicId === ref.topicId);
     if (!crystal) return;
-    progression.addXP(ref, -DEV_XP_AMOUNT);
-    appEventBus.emit('xp:gained', {
-      subjectId: ref.subjectId, topicId: ref.topicId, amount: -DEV_XP_AMOUNT,
-      sessionId: 'dev-command-palette', cardId: 'dev-command-palette',
-    });
+    // Fix #5: subtract path no longer emits `xp:gained` -- the
+    // orchestrator skips emission for non-positive deltas so
+    // `xp:gained` retains "net positive XP landed" semantics for
+    // telemetry consumers. Pass the dev session id through for
+    // symmetry with the add path.
+    crystalGardenOrchestrator.addXP(ref, -DEV_XP_AMOUNT, { sessionId: DEV_XP_SESSION_ID });
     onOpenChange(false);
   };
 
   const handleDevTriggerLevelUpAnimation = () => {
     if (!selectedTopic) return;
     const { isDiscoveryModalOpen, isStudyPanelOpen, isRitualModalOpen, isStudyTimelineOpen, isCrystalTrialOpen } = useUIStore.getState();
-    crystalCeremonyStore.getState().notifyLevelUp(
+    crystalCeremonyStore.getState().presentCeremony(
       selectedTopic,
       isDiscoveryModalOpen || isStudyPanelOpen || isRitualModalOpen || isStudyTimelineOpen || isCrystalTrialOpen,
     );
@@ -330,7 +344,7 @@ export function AbyssCommandPalette({
   };
 
   const handleDevXpBuffToggle = () => {
-    useProgressionStore.getState().toggleBuffFromCatalog(DEV_XP_BUFF_ID, DEV_BUFF_SOURCE);
+    toggleBuffFromCatalog(DEV_XP_BUFF_ID, DEV_BUFF_SOURCE);
     onOpenChange(false);
   };
 
@@ -364,7 +378,7 @@ export function AbyssCommandPalette({
     'add-xp': { id: 'add-xp', label: 'Add +80 XP to selected crystal', value: 'add xp crystal dev', icon: Sparkles, onSelect: () => handleCommandSelect('add-xp', canDevAddXp, handleDevAddXp), disabled: !canDevAddXp },
     'subtract-xp': { id: 'subtract-xp', label: 'Subtract 80 XP from selected crystal', value: 'subtract xp crystal dev', icon: Minus, onSelect: () => handleCommandSelect('subtract-xp', canDevAddXp, handleDevSubtractXp), disabled: !canDevAddXp },
     'trigger-level-up-animation': { id: 'trigger-level-up-animation', label: 'Trigger selected crystal level-up animation', value: 'trigger crystal level up animation dev', icon: Sparkles, onSelect: () => handleCommandSelect('trigger-level-up-animation', canTriggerLevelUpAnimation, handleDevTriggerLevelUpAnimation), disabled: !canTriggerLevelUpAnimation },
-    'toggle-xp-buff': { id: 'toggle-xp-buff', label: devXpBuffActive ? 'Turn off 5× XP multiplier (dev)' : 'Turn on 5× XP multiplier (dev)', value: 'toggle xp multiplier buff dev', icon: Zap, onSelect: () => handleCommandSelect('toggle-xp-buff', isDebugMode, handleDevXpBuffToggle), disabled: !isDebugMode },
+    'toggle-xp-buff': { id: 'toggle-xp-buff', label: devXpBuffActive ? 'Turn off 5x XP multiplier (dev)' : 'Turn on 5x XP multiplier (dev)', value: 'toggle xp multiplier buff dev', icon: Zap, onSelect: () => handleCommandSelect('toggle-xp-buff', isDebugMode, handleDevXpBuffToggle), disabled: !isDebugMode },
   };
 
   const visibleRecentCommands = recentCommands

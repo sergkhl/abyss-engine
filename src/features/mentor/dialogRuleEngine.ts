@@ -126,7 +126,6 @@ export const TRIGGER_SPECS: Record<MentorTriggerId, TriggerSpec> = {
             effect: { kind: 'open_discovery' },
             next: 'end',
           },
-          { id: 'maybe-later', label: 'Maybe later', next: 'end' },
         ],
       });
       return messages;
@@ -162,7 +161,6 @@ export const TRIGGER_SPECS: Record<MentorTriggerId, TriggerSpec> = {
             },
             next: 'end',
           },
-          { id: 'maybe-later', label: 'Maybe later', next: 'end' },
         ],
       },
     ],
@@ -352,7 +350,6 @@ export const TRIGGER_SPECS: Record<MentorTriggerId, TriggerSpec> = {
               effect: { kind: 'open_topic_study', subjectId, topicId },
               next: 'end',
             },
-            { id: 'dismiss', label: 'Maybe later', next: 'end' },
           ],
         },
       ];

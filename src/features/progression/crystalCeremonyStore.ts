@@ -16,10 +16,18 @@ export interface CrystalCeremonyState {
 
 export interface CrystalCeremonyActions {
   /**
-   * Call when a crystal's level increases. Latest-only: overwrites `pendingTopicKey` when a dialog is open.
-   * Starts ceremony immediately when no dialog is open (replaces any in-progress ceremony).
+   * Called by `eventBusHandlers` reacting to `crystal:leveled` and
+   * `crystal:unlocked` to drive the visual ceremony. Latest-only:
+   * overwrites `pendingTopicKey` when a dialog is open. Starts the
+   * ceremony immediately when no dialog is open (replacing any
+   * in-progress ceremony).
+   *
+   * Renamed from `notifyLevelUp` in Phase 1 step 5 to reflect that the
+   * ceremony is presentation-driven and now serves both unlock and
+   * level-up events. No deprecated shim per `AGENTS.md` § "No Legacy
+   * Burden".
    */
-  notifyLevelUp: (ref: TopicRef, isDialogOpen: boolean) => void;
+  presentCeremony: (ref: TopicRef, isDialogOpen: boolean) => void;
   /** When every dialog closes, play the pending ceremony if any. */
   onDialogClosed: () => void;
   /** Clear finished ceremonies so morph settles to 1 without keeping dead state. */
@@ -45,7 +53,7 @@ export const crystalCeremonyStore = create<CrystalCeremonyState & CrystalCeremon
   ceremonyTopicKey: null,
   ceremonyStartedAt: null,
 
-  notifyLevelUp: (ref, isDialogOpen) => {
+  presentCeremony: (ref, isDialogOpen) => {
     const key = topicRefKey(ref);
     if (isDialogOpen) {
       set({ pendingTopicKey: key });

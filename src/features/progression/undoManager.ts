@@ -1,10 +1,39 @@
 import type { ProgressionState, StudyUndoSnapshot } from '@/types/progression';
 import { BuffEngine } from './buffs/buffEngine';
-import {
-  captureUndoSnapshot,
-  MAX_UNDO_DEPTH,
-  trimUndoSnapshotStack,
-} from './progressionUtils';
+
+export const MAX_UNDO_DEPTH = 50;
+
+function cloneDeep<T>(value: T): T {
+  if (typeof structuredClone === 'function') {
+    return structuredClone(value);
+  }
+  return JSON.parse(JSON.stringify(value));
+}
+
+function captureUndoSnapshot(state: ProgressionState): StudyUndoSnapshot {
+  if (!state.currentSession) {
+    throw new Error('Cannot capture undo snapshot without an active session.');
+  }
+
+  const coreSession = cloneDeep(state.currentSession);
+
+  return {
+    timestamp: Date.now(),
+    sm2Data: cloneDeep(state.sm2Data),
+    activeCrystals: cloneDeep(state.activeCrystals),
+    activeBuffs: cloneDeep(state.activeBuffs),
+    unlockPoints: state.unlockPoints,
+    resonancePoints: state.resonancePoints,
+    currentSession: coreSession,
+  };
+}
+
+function trimUndoSnapshotStack<T>(
+  stack: T[],
+  maxDepth: number = MAX_UNDO_DEPTH,
+): T[] {
+  return stack.slice(Math.max(0, stack.length - maxDepth));
+}
 
 function buildRestoredPartial(
   state: ProgressionState,
@@ -84,5 +113,3 @@ class UndoManager {
 }
 
 export const undoManager = new UndoManager();
-
-export { MAX_UNDO_DEPTH };

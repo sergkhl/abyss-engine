@@ -2,6 +2,7 @@ import { test as base, type Page } from '@playwright/test';
 import {
   waitForPageHydrated,
   waitForAbyssDev,
+  waitForDeckReady,
   startConsoleErrorCapture,
   E2E_HOME_PATH,
 } from '../utils/test-helpers';
@@ -12,24 +13,6 @@ interface SeedOptions {
   loadDefaultDeck?: boolean;
   /** Fixed seed for deterministic shuffles (written to sessionStorage). */
   rngSeed?: string;
-}
-
-/**
- * Wait until the deck store reports at least one active card. Replaces the
- * previous magic `waitForTimeout(750)` after clicking "Load Default Deck".
- */
-async function waitForDeckReady(page: Page, timeoutMs = 8000): Promise<void> {
-  await page.waitForFunction(
-    () => {
-      const dev = (window as unknown as {
-        abyssDev?: { getState?: () => { activeCards?: number } };
-      }).abyssDev;
-      const state = dev?.getState?.();
-      return typeof state?.activeCards === 'number' && state.activeCards > 0;
-    },
-    undefined,
-    { timeout: timeoutMs },
-  );
 }
 
 export async function seedApp(page: Page, opts: SeedOptions = {}): Promise<void> {
