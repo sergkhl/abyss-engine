@@ -305,7 +305,7 @@ describe('MentorDialogOverlay - overlayController integration', () => {
             mood: 'hint',
             choices: [
               { id: 'open-discovery', label: 'Open' },
-              { id: 'maybe-later', label: 'Later', next: 'end' },
+              { id: 'some-other-choice', label: 'Other', next: 'end' },
             ],
           },
         ],
@@ -443,7 +443,7 @@ describe('MentorDialogOverlay - overlayController integration', () => {
             mood: 'hint',
             choices: [
               { id: 'open-discovery', label: 'Open' },
-              { id: 'maybe-later', label: 'Later', next: 'end' },
+              { id: 'some-other-choice', label: 'Other', next: 'end' },
             ],
           },
           { id: 'msg-after', text: 'After', mood: 'neutral' },

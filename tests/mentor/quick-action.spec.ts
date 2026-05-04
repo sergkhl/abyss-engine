@@ -22,17 +22,14 @@ async function dismissAnyOpenMentorDialog(page: import('@playwright/test').Page)
   if ((await overlay.count()) === 0) return;
   if (!(await overlay.isVisible())) return;
 
-  // Walk through the welcome plan to dismissal: greet -> name -> 'Maybe later'.
+  // Walk through the welcome plan to dismissal: greet -> name -> close.
+  // The CTA no longer carries a "Maybe later" choice; ✕ is the canonical
+  // dismissal path.
   const next = page.getByTestId('mentor-dialog-next');
   if (await next.isVisible().catch(() => false)) await next.click();
   const skip = page.getByTestId('mentor-choice-skip-name');
   if (await skip.isVisible().catch(() => false)) await skip.click();
-  const maybeLater = page.getByTestId('mentor-choice-maybe-later');
-  if (await maybeLater.isVisible().catch(() => false)) {
-    await maybeLater.click();
-  } else {
-    await page.getByTestId('mentor-dialog-close').click();
-  }
+  await page.getByTestId('mentor-dialog-close').click();
   await expect(overlay).toBeHidden({ timeout: 5_000 });
 }
 

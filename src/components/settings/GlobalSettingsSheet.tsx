@@ -46,7 +46,7 @@ const CURRICULUM_SURFACE_IDS = [
   'subjectGenerationEdges',
 ] as const satisfies readonly InferenceSurfaceId[];
 
-const CONTENT_SHEET_CLASSNAME = '!w-full sm:max-w-xl overflow-y-auto';
+const CONTENT_SHEET_CLASSNAME = '!w-full sm:max-w-xl overflow-y-auto p-4';
 const SECTION_SPACING = 'pt-5';
 const ROW_CLASSNAME = 'flex items-center justify-between gap-2';
 const SELECT_CLASSNAME = 'w-44 shrink-0';
