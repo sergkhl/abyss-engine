@@ -90,6 +90,13 @@ export { useTopicUnlockStatus } from './hooks/useTopicUnlockStatus';
 export { useDueCardsCount } from './hooks/useDueCardsCount';
 export { useCrystalLevelProgress } from './hooks/useCrystalLevelProgress';
 export { useRemainingRitualCooldownMs } from './hooks/useRemainingRitualCooldownMs';
+// Fix #7: shared 1Hz cooldown clock with modal-open freeze. Composes
+// `useRemainingRitualCooldownMs` so consumers don't manage their own
+// wall-clock interval.
+export {
+	useRitualCooldownClock,
+	RITUAL_COOLDOWN_TICK_INTERVAL_MS,
+} from './hooks/useRitualCooldownClock';
 
 // Policy entry points. Stable named exports across the rewrite.
 export {
