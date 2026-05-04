@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import React, { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber/webgpu';
 import * as THREE from 'three/webgpu';
 import { Billboard, Sparkles } from '@react-three/drei/webgpu';
@@ -166,14 +166,6 @@ export const WisdomAltar: React.FC = () => {
 
     invalidate();
   });
-
-  // Touch the unused-effect lint by anchoring to the cooldown value;
-  // the previous `useEffect` block that set up the wall-clock interval
-  // has been replaced by the shared hook above.
-  useEffect(() => {
-    // no-op placeholder removed: cooldown plumbing now lives entirely
-    // inside `useRitualCooldownClock`.
-  }, []);
 
   return (
     <group
