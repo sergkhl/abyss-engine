@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware';
 import type { Buff } from '@/types/progression';
 
 import { BuffEngine } from '../buffs/buffEngine';
+import { normalizeActiveBuffs } from '../buffs/buffMerge';
 
 /**
  * Buff state slice: currently active buffs hydrated by `BuffEngine` at
@@ -59,37 +60,11 @@ export const useBuffStore = create<BuffStore>()(
 // `useBuffStore` rather than in `crystalGardenOrchestrator` -- whose seat
 // is reserved for cross-store writes.
 //
-// Production callers (`AbyssCommandPalette` dev XP-buff toggle) route
-// through these helpers. The legacy writers of the same names remain on
-// `progressionStore.ts` for the existing `progressionStore.test.ts` parity
-// gate until Phase 4 step 15 deletes the monolith outright.
+// The dedupe / hydrate / session-end-prune behavior used to live here as a
+// private duplicate. As of fix #4 of the progression monolith verification
+// plan, those helpers are imported from `../buffs/buffMerge` so this file,
+// the ritual flow, and boot-time pruning all share one interface.
 // ---------------------------------------------------------------------------
-
-function dedupeBuffsById(buffs: Buff[]): Buff[] {
-	const seen = new Set<string>();
-	const deduped: Buff[] = [];
-	for (let index = buffs.length - 1; index >= 0; index -= 1) {
-		const buff = buffs[index];
-		const dedupeKey = !buff
-			? ''
-			: `${buff.buffId}|${buff.source ?? 'unknown'}|${buff.condition}`;
-		if (!buff || seen.has(dedupeKey)) {
-			continue;
-		}
-		seen.add(dedupeKey);
-		deduped.push(buff);
-	}
-	return deduped.reverse();
-}
-
-function normalizeActiveBuffs(currentBuffs: Buff[], incoming: Buff[]): Buff[] {
-	const nonSession = currentBuffs
-		.map((buff) => BuffEngine.get().hydrateBuff(buff))
-		.filter((buff) => buff.condition !== 'session_end');
-	const sanitizedIncoming = incoming.map((buff) => BuffEngine.get().hydrateBuff(buff));
-	const combined = [...nonSession, ...sanitizedIncoming];
-	return dedupeBuffsById(combined);
-}
 
 export function grantBuffFromCatalog(
 	defId: string,
