@@ -1,13 +1,14 @@
 import type { GroundingSearchPolicy } from '@/types/grounding';
 import type { OpenRouterWebSearchTool } from '@/types/llm';
 
+/** Topic-theory web citations: many subjects lack .edu/gov or allowlisted doc primaries; trust tiers still recorded per URL. */
 export const FIRECRAWL_TOPIC_GROUNDING_POLICY: GroundingSearchPolicy = {
   engine: 'firecrawl',
   maxResults: 3,
   maxTotalResults: 6,
   requireWebSearch: true,
   minAcceptedSources: 2,
-  requireAuthoritativePrimarySource: true,
+  requireAuthoritativePrimarySource: false,
   authoritativePrimarySourceDomains: [
     'developer.mozilla.org',
     'docs.python.org',
@@ -34,20 +35,7 @@ export const FIRECRAWL_TOPIC_GROUNDING_POLICY: GroundingSearchPolicy = {
     'tc39.es',
     'opengroup.org',
   ],
-  rejectedDomains: [
-    'reddit.com',
-    'quora.com',
-    'stackoverflow.com',
-    'twitter.com',
-    'x.com',
-    'tiktok.com',
-    'youtube.com',
-    'medium.com',
-    'substack.com',
-    'coursehero.com',
-    'chegg.com',
-    'brainly.com',
-  ],
+  rejectedDomains: [],
 };
 
 export function buildOpenRouterWebSearchTools(

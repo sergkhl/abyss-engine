@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import type { GroundingSearchPolicy } from '@/types/grounding';
+
 import { FIRECRAWL_TOPIC_GROUNDING_POLICY } from './groundingPolicy';
 import { validateGroundingSources } from './validateGroundingSources';
 
@@ -7,7 +9,7 @@ const providerMetadata = {
   usage: { server_tool_use: { web_search_requests: 1 } },
 };
 
-function validateSingleSource(url: string) {
+function validateSingleSource(url: string, policyOverrides?: Partial<GroundingSearchPolicy>) {
   return validateGroundingSources({
     sources: [
       {
@@ -20,6 +22,7 @@ function validateSingleSource(url: string) {
     policy: {
       ...FIRECRAWL_TOPIC_GROUNDING_POLICY,
       minAcceptedSources: 1,
+      ...policyOverrides,
     },
     providerMetadata,
   });
@@ -43,10 +46,20 @@ describe('validateGroundingSources', () => {
   });
 
   it('does not promote generic docs-shaped hosts to authoritative primary sources', () => {
-    const result = validateSingleSource('https://docs.random-blog.com/topic');
+    const result = validateSingleSource('https://docs.random-blog.com/topic', {
+      requireAuthoritativePrimarySource: true,
+    });
 
     expect(result.acceptedSources).toHaveLength(1);
     expect(result.acceptedSources[0]?.trustLevel).toBe('medium');
     expect(result.errors).toContain('At least one authoritative primary source is required');
+  });
+
+  it('accepts reddit and similar hosts when rejectedDomains is empty on the policy', () => {
+    const result = validateSingleSource('https://www.reddit.com/r/poker/comments/example');
+
+    expect(result.rejectedSources).toHaveLength(0);
+    expect(result.acceptedSources).toHaveLength(1);
+    expect(result.errors).toEqual([]);
   });
 });
