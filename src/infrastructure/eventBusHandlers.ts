@@ -91,11 +91,19 @@ if (!g.__abyssEventBusHandlersRegistered) {
   g.__abyssEventBusHandlersRegistered = true;
 
   // Fix #8: HMR-safe subscription teardown. Every listener
-  // registration -- `appEventBus.on`, store `subscribe`, `pubSubClient.on`
-  // -- pushes its unsubscribe function here. The `import.meta.hot?.dispose`
-  // hook at the bottom of the registration block invokes them in
-  // reverse on a hot re-evaluation so the new module load registers
-  // fresh handlers without ghost listeners from the prior load.
+  // registration -- `appEventBus.on`, store `subscribe` -- pushes its
+  // unsubscribe function here. The `import.meta.hot?.dispose` hook at
+  // the bottom of the registration block invokes them in reverse on a
+  // hot re-evaluation so the new module load registers fresh handlers
+  // without ghost listeners from the prior load.
+  //
+  // NOTE: `pubSubClient.on(...)` returns `void` -- it does not vend a
+  // per-listener disposer in this client. Its single registration
+  // below is therefore intentionally not added to `disposers`; pubsub
+  // lifecycle is owned upstream by the client itself. The risk window
+  // is a single duplicated `topic-cards:updated` handler across an
+  // HMR boundary, which the trial-store guards (`status` check inside
+  // the handler) already make idempotent.
   const disposers: Array<() => void> = [];
 
   // `useCrystalTrialStore.persist.onFinishHydration` cannot be
@@ -496,6 +504,15 @@ if (!g.__abyssEventBusHandlersRegistered) {
   // exists at the moment of hydration still produces a false→true
   // announcement.
   //
+  // Defensive `?.` chain on `.persist`: in test environments the
+  // stores are sometimes mocked as plain objects without the zustand
+  // `persist` middleware. When `.persist` is absent we treat the
+  // store as already hydrated (`?? true`) so the watcher attaches
+  // immediately, which matches the pre-Fix #1 behavior the existing
+  // mentor specs were written against. Production zustand-persisted
+  // stores always expose `.persist`, so this only relaxes the gate in
+  // non-persisted environments.
+  //
   // Fix #8: each subscription's unsubscribe is pushed onto `disposers`
   // so a hot re-evaluation tears them down. The deferred attach path
   // additionally checks `disposed` so a hydration that resolves *after*
@@ -506,21 +523,21 @@ if (!g.__abyssEventBusHandlersRegistered) {
     disposers.push(useCrystalGardenStore.subscribe(recomputeTrialAvailability));
     recomputeTrialAvailability();
   };
-  const trialHydrated = useCrystalTrialStore.persist.hasHydrated();
-  const gardenHydrated = useCrystalGardenStore.persist.hasHydrated();
+  const trialHydrated = useCrystalTrialStore.persist?.hasHydrated() ?? true;
+  const gardenHydrated = useCrystalGardenStore.persist?.hasHydrated() ?? true;
   if (trialHydrated && gardenHydrated) {
     attachTrialAvailabilityWatcher();
   } else {
     let attached = false;
     const tryAttach = (): void => {
       if (attached || disposed) return;
-      if (!useCrystalTrialStore.persist.hasHydrated()) return;
-      if (!useCrystalGardenStore.persist.hasHydrated()) return;
+      if (!(useCrystalTrialStore.persist?.hasHydrated() ?? true)) return;
+      if (!(useCrystalGardenStore.persist?.hasHydrated() ?? true)) return;
       attached = true;
       attachTrialAvailabilityWatcher();
     };
-    if (!trialHydrated) useCrystalTrialStore.persist.onFinishHydration(tryAttach);
-    if (!gardenHydrated) useCrystalGardenStore.persist.onFinishHydration(tryAttach);
+    if (!trialHydrated) useCrystalTrialStore.persist?.onFinishHydration(tryAttach);
+    if (!gardenHydrated) useCrystalGardenStore.persist?.onFinishHydration(tryAttach);
   }
 
   // ---- Phase C: content-generation terminal events → mentor triggers ----
@@ -610,9 +627,13 @@ if (!g.__abyssEventBusHandlersRegistered) {
   // Card pool change detection: invalidate pre-generated trials.
   // Subscribes to the renamed v1 pubsub event `topic-cards:updated` published
   // by `deckContentWriter.persistTopicContentBundle(...)`.
-  // `pubSubClient.on(...)` follows the same `() => void` unsubscribe
-  // contract as `appEventBus.on(...)`, so the disposer wiring is symmetric.
-  disposers.push(pubSubClient.on('topic-cards:updated', (msg) => {
+  //
+  // `pubSubClient.on(...)` returns `void` -- it does not vend a
+  // per-listener disposer, so this registration is not pushed onto
+  // `disposers`. Pubsub lifecycle is owned upstream; on HMR the worst
+  // case is a duplicated handler whose body is already idempotent
+  // because of the trial-store status guard below.
+  pubSubClient.on('topic-cards:updated', (msg) => {
     if (!msg.subjectId || !msg.topicId) {
       return;
     }
@@ -653,7 +674,7 @@ if (!g.__abyssEventBusHandlersRegistered) {
         currentLevel,
       });
     }
-  }));
+  });
 
   disposers.push(appEventBus.on('session:completed', (e) => {
     telemetry.log(
@@ -747,8 +768,17 @@ if (!g.__abyssEventBusHandlersRegistered) {
   // undefined in production builds, so this block compiles to a no-op
   // there. Disposers run in reverse order to mirror typical setup
   // ordering.
-  if (import.meta.hot) {
-    import.meta.hot.dispose(() => {
+  //
+  // The workspace tsconfig does not pull in `vite/client` types, so
+  // `ImportMeta` doesn't carry a `hot` member. Cast to a narrow local
+  // type that exposes only `hot.dispose` -- enough to keep the dispose
+  // hook type-safe without leaking HMR types into the global
+  // `ImportMeta` shape.
+  const importMetaHot = (import.meta as ImportMeta & {
+    hot?: { dispose: (cb: () => void) => void };
+  }).hot;
+  if (importMetaHot) {
+    importMetaHot.dispose(() => {
       disposed = true;
       for (let i = disposers.length - 1; i >= 0; i--) {
         try {
